@@ -75,7 +75,7 @@ def compact_table(items):
               f'<td style="padding:5px 4px;color:var(--t1)">{r["name"]}<br><span style="color:var(--t4);font-size:10px">{r["code"]}</span></td>'
               f'<td style="padding:5px 4px;color:var(--t1)">{r["price"]:.2f}</td>'
               f'<td style="padding:5px 4px;color:{col}">{chg(r["change"])}</td>'
-              f'<td style="padding:5px 4px">{r["l1"]["greed"]:.1f}%</td>'
+              f'<td style="padding:5px 4px">{r["l1"].get("greed",0):.1f}%</td>'
               f'<td style="padding:5px 4px;color:var(--t3)">{r["template"]} {r["l4"].get("flow","")}</td></tr>')
     h += '</table></div>'
     return h

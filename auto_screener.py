@@ -127,6 +127,7 @@ def run_screening(stock):
          'l1':{},'l2':{},'l3':{},'l4':{},'flows':[]}
     kd=fetch_kline(code,'day')
     if not kd or len(kd)<30:
+        res['l1']={'status':'wait','greed':0.0,'detail':'K线数据不足，无法计算贪婪指数'}
         res['template']='D'; res['suggestion']='K线数据不足，无法判定'; res['l2']={'status':'wait','detail':'K线数据不足'}
         res['l3']={'status':'wait','detail':'K线数据不足'}; res['l4']={'status':'wait','detail':'资金流数据不足'}
         return res
