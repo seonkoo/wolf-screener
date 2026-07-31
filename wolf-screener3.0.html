@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小狼选股雷达 · 综合策略看板</title>
+<style>
+:root{--bg:#0a0e17;--bg2:#0d1421;--bg3:#121a2b;--bg4:#1a2940;--line:#2b3a52;--line2:#40506a;
+--t1:#edf3ff;--t2:#b2bfd3;--t3:#93a4bb;--t4:#72839c;--red:#ff4d4f;--red2:#ff6b6b;--green:#52c41a;
+--green2:#69db7c;--amber:#fa8c16;--blue:#4a9eff;--cyan:#13c2c2;--violet:#8c7dff;--radius:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--t1);font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;
+background-image:radial-gradient(ellipse at 20% 0%,rgba(74,158,255,.04),transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(255,77,79,.03),transparent 50%);
+min-height:100vh}
+.app{max-width:1200px;margin:0 auto;padding:12px}
+.hdr{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+padding:14px 16px;margin-bottom:12px;border:1px solid var(--line);border-radius:var(--radius);
+background:linear-gradient(135deg,rgba(26,41,64,.9),rgba(13,20,33,.9))}
+.hdr h1{font-size:20px;display:flex;align-items:center;gap:8px}
+.hdr h1::before{content:'\1F3A3';font-size:22px}
+.hdr .sub{font-size:12px;color:var(--t3);margin-top:2px}
+.hdr-side{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tag{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:600;border:1px solid}
+.tag.cache{color:#ffe9c4;background:rgba(250,140,22,.12);border-color:rgba(250,140,22,.3)}
+.btn{padding:8px 14px;border-radius:8px;border:1px solid var(--line2);background:var(--bg4);
+color:var(--t1);font:inherit;font-size:13px;cursor:pointer;transition:all .15s;font-weight:600}
+.btn:hover{border-color:var(--blue);background:var(--bg3)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+.tab{flex-shrink:0;padding:10px 16px;border:1px solid var(--line);border-radius:10px;
+background:var(--bg2);color:var(--t3);cursor:pointer;font:inherit;font-size:13px;font-weight:600;transition:all .15s;white-space:nowrap}
+.tab.active{background:linear-gradient(135deg,rgba(74,158,255,.2),rgba(19,194,194,.1));border-color:var(--blue);color:#dbeafe}
+.pane{display:none}.pane.active{display:block}
+.grid{display:grid;gap:10px}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:640px){.g3,.g4{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}}
+.card{background:var(--bg3);border:1px solid var(--line);border-radius:var(--radius);padding:14px;position:relative;overflow:hidden}
+.card .lbl{font-size:11px;color:var(--t3);margin-bottom:6px}
+.card .val{font-size:22px;font-weight:800;line-height:1.1}
+.card .meta{font-size:11px;color:var(--t2);margin-top:6px}
+.card.hl::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue)}
+.panel{background:var(--bg3);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.panel h3{font-size:15px;margin-bottom:10px;color:#dbeafe;display:flex;align-items:center;gap:6px}
+.panel h3::before{content:'';width:3px;height:14px;background:var(--blue);border-radius:2px}
+.panel-sub{font-size:12px;color:var(--t3);margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{padding:10px 8px;text-align:left;color:var(--t2);font-size:12px;border-bottom:2px solid var(--blue);white-space:nowrap}
+th.c,td.c{text-align:center}
+td{padding:8px;border-bottom:1px solid rgba(43,58,82,.5)}
+tr:hover td{background:rgba(74,158,255,.06)}
+.up{color:var(--red)}.dn{color:var(--green)}
+.s-panic{color:var(--green)}.s-neutral{color:var(--amber)}.s-greedy{color:var(--red)}
+.s-pass{color:var(--green);font-weight:700}.s-fail{color:var(--red);font-weight:700}.s-wait{color:var(--amber);font-weight:700}
+.badge{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.b-green{background:rgba(82,196,26,.15);color:var(--green2);border:1px solid rgba(82,196,26,.3)}
+.b-amber{background:rgba(250,140,22,.15);color:#fdba74;border:1px solid rgba(250,140,22,.3)}
+.b-red{background:rgba(255,77,79,.15);color:var(--red2);border:1px solid rgba(255,77,79,.3)}
+.b-blue{background:rgba(74,158,255,.15);color:#93c5fd;border:1px solid rgba(74,158,255,.3)}
+.b-gray{background:rgba(115,131,156,.15);color:var(--t3);border:1px solid rgba(115,131,156,.3)}
+input,select,textarea{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;
+padding:8px 12px;color:var(--t1);font:inherit;font-size:13px;width:100%}
+input:focus,select:focus{outline:none;border-color:var(--blue)}
+textarea{min-height:60px;resize:vertical}
+label{font-size:12px;color:var(--t3);display:block;margin-bottom:4px}
+.form-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+.form-row>div{flex:1;min-width:120px}
+.suggest{padding:14px;border-radius:var(--radius);border:1px solid;margin-bottom:10px}
+.suggest-a{background:rgba(82,196,26,.08);border-color:rgba(82,196,26,.3)}
+.suggest-b{background:rgba(250,140,22,.08);border-color:rgba(250,140,22,.3)}
+.suggest-c{background:rgba(255,77,79,.08);border-color:rgba(255,77,79,.3)}
+.suggest-d{background:rgba(115,131,156,.08);border-color:rgba(115,131,156,.3)}
+.suggest h4{font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.suggest p{font-size:13px;color:var(--t2);line-height:1.8}
+.suggest .tpl{font-size:12px;color:var(--t3);margin-top:8px;padding:8px;background:rgba(0,0,0,.2);border-radius:6px;line-height:1.7}
+.loading{text-align:center;padding:20px;color:var(--t3)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.switch{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--t2)}
+.switch input{width:auto}
+.principle{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+.principle .icon{font-size:20px;flex-shrink:0}
+.principle .txt{font-size:13px;color:var(--t2);line-height:1.6}
+.principle .txt b{color:var(--t1)}
+footer{margin-top:16px;padding:14px;border-top:1px solid var(--line);font-size:11px;color:var(--t4);line-height:1.7}
+details summary::-webkit-details-marker{display:none}
+details[open] summary{margin-bottom:10px}
+@media(max-width:640px){.app{padding:8px}.hdr{padding:10px 12px}.hdr h1{font-size:18px}.panel{padding:10px}.card{padding:10px}.card .val{font-size:18px}th,td{padding:6px 4px;font-size:12px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<div class="hdr">
+  <div>
+    <h1>小狼选股雷达</h1>
+    <div class="sub">波段交易策略 · 四层筛选 · 多重共振 · 严格风控 | 数据更新: <span id="updateTime">2026-07-31 23:20</span> · v4.2 重大事件</div>
+  </div>
+  <div class="hdr-side">
+    <span class="tag cache" id="dataTag">缓存数据</span>
+    <button class="btn primary" id="refreshBtn">🔄 刷新数据</button>
+  </div>
+</div>
+
+<nav class="tabs" id="tabNav">
+  <button class="tab active" data-tab="overview">📡 今日看板</button>
+  <button class="tab" data-tab="screener">🎯 选股雷达</button>
+  <button class="tab" data-tab="flow">💰 板块资金流</button>
+  <button class="tab" data-tab="etf">📈 ETF扫描</button>
+  <button class="tab" data-tab="risk">🛡️ 风控中心</button>
+  <button class="tab" data-tab="global">🌐 全球市场</button>
+  <button class="tab" data-tab="events">📅 重大事件</button>
+  <button class="tab" data-tab="auto">🤖 自动选股</button>
+</nav>
+
+<!-- Tab 1: 今日看板 -->
+<section class="pane active" id="pane-overview">
+  <!-- 恐慌机会提醒 -->
+  <div id="panicAlert"></div>
+  <!-- 外围市场综述 -->
+  <div id="globalBanner"></div>
+  <!-- 重大事件已独立为单独Tab（见 pane-events） -->
+  <!-- ETF贪婪指数排行 -->
+  <div class="panel">
+    <h3>ETF贪婪指数实时排行</h3>
+    <div class="panel-sub">页面打开自动扫描24个ETF的750日价格分位，点击「分析」直接进入四层筛选</div>
+    <div id="scanLoading" class="loading"><div class="spinner"></div><div style="margin-top:8px" id="scanProgress">正在扫描ETF贪婪指数...</div></div>
+    <div id="scanResults" style="display:none">
+      <div class="grid g4" style="margin-bottom:10px" id="scanSummary"></div>
+      <table id="greedRanking"><thead><tr><th>#</th><th>名称</th><th class="c">代码</th><th class="c">贪婪指数</th><th class="c">情绪</th><th class="c">收盘价</th><th class="c">乖离率</th><th class="c">操作</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+  <!-- 板块资金流概览 -->
+  <div class="grid g2">
+    <div class="panel">
+      <h3 style="color:var(--red)">概念板块流入 TOP5</h3>
+      <table id="ovFlowIn"><tbody><tr><td class="c" style="color:var(--t3);padding:16px">加载中...</td></tr></tbody></table>
+    </div>
+    <div class="panel">
+      <h3 style="color:var(--green)">概念板块流出 TOP5</h3>
+      <table id="ovFlowOut"><tbody><tr><td class="c" style="color:var(--t3);padding:16px">加载中...</td></tr></tbody></table>
+    </div>
+  </div>
+  <!-- 策略要点（折叠） -->
+  <details class="panel">
+    <summary style="cursor:pointer;font-size:15px;font-weight:700;color:#dbeafe;list-style:none;display:flex;align-items:center;gap:6px"><span style="width:3px;height:14px;background:var(--blue);border-radius:2px;display:inline-block"></span>策略要点 &amp; 风险提示</summary>
+    <div style="margin-top:10px;font-size:13px;color:var(--t2);line-height:1.8">
+      <p style="margin-bottom:8px"><b style="color:var(--t1)">交易定位：</b>波段交易，持仓5~12个交易日，博弈阶段性反弹</p>
+      <p style="margin-bottom:8px"><b style="color:var(--t1)">核心理念：</b>多重信号共振入场，单一指标不构成买卖依据；严格风控，止损优先</p>
+      <p style="margin-bottom:8px"><b style="color:var(--t1)">强制分界：</b>贪婪>65%只卖不买 | 恐慌<35%纳入观察池等技术确认</p>
+      <p style="margin-bottom:8px"><b style="color:var(--t1)">当前浪型：</b>大4浪调整周期，博弈4-4反弹，警惕4-5下行。<b style="color:var(--amber)">反弹≠反转，严禁长线重仓</b></p>
+      <p style="margin-bottom:8px"><b style="color:var(--green)">优先：</b>内需自主产业链、防御板块 | <b style="color:var(--amber)">谨慎：</b>海外依赖赛道 | <b style="color:var(--red)">规避：</b>高位资源股、纯题材</p>
+      <p style="margin-top:10px;color:var(--t4);font-size:11px">⚠️ 本策略为波段信号参考工具，不构成投资建议。单一指标无效，必须多重条件共振。游资短线炒作、连板个股不适用本策略。</p>
+    </div>
+  </details>
+</section>
+
+<!-- Tab 2: 选股雷达 -->
+<section class="pane" id="pane-screener">
+  <div class="panel">
+    <h3>标的输入</h3>
+    <div class="panel-sub">输入代码或点击下方按钮快速填入，系统将自动进行四层筛选</div>
+    <div style="margin-bottom:10px">
+      <label>快速填入标的池</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn preset-btn" data-codes="510050,510300,510500,159845,588000,159915" style="font-size:12px;padding:6px 10px">宽基ETF×6</button>
+        <button class="btn preset-btn" data-codes="512930,512480,159995,562500,515050,159732" style="font-size:12px;padding:6px 10px">科技ETF×6</button>
+        <button class="btn preset-btn" data-codes="512800,512880,515170,512010,512660" style="font-size:12px;padding:6px 10px">行业ETF×5</button>
+        <button class="btn preset-btn" data-codes="513130,513600,159632,513520" style="font-size:12px;padding:6px 10px">跨境ETF×4</button>
+        <button class="btn preset-btn" data-codes="600519,000858,601318,600036,000333,601012" style="font-size:12px;padding:6px 10px">蓝筹股×6</button>
+        <button class="btn" id="clearInputBtn" style="font-size:12px;padding:6px 10px;border-color:var(--red);color:var(--red2)">清空</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div style="flex:2"><label>股票/ETF代码（多个用逗号或换行分隔）</label><textarea id="stockInput" placeholder="例如: 510050, 512930, 600519"></textarea></div>
+      <div><label>匹配板块（用于情绪海选）</label><select id="sectorSelect"><option value="auto">自动匹配ETF</option><option value="上证50">上证50</option><option value="沪深300">沪深300</option><option value="中证500">中证500</option><option value="中证1000">中证1000</option><option value="科创50">科创50</option><option value="创业板指">创业板指</option><option value="AI人工智能">AI人工智能</option><option value="半导体">半导体</option><option value="芯片产业">芯片产业</option><option value="机器人">机器人</option><option value="5G通信">5G通信</option><option value="消费电子">消费电子</option><option value="新能源">新能源</option><option value="光伏">光伏</option><option value="医药">医药</option><option value="银行">银行</option><option value="证券">证券</option><option value="食品饮料">食品饮料</option><option value="军工">军工</option></select></div>
+      <div><label>&nbsp;</label><button class="btn primary" id="screenBtn" style="width:100%">🚀 开始筛选</button></div>
+    </div>
+    <div class="form-row">
+      <div><label>单只资金上限（万元）</label><input type="number" id="capitalInput" value="10" min="1"></div>
+      <div><label>止损比例（%）</label><input type="number" id="stopLossInput" value="6" min="1" max="20"></div>
+      <div><label>止盈目标（%）</label><input type="number" id="takeProfitInput" value="10" min="1" max="30"></div>
+      <div><label>底仓比例（%）</label><input type="number" id="positionInput" value="15" min="5" max="50"></div>
+    </div>
+  </div>
+  <div id="screenSummary" style="display:none;margin-bottom:10px"></div>
+  <div id="screenResults"><div class="panel"><div class="loading"><div class="spinner"></div><div style="margin-top:8px">点击上方按钮快速填入标的，或手动输入代码后开始筛选</div></div></div></div>
+</section>
+
+<!-- Tab 3: 板块资金流 -->
+<section class="pane" id="pane-flow">
+  <div class="panel">
+    <h3>板块资金流 · 盘中实时</h3>
+    <div class="panel-sub">数据来源：东方财富（主力=超大单+大单净额，分钟级延迟）。每5分钟自动刷新。</div>
+    <div class="form-row">
+      <div><label>板块类型</label><select id="flowKind"><option value="concept">概念板块</option><option value="industry">行业板块</option></select></div>
+      <div><label>&nbsp;</label><button class="btn primary" id="flowRefreshBtn" style="width:100%">🔄 刷新资金流</button></div>
+      <div><label>&nbsp;</label><div class="switch"><input type="checkbox" id="flowAuto" checked><span>自动刷新(5min)</span></div></div>
+    </div>
+  </div>
+  <div class="grid g4" style="margin-bottom:12px">
+    <div class="card"><div class="lbl">最强流入</div><div class="val up" id="flowCardIn">—</div><div class="meta" id="flowCardInMeta">—</div></div>
+    <div class="card"><div class="lbl">最强流出</div><div class="val dn" id="flowCardOut">—</div><div class="meta" id="flowCardOutMeta">—</div></div>
+    <div class="card"><div class="lbl">净流入板块数</div><div class="val" id="flowCardNin">—</div><div class="meta" id="flowCardNinMeta">—</div></div>
+    <div class="card"><div class="lbl">净流出板块数</div><div class="val" id="flowCardNout">—</div><div class="meta" id="flowCardNoutMeta">—</div></div>
+  </div>
+  <div class="grid g2">
+    <div class="panel">
+      <h3 style="color:var(--red)">🔴 净流入 TOP10</h3>
+      <table id="flowTableIn"><thead><tr><th>#</th><th>板块</th><th class="c">净流入(亿)</th></tr></thead><tbody><tr><td colspan="3" class="c" style="color:var(--t3);padding:20px">加载中...</td></tr></tbody></table>
+    </div>
+    <div class="panel">
+      <h3 style="color:var(--green)">🟢 净流出 TOP10</h3>
+      <table id="flowTableOut"><thead><tr><th>#</th><th>板块</th><th class="c">净流出(亿)</th></tr></thead><tbody><tr><td colspan="3" class="c" style="color:var(--t3);padding:20px">加载中...</td></tr></tbody></table>
+    </div>
+  </div>
+</section>
+
+<!-- Tab 4: ETF扫描 -->
+<section class="pane" id="pane-etf">
+  <div class="panel">
+    <h3>ETF贪婪指数扫描</h3>
+    <div class="panel-sub">基于自建750日价格分位指标（Arkvol可用时优先使用），按小狼策略情绪分层：恐慌低位（绿色）→ 可观察 | 贪婪过热（红色）→ 禁止开仓</div>
+    <div class="form-row">
+      <div><label>筛选范围</label><select id="etfFilter"><option value="all">全部</option><option value="broad">宽基ETF</option><option value="tech">科技板块</option><option value="funds">基金/ETF(需Arkvol)</option></select></div>
+      <div><label>情绪过滤</label><select id="sentimentFilter"><option value="all">全部</option><option value="panic">仅恐慌低位(<35%)</option><option value="neutral">中性(35-65%)</option><option value="greedy">仅贪婪过热(>65%)</option></select></div>
+    </div>
+  </div>
+  <div class="panel">
+    <table id="etfTable"><thead><tr><th>名称</th><th class="c">代码</th><th class="c">贪婪指数</th><th class="c">情绪状态</th><th class="c">收盘价</th><th class="c">策略建议</th><th class="c">操作</th></tr></thead><tbody><tr><td colspan="7" class="c" style="color:var(--t3);padding:20px">加载中...</td></tr></tbody></table>
+  </div>
+  <div class="panel">
+    <h3>ETF乖离率排行</h3>
+    <div class="panel-sub">价格相对20日EMA偏离程度。正值偏强（超买风险），负值偏弱（超跌机会）。排除极端异常值。</div>
+    <div class="grid g2">
+      <div><h4 style="color:var(--red);font-size:13px;margin-bottom:8px">▲ 偏强 TOP8</h4><table id="devStrong"><tbody><tr><td class="c" style="color:var(--t3)">加载中...</td></tr></tbody></table></div>
+      <div><h4 style="color:var(--green);font-size:13px;margin-bottom:8px">▼ 偏弱 TOP10</h4><table id="devWeak"><tbody><tr><td class="c" style="color:var(--t3)">加载中...</td></tr></tbody></table></div>
+    </div>
+  </div>
+</section>
+
+<!-- Tab 5: 风控中心 -->
+<section class="pane" id="pane-risk">
+  <div class="panel">
+    <h3>强制黑名单过滤</h3>
+    <div class="panel-sub">以下标的将被自动剔除，不进入筛选流程</div>
+    <div class="grid g2">
+      <div class="card"><div class="lbl">强制剔除</div><div style="font-size:13px;color:var(--t2);line-height:2;margin-top:6px"><span class="badge b-red">ST/*ST</span> 股票<br><span class="badge b-red">涨幅巨大</span> 贪婪>65%标的<br><span class="badge b-red">纯题材</span> 无基本面支撑</div></div>
+      <div class="card"><div class="lbl">可选屏蔽（开关）</div><div style="font-size:13px;color:var(--t2);line-height:2.4;margin-top:6px"><label class="switch"><input type="checkbox" id="block300" checked> <span>创业板(300)</span></label><label class="switch"><input type="checkbox" id="block688" checked> <span>科创板(688)</span></label><label class="switch"><input type="checkbox" id="blockOverseas"> <span>海外依赖标的</span></label></div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>止损/止盈计算器</h3>
+    <div class="form-row">
+      <div><label>买入价</label><input type="number" id="buyPrice" placeholder="如 3.058" step="0.001"></div>
+      <div><label>止损比例(%)</label><input type="number" id="calcStop" value="6" min="1" max="20"></div>
+      <div><label>止盈目标(%)</label><input type="number" id="calcProfit" value="10" min="1" max="30"></div>
+      <div><label>&nbsp;</label><button class="btn primary" id="calcBtn" style="width:100%">计算</button></div>
+    </div>
+    <div id="calcResult" style="display:none">
+      <div class="grid g3">
+        <div class="card" style="border-top:3px solid var(--red)"><div class="lbl">止损价</div><div class="val up" id="stopPrice">—</div><div class="meta" id="stopMeta">—</div></div>
+        <div class="card" style="border-top:3px solid var(--green)"><div class="lbl">止盈价(目标)</div><div class="val dn" id="profitPrice">—</div><div class="meta" id="profitMeta">—</div></div>
+        <div class="card" style="border-top:3px solid var(--blue)"><div class="lbl">盈亏比</div><div class="val" id="ratio">—</div><div class="meta" id="ratioMeta">—</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>离场信号检查清单</h3>
+    <div style="font-size:13px;color:var(--t2);line-height:2">
+      <div style="margin-bottom:8px"><span class="badge b-red">止损</span> 价格跌破预设止损线 → 无条件离场</div>
+      <div style="margin-bottom:8px"><span class="badge b-green">止盈</span> 到达8%~10%目标 → 分批减仓</div>
+      <div style="margin-bottom:8px"><span class="badge b-amber">信号离场</span> 满足任意一条即减仓/清仓：</div>
+      <div style="padding-left:20px;color:var(--t3);font-size:12px;line-height:1.8">• DK-D买点失效<br>• 板块贪婪指数进入>65%过热区间<br>• 15分钟MACD形成顶背离，反弹动能衰竭<br>• 浪型信号转变，预期走出4-5下跌浪</div>
+    </div>
+  </div>
+</section>
+
+<!-- Tab 6: 全球市场 -->
+<section class="pane" id="pane-global">
+  <div class="panel" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div>
+      <h3 style="margin-bottom:0">🌐 全球市场 · 外围环境扫描</h3>
+      <div class="panel-sub" style="margin-bottom:0">数据来源：腾讯（美股七姐妹 / 韩股 / A50·黄金·原油ETF代理）、东方财富（韩国KOSPI指数）。与A股四层筛选联动研判。</div>
+    </div>
+    <button class="btn primary" id="globalRefreshBtn">🔄 刷新</button>
+  </div>
+
+  <div id="globalLoading" class="loading"><div class="spinner"></div><div style="margin-top:8px">正在拉取全球行情...</div></div>
+
+  <div class="panel" style="border:1px solid var(--blue)">
+    <h3>📊 综合研判 · 外围对A股波段反弹的影响</h3>
+    <div id="globalVerdict" style="margin-bottom:8px;font-size:14px">加载中...</div>
+    <div id="globalLines" style="font-size:13px;color:var(--t2);line-height:1.7">—</div>
+    <div class="suggest suggest-b" style="margin-top:10px"><div id="globalAdvice" style="font-size:13px;color:var(--t1)">—</div></div>
+  </div>
+
+  <div class="panel">
+    <h3>纳指七姐妹（Magnificent 7）</h3>
+    <div class="panel-sub">美国科技龙头，反映全球风险偏好与AI产业景气，是A股成长板块的情绪锚</div>
+    <table><thead><tr><th>个股</th><th class="c">最新价(USD)</th><th class="c">涨跌幅</th></tr></thead><tbody id="mag7Body"><tr><td colspan="3" class="c" style="color:var(--t3);padding:16px">加载中...</td></tr></tbody></table>
+  </div>
+
+  <div class="grid g2">
+    <div class="panel">
+      <h3>韩国市场 · 半导体风向标</h3>
+      <div class="panel-sub">三星 / 海力士为全球存储芯片景气领先指标，直接影响A股半导体链</div>
+      <div class="grid g3" id="krCards"></div>
+    </div>
+    <div class="panel">
+      <h3>大宗商品 &amp; A50期货</h3>
+      <div class="panel-sub">黄金 = 避险温度，原油 = 通胀/成本压力，A50 = 境外对中国资产预期</div>
+      <div class="grid g3" id="comCards"></div>
+      <div style="font-size:11px;color:var(--t4);margin-top:8px">注：黄金 / 原油 / A50 采用A股ETF代理（A股交易时段内紧密追踪真实标的），非交易时段显示当日收盘值。</div>
+    </div>
+  </div>
+</section>
+
+<!-- Tab: 重大事件（独立板块，位于全球市场之后） -->
+<section class="pane" id="pane-events">
+  <div class="panel" id="eventsPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3>📅 重大事件 · 财经日历</h3>
+        <div class="panel-sub" style="margin-bottom:0">东方财富财经日历 · 经济数据 / 新股 / 会议 / 政策（今日及未来3天）· <span style="color:var(--red2)">🌍 影响全球资金流动性的新闻置顶</span></div>
+      </div>
+      <button class="btn" id="eventsRefreshBtn" style="font-size:12px;padding:6px 10px">🔄 刷新</button>
+    </div>
+    <div id="eventsLoading" class="loading"><div class="spinner"></div><div style="margin-top:8px">正在拉取财经日历...</div></div>
+    <div id="eventsBody" style="display:none;max-height:72vh;overflow-y:auto;margin-top:6px"></div>
+  </div>
+</section>
+
+<!-- 自动选股 Tab：快照由 sync_auto_tab.py 注入 -->
+<section class="pane" id="pane-auto">
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🤖 自动选股 · 全A四层扫描</h3>
+    <div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 生成于 2026-08-01 01:54</div></div>
+    <div style="font-size:12px;color:var(--t2)">候选 <b>100</b> · 🟢A <b>17</b> · 🔵B <b>38</b> · 🔴C <b>38</b> · ⚪D <b>7</b></div>
+  </div>
+  <div style="margin-top:8px;font-size:11px;color:var(--t3)">⚠️ 波段反弹信号，非投资建议；止损6% / 目标10%。第3层技术共振在扫描环境用「日线代理」（沙箱取不到15min K线），在手机网页端切到本Tab后，建议用「🎯 选股雷达」用真实15min MACD复核。</div>
+</div>
+<div class="panel">
+  <h3 style="margin-bottom:6px">🟢 A · 建议低吸（四层全过 17只）</h3>
+  
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">视觉中国 <span style="color:var(--t3);font-weight:400;font-size:12px">000681</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">17.96</div>
+          <div style="font-size:12px;color:var(--red2)">+7.29%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 4.4%</span> <span>主力 <b style="color:var(--green2)">+1.25亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>16.88</b> · 目标 <b>19.76</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">美年健康 <span style="color:var(--t3);font-weight:400;font-size:12px">002044</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">4.78</div>
+          <div style="font-size:12px;color:var(--red2)">+6.22%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 6.0%</span> <span>主力 <b style="color:var(--green2)">+0.44亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>4.49</b> · 目标 <b>5.26</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">鸿博股份 <span style="color:var(--t3);font-weight:400;font-size:12px">002229</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">10.30</div>
+          <div style="font-size:12px;color:var(--red2)">+6.08%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 6.6%</span> <span>主力 <b style="color:var(--green2)">+0.37亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>9.68</b> · 目标 <b>11.33</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">南兴股份 <span style="color:var(--t3);font-weight:400;font-size:12px">002757</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">16.32</div>
+          <div style="font-size:12px;color:var(--red2)">+6.25%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 6.9%</span> <span>主力 <b style="color:var(--green2)">+0.65亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>15.34</b> · 目标 <b>17.95</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">常山北明 <span style="color:var(--t3);font-weight:400;font-size:12px">000158</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">13.30</div>
+          <div style="font-size:12px;color:var(--red2)">+6.23%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 7.8%</span> <span>主力 <b style="color:var(--green2)">+0.93亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>12.50</b> · 目标 <b>14.63</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">科大讯飞 <span style="color:var(--t3);font-weight:400;font-size:12px">002230</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">42.22</div>
+          <div style="font-size:12px;color:var(--red2)">+5.89%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 9.1%</span> <span>主力 <b style="color:var(--green2)">+4.27亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>39.69</b> · 目标 <b>46.44</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">省广集团 <span style="color:var(--t3);font-weight:400;font-size:12px">002400</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">6.80</div>
+          <div style="font-size:12px;color:var(--red2)">+7.94%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 9.1%</span> <span>主力 <b style="color:var(--green2)">+2.47亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>6.39</b> · 目标 <b>7.48</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">东华软件 <span style="color:var(--t3);font-weight:400;font-size:12px">002065</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">7.24</div>
+          <div style="font-size:12px;color:var(--red2)">+5.23%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 9.1%</span> <span>主力 <b style="color:var(--green2)">+0.60亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>6.81</b> · 目标 <b>7.96</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">建设工业 <span style="color:var(--t3);font-weight:400;font-size:12px">002265</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">19.41</div>
+          <div style="font-size:12px;color:var(--red2)">+6.18%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 9.4%</span> <span>主力 <b style="color:var(--green2)">+0.94亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>18.25</b> · 目标 <b>21.35</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">德赛西威 <span style="color:var(--t3);font-weight:400;font-size:12px">002920</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">92.45</div>
+          <div style="font-size:12px;color:var(--red2)">+3.95%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 11.3%</span> <span>主力 <b style="color:var(--green2)">+1.76亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>86.90</b> · 目标 <b>101.69</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">天融信 <span style="color:var(--t3);font-weight:400;font-size:12px">002212</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">6.57</div>
+          <div style="font-size:12px;color:var(--red2)">+4.45%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 12.2%</span> <span>主力 <b style="color:var(--green2)">+0.39亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>6.18</b> · 目标 <b>7.23</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">贝瑞基因 <span style="color:var(--t3);font-weight:400;font-size:12px">000710</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">8.50</div>
+          <div style="font-size:12px;color:var(--red2)">+6.65%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 12.5%</span> <span>主力 <b style="color:var(--green2)">+0.39亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>7.99</b> · 目标 <b>9.35</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">金固股份 <span style="color:var(--t3);font-weight:400;font-size:12px">002488</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">9.10</div>
+          <div style="font-size:12px;color:var(--red2)">+8.08%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 14.7%</span> <span>主力 <b style="color:var(--green2)">+0.70亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>8.55</b> · 目标 <b>10.01</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">达实智能 <span style="color:var(--t3);font-weight:400;font-size:12px">002421</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">2.87</div>
+          <div style="font-size:12px;color:var(--red2)">+5.51%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 19.7%</span> <span>主力 <b style="color:var(--green2)">+0.43亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>2.70</b> · 目标 <b>3.16</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">国新健康 <span style="color:var(--t3);font-weight:400;font-size:12px">000503</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">7.72</div>
+          <div style="font-size:12px;color:var(--red2)">+7.82%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 20.4%</span> <span>主力 <b style="color:var(--green2)">+0.53亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>7.26</b> · 目标 <b>8.49</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">石基信息 <span style="color:var(--t3);font-weight:400;font-size:12px">002153</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">8.52</div>
+          <div style="font-size:12px;color:var(--red2)">+3.52%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 28.5%</span> <span>主力 <b style="color:var(--green2)">+0.55亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>8.01</b> · 目标 <b>9.37</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">学大教育 <span style="color:var(--t3);font-weight:400;font-size:12px">000526</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">35.55</div>
+          <div style="font-size:12px;color:var(--green2)">-2.15%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 31.7%</span> <span>主力 <b style="color:var(--green2)">+0.45亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪</span>
+        <span class="badge b-green">②浪型</span>
+        <span class="badge b-green">③技术⚠代理</span>
+        <span class="badge b-green">④资金</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>33.42</b> · 目标 <b>39.10</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多重条件共振，小仓位分批低吸博弈波段反弹，止损6%%，目标10%%，反弹属4浪内部修复，不长期持有。</div>
+    </div>
+</div>
+<div class="panel">
+  <details><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔵 B · 观察（38只）</summary>
+  <div style="max-height:52vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse"><tr style="color:var(--t4);font-size:11px;text-align:left"><th style="padding:4px">名称</th><th style="padding:4px">价</th><th style="padding:4px">涨跌</th><th style="padding:4px">贪婪</th><th style="padding:4px">判定</th></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">科华数据<br><span style="color:var(--t4);font-size:10px">002335</span></td><td style="padding:5px 4px;color:var(--t1)">28.70</td><td style="padding:5px 4px;color:var(--red2)">+3.57%</td><td style="padding:5px 4px">0.3%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">苏州固锝<br><span style="color:var(--t4);font-size:10px">002079</span></td><td style="padding:5px 4px;color:var(--t1)">8.87</td><td style="padding:5px 4px;color:var(--red2)">+1.72%</td><td style="padding:5px 4px">1.9%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">西陇科学<br><span style="color:var(--t4);font-size:10px">002584</span></td><td style="padding:5px 4px;color:var(--t1)">7.22</td><td style="padding:5px 4px;color:var(--red2)">+3.44%</td><td style="padding:5px 4px">2.2%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">欧菲光<br><span style="color:var(--t4);font-size:10px">002456</span></td><td style="padding:5px 4px;color:var(--t1)">7.22</td><td style="padding:5px 4px;color:var(--red2)">+2.70%</td><td style="padding:5px 4px">2.8%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">海格通信<br><span style="color:var(--t4);font-size:10px">002465</span></td><td style="padding:5px 4px;color:var(--t1)">10.00</td><td style="padding:5px 4px;color:var(--red2)">+2.56%</td><td style="padding:5px 4px">3.1%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中兵红箭<br><span style="color:var(--t4);font-size:10px">000519</span></td><td style="padding:5px 4px;color:var(--t1)">14.39</td><td style="padding:5px 4px;color:var(--red2)">+2.79%</td><td style="padding:5px 4px">3.4%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">完美世界<br><span style="color:var(--t4);font-size:10px">002624</span></td><td style="padding:5px 4px;color:var(--t1)">10.97</td><td style="padding:5px 4px;color:var(--red2)">+6.40%</td><td style="padding:5px 4px">3.8%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">奥普光电<br><span style="color:var(--t4);font-size:10px">002338</span></td><td style="padding:5px 4px;color:var(--t1)">39.96</td><td style="padding:5px 4px;color:var(--red2)">+0.20%</td><td style="padding:5px 4px">7.5%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中航光电<br><span style="color:var(--t4);font-size:10px">002179</span></td><td style="padding:5px 4px;color:var(--t1)">34.04</td><td style="padding:5px 4px;color:var(--red2)">+1.98%</td><td style="padding:5px 4px">11.0%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中国铀业<br><span style="color:var(--t4);font-size:10px">001280</span></td><td style="padding:5px 4px;color:var(--t1)">62.42</td><td style="padding:5px 4px;color:var(--red2)">+4.50%</td><td style="padding:5px 4px">13.2%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中鼎股份<br><span style="color:var(--t4);font-size:10px">000887</span></td><td style="padding:5px 4px;color:var(--t1)">17.25</td><td style="padding:5px 4px;color:var(--red2)">+2.68%</td><td style="padding:5px 4px">13.2%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">和而泰<br><span style="color:var(--t4);font-size:10px">002402</span></td><td style="padding:5px 4px;color:var(--t1)">20.10</td><td style="padding:5px 4px;color:var(--red2)">+3.29%</td><td style="padding:5px 4px">14.4%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">奔图科技<br><span style="color:var(--t4);font-size:10px">002180</span></td><td style="padding:5px 4px;color:var(--t1)">17.02</td><td style="padding:5px 4px;color:var(--red2)">+5.06%</td><td style="padding:5px 4px">17.9%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">良信股份<br><span style="color:var(--t4);font-size:10px">002706</span></td><td style="padding:5px 4px;color:var(--t1)">9.02</td><td style="padding:5px 4px;color:var(--red2)">+2.50%</td><td style="padding:5px 4px">20.7%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">协鑫集成<br><span style="color:var(--t4);font-size:10px">002506</span></td><td style="padding:5px 4px;color:var(--t1)">2.54</td><td style="padding:5px 4px;color:var(--red2)">+2.01%</td><td style="padding:5px 4px">25.1%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">北斗星通<br><span style="color:var(--t4);font-size:10px">002151</span></td><td style="padding:5px 4px;color:var(--t1)">28.42</td><td style="padding:5px 4px;color:var(--red2)">+1.50%</td><td style="padding:5px 4px">25.1%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">恺英网络<br><span style="color:var(--t4);font-size:10px">002517</span></td><td style="padding:5px 4px;color:var(--t1)">17.19</td><td style="padding:5px 4px;color:var(--red2)">+4.18%</td><td style="padding:5px 4px">30.7%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">三花智控<br><span style="color:var(--t4);font-size:10px">002050</span></td><td style="padding:5px 4px;color:var(--t1)">37.53</td><td style="padding:5px 4px;color:var(--red2)">+5.84%</td><td style="padding:5px 4px">36.7%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">大华股份<br><span style="color:var(--t4);font-size:10px">002236</span></td><td style="padding:5px 4px;color:var(--t1)">16.72</td><td style="padding:5px 4px;color:var(--red2)">+3.47%</td><td style="padding:5px 4px">38.6%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">山子高科<br><span style="color:var(--t4);font-size:10px">000981</span></td><td style="padding:5px 4px;color:var(--t1)">2.66</td><td style="padding:5px 4px;color:var(--red2)">+3.91%</td><td style="padding:5px 4px">38.6%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">岩山科技<br><span style="color:var(--t4);font-size:10px">002195</span></td><td style="padding:5px 4px;color:var(--t1)">6.80</td><td style="padding:5px 4px;color:var(--red2)">+3.03%</td><td style="padding:5px 4px">40.8%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">万向钱潮<br><span style="color:var(--t4);font-size:10px">000559</span></td><td style="padding:5px 4px;color:var(--t1)">11.23</td><td style="padding:5px 4px;color:var(--red2)">+4.86%</td><td style="padding:5px 4px">42.9%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">巨人网络<br><span style="color:var(--t4);font-size:10px">002558</span></td><td style="padding:5px 4px;color:var(--t1)">29.28</td><td style="padding:5px 4px;color:var(--red2)">+5.78%</td><td style="padding:5px 4px">43.3%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">双环传动<br><span style="color:var(--t4);font-size:10px">002472</span></td><td style="padding:5px 4px;color:var(--t1)">38.42</td><td style="padding:5px 4px;color:var(--red2)">+7.65%</td><td style="padding:5px 4px">44.5%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">北方铜业<br><span style="color:var(--t4);font-size:10px">000737</span></td><td style="padding:5px 4px;color:var(--t1)">13.42</td><td style="padding:5px 4px;color:var(--red2)">+3.39%</td><td style="padding:5px 4px">45.8%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">粤 传 媒<br><span style="color:var(--t4);font-size:10px">002181</span></td><td style="padding:5px 4px;color:var(--t1)">8.58</td><td style="padding:5px 4px;color:var(--red2)">+7.12%</td><td style="padding:5px 4px">46.4%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">三七互娱<br><span style="color:var(--t4);font-size:10px">002555</span></td><td style="padding:5px 4px;color:var(--t1)">19.91</td><td style="padding:5px 4px;color:var(--red2)">+3.27%</td><td style="padding:5px 4px">48.9%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">海南海药<br><span style="color:var(--t4);font-size:10px">000566</span></td><td style="padding:5px 4px;color:var(--t1)">5.86</td><td style="padding:5px 4px;color:var(--green2)">-1.51%</td><td style="padding:5px 4px">49.2%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">航天发展<br><span style="color:var(--t4);font-size:10px">000547</span></td><td style="padding:5px 4px;color:var(--t1)">14.17</td><td style="padding:5px 4px;color:var(--red2)">+3.05%</td><td style="padding:5px 4px">51.4%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">盛达资源<br><span style="color:var(--t4);font-size:10px">000603</span></td><td style="padding:5px 4px;color:var(--t1)">25.40</td><td style="padding:5px 4px;color:var(--red2)">+5.53%</td><td style="padding:5px 4px">54.5%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">湖南黄金<br><span style="color:var(--t4);font-size:10px">002155</span></td><td style="padding:5px 4px;color:var(--t1)">23.05</td><td style="padding:5px 4px;color:var(--red2)">+2.72%</td><td style="padding:5px 4px">55.8%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">国安股份<br><span style="color:var(--t4);font-size:10px">000839</span></td><td style="padding:5px 4px;color:var(--t1)">2.77</td><td style="padding:5px 4px;color:var(--red2)">+2.97%</td><td style="padding:5px 4px">56.7%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">金风科技<br><span style="color:var(--t4);font-size:10px">002202</span></td><td style="padding:5px 4px;color:var(--t1)">18.39</td><td style="padding:5px 4px;color:var(--red2)">+2.11%</td><td style="padding:5px 4px">58.3%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">神火股份<br><span style="color:var(--t4);font-size:10px">000933</span></td><td style="padding:5px 4px;color:var(--t1)">26.07</td><td style="padding:5px 4px;color:var(--green2)">-1.10%</td><td style="padding:5px 4px">59.9%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">云铝股份<br><span style="color:var(--t4);font-size:10px">000807</span></td><td style="padding:5px 4px;color:var(--t1)">26.62</td><td style="padding:5px 4px;color:var(--red2)">+0.45%</td><td style="padding:5px 4px">60.2%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">康强电子<br><span style="color:var(--t4);font-size:10px">002119</span></td><td style="padding:5px 4px;color:var(--t1)">20.40</td><td style="padding:5px 4px;color:var(--red2)">+6.25%</td><td style="padding:5px 4px">62.1%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">湖南白银<br><span style="color:var(--t4);font-size:10px">002716</span></td><td style="padding:5px 4px;color:var(--t1)">7.99</td><td style="padding:5px 4px;color:var(--red2)">+4.17%</td><td style="padding:5px 4px">63.0%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">嘉美包装<br><span style="color:var(--t4);font-size:10px">002969</span></td><td style="padding:5px 4px;color:var(--t1)">12.41</td><td style="padding:5px 4px;color:var(--red2)">+4.90%</td><td style="padding:5px 4px">63.9%</td><td style="padding:5px 4px;color:var(--t3)">B 主力回流</td></tr></table></div>
+  </details>
+</div>
+<div class="panel">
+  <details><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔴 C · 禁止（38只）</summary>
+  <div style="max-height:52vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse"><tr style="color:var(--t4);font-size:11px;text-align:left"><th style="padding:4px">名称</th><th style="padding:4px">价</th><th style="padding:4px">涨跌</th><th style="padding:4px">贪婪</th><th style="padding:4px">判定</th></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">光迅科技<br><span style="color:var(--t4);font-size:10px">002281</span></td><td style="padding:5px 4px;color:var(--t1)">161.65</td><td style="padding:5px 4px;color:var(--red2)">+6.12%</td><td style="padding:5px 4px">81.5%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">东山精密<br><span style="color:var(--t4);font-size:10px">002384</span></td><td style="padding:5px 4px;color:var(--t1)">171.48</td><td style="padding:5px 4px;color:var(--red2)">+5.98%</td><td style="padding:5px 4px">79.0%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">沪电股份<br><span style="color:var(--t4);font-size:10px">002463</span></td><td style="padding:5px 4px;color:var(--t1)">103.75</td><td style="padding:5px 4px;color:var(--red2)">+7.46%</td><td style="padding:5px 4px">81.8%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">海康威视<br><span style="color:var(--t4);font-size:10px">002415</span></td><td style="padding:5px 4px;color:var(--t1)">37.65</td><td style="padding:5px 4px;color:var(--red2)">+5.70%</td><td style="padding:5px 4px">100.0%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">云南锗业<br><span style="color:var(--t4);font-size:10px">002428</span></td><td style="padding:5px 4px;color:var(--t1)">66.95</td><td style="padding:5px 4px;color:var(--red2)">+8.33%</td><td style="padding:5px 4px">78.4%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">德明利<br><span style="color:var(--t4);font-size:10px">001309</span></td><td style="padding:5px 4px;color:var(--t1)">385.90</td><td style="padding:5px 4px;color:var(--green2)">-1.06%</td><td style="padding:5px 4px">75.9%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">深南电路<br><span style="color:var(--t4);font-size:10px">002916</span></td><td style="padding:5px 4px;color:var(--t1)">308.00</td><td style="padding:5px 4px;color:var(--red2)">+8.26%</td><td style="padding:5px 4px">79.9%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">江海股份<br><span style="color:var(--t4);font-size:10px">002484</span></td><td style="padding:5px 4px;color:var(--t1)">58.71</td><td style="padding:5px 4px;color:var(--red2)">+5.78%</td><td style="padding:5px 4px">85.0%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">京东方Ａ<br><span style="color:var(--t4);font-size:10px">000725</span></td><td style="padding:5px 4px;color:var(--t1)">5.51</td><td style="padding:5px 4px;color:var(--red2)">+2.80%</td><td style="padding:5px 4px">86.5%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">顺络电子<br><span style="color:var(--t4);font-size:10px">002138</span></td><td style="padding:5px 4px;color:var(--t1)">42.80</td><td style="padding:5px 4px;color:var(--red2)">+6.73%</td><td style="padding:5px 4px">85.9%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">锡业股份<br><span style="color:var(--t4);font-size:10px">000960</span></td><td style="padding:5px 4px;color:var(--t1)">34.10</td><td style="padding:5px 4px;color:var(--red2)">+8.39%</td><td style="padding:5px 4px">68.3%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中材科技<br><span style="color:var(--t4);font-size:10px">002080</span></td><td style="padding:5px 4px;color:var(--t1)">43.14</td><td style="padding:5px 4px;color:var(--red2)">+1.91%</td><td style="padding:5px 4px">70.2%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">紫光股份<br><span style="color:var(--t4);font-size:10px">000938</span></td><td style="padding:5px 4px;color:var(--t1)">34.89</td><td style="padding:5px 4px;color:var(--red2)">+3.84%</td><td style="padding:5px 4px">95.3%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">金安国纪<br><span style="color:var(--t4);font-size:10px">002636</span></td><td style="padding:5px 4px;color:var(--t1)">50.83</td><td style="padding:5px 4px;color:var(--red2)">+3.52%</td><td style="padding:5px 4px">86.8%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">铜陵有色<br><span style="color:var(--t4);font-size:10px">000630</span></td><td style="padding:5px 4px;color:var(--t1)">6.21</td><td style="padding:5px 4px;color:var(--red2)">+1.97%</td><td style="padding:5px 4px">72.7%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">广合科技<br><span style="color:var(--t4);font-size:10px">001389</span></td><td style="padding:5px 4px;color:var(--t1)">141.82</td><td style="padding:5px 4px;color:var(--red2)">+7.93%</td><td style="padding:5px 4px">78.1%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">潍柴动力<br><span style="color:var(--t4);font-size:10px">000338</span></td><td style="padding:5px 4px;color:var(--t1)">27.95</td><td style="padding:5px 4px;color:var(--red2)">+7.67%</td><td style="padding:5px 4px">83.4%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">航天电器<br><span style="color:var(--t4);font-size:10px">002025</span></td><td style="padding:5px 4px;color:var(--t1)">61.37</td><td style="padding:5px 4px;color:var(--red2)">+7.37%</td><td style="padding:5px 4px">73.4%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">东方钽业<br><span style="color:var(--t4);font-size:10px">000962</span></td><td style="padding:5px 4px;color:var(--t1)">43.88</td><td style="padding:5px 4px;color:var(--red2)">+6.89%</td><td style="padding:5px 4px">67.4%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">洁美科技<br><span style="color:var(--t4);font-size:10px">002859</span></td><td style="padding:5px 4px;color:var(--t1)">60.30</td><td style="padding:5px 4px;color:var(--red2)">+0.95%</td><td style="padding:5px 4px">86.5%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">埃斯顿<br><span style="color:var(--t4);font-size:10px">002747</span></td><td style="padding:5px 4px;color:var(--t1)">29.74</td><td style="padding:5px 4px;color:var(--red2)">+6.40%</td><td style="padding:5px 4px">87.8%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中钨高新<br><span style="color:var(--t4);font-size:10px">000657</span></td><td style="padding:5px 4px;color:var(--t1)">49.51</td><td style="padding:5px 4px;color:var(--red2)">+2.29%</td><td style="padding:5px 4px">69.3%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">冰轮环境<br><span style="color:var(--t4);font-size:10px">000811</span></td><td style="padding:5px 4px;color:var(--t1)">35.30</td><td style="padding:5px 4px;color:var(--red2)">+5.50%</td><td style="padding:5px 4px">90.0%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">杰瑞股份<br><span style="color:var(--t4);font-size:10px">002353</span></td><td style="padding:5px 4px;color:var(--t1)">134.70</td><td style="padding:5px 4px;color:var(--red2)">+7.13%</td><td style="padding:5px 4px">83.7%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">兴森科技<br><span style="color:var(--t4);font-size:10px">002436</span></td><td style="padding:5px 4px;color:var(--t1)">27.51</td><td style="padding:5px 4px;color:var(--green2)">-0.65%</td><td style="padding:5px 4px">78.7%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">双星新材<br><span style="color:var(--t4);font-size:10px">002585</span></td><td style="padding:5px 4px;color:var(--t1)">9.10</td><td style="padding:5px 4px;color:var(--red2)">+5.08%</td><td style="padding:5px 4px">88.4%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">深科技<br><span style="color:var(--t4);font-size:10px">000021</span></td><td style="padding:5px 4px;color:var(--t1)">37.23</td><td style="padding:5px 4px;color:var(--red2)">+2.22%</td><td style="padding:5px 4px">85.9%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">多氟多<br><span style="color:var(--t4);font-size:10px">002407</span></td><td style="padding:5px 4px;color:var(--t1)">31.44</td><td style="padding:5px 4px;color:var(--red2)">+2.88%</td><td style="padding:5px 4px">67.4%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">华天科技<br><span style="color:var(--t4);font-size:10px">002185</span></td><td style="padding:5px 4px;color:var(--t1)">15.47</td><td style="padding:5px 4px;color:var(--red2)">+3.76%</td><td style="padding:5px 4px">85.0%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">华源控股<br><span style="color:var(--t4);font-size:10px">002787</span></td><td style="padding:5px 4px;color:var(--t1)">19.47</td><td style="padding:5px 4px;color:var(--red2)">+8.53%</td><td style="padding:5px 4px">81.2%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">科达利<br><span style="color:var(--t4);font-size:10px">002850</span></td><td style="padding:5px 4px;color:var(--t1)">182.31</td><td style="padding:5px 4px;color:var(--red2)">+6.86%</td><td style="padding:5px 4px">79.3%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">大连电瓷<br><span style="color:var(--t4);font-size:10px">002606</span></td><td style="padding:5px 4px;color:var(--t1)">14.91</td><td style="padding:5px 4px;color:var(--red2)">+1.15%</td><td style="padding:5px 4px">93.1%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">共达电声<br><span style="color:var(--t4);font-size:10px">002655</span></td><td style="padding:5px 4px;color:var(--t1)">22.85</td><td style="padding:5px 4px;color:var(--red2)">+7.33%</td><td style="padding:5px 4px">78.4%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中国广核<br><span style="color:var(--t4);font-size:10px">003816</span></td><td style="padding:5px 4px;color:var(--t1)">4.13</td><td style="padding:5px 4px;color:var(--green2)">-0.72%</td><td style="padding:5px 4px">77.1%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">鹏鼎控股<br><span style="color:var(--t4);font-size:10px">002938</span></td><td style="padding:5px 4px;color:var(--t1)">81.50</td><td style="padding:5px 4px;color:var(--red2)">+7.17%</td><td style="padding:5px 4px">82.8%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">美盈森<br><span style="color:var(--t4);font-size:10px">002303</span></td><td style="padding:5px 4px;color:var(--t1)">4.58</td><td style="padding:5px 4px;color:var(--red2)">+6.76%</td><td style="padding:5px 4px">97.2%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">甘咨询<br><span style="color:var(--t4);font-size:10px">000779</span></td><td style="padding:5px 4px;color:var(--t1)">12.78</td><td style="padding:5px 4px;color:var(--red2)">+6.86%</td><td style="padding:5px 4px">100.0%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">宁波银行<br><span style="color:var(--t4);font-size:10px">002142</span></td><td style="padding:5px 4px;color:var(--t1)">31.88</td><td style="padding:5px 4px;color:var(--green2)">-3.10%</td><td style="padding:5px 4px">88.4%</td><td style="padding:5px 4px;color:var(--t3)">C 主力回流</td></tr></table></div>
+  </details>
+</div>
+<div class="panel">
+  <details><summary style="cursor:pointer;font-weight:600;color:var(--t1)">⚪ D · 观望（7只）</summary>
+  <div style="max-height:52vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse"><tr style="color:var(--t4);font-size:11px;text-align:left"><th style="padding:4px">名称</th><th style="padding:4px">价</th><th style="padding:4px">涨跌</th><th style="padding:4px">贪婪</th><th style="padding:4px">判定</th></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中国长城<br><span style="color:var(--t4);font-size:10px">000066</span></td><td style="padding:5px 4px;color:var(--t1)">13.74</td><td style="padding:5px 4px;color:var(--red2)">+4.49%</td><td style="padding:5px 4px">0.6%</td><td style="padding:5px 4px;color:var(--t3)">D 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">拓维信息<br><span style="color:var(--t4);font-size:10px">002261</span></td><td style="padding:5px 4px;color:var(--t1)">25.93</td><td style="padding:5px 4px;color:var(--red2)">+5.45%</td><td style="padding:5px 4px">1.3%</td><td style="padding:5px 4px;color:var(--t3)">D 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">博杰股份<br><span style="color:var(--t4);font-size:10px">002975</span></td><td style="padding:5px 4px;color:var(--t1)">73.40</td><td style="padding:5px 4px;color:var(--red2)">+5.86%</td><td style="padding:5px 4px">52.0%</td><td style="padding:5px 4px;color:var(--t3)">D 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">神州数码<br><span style="color:var(--t4);font-size:10px">000034</span></td><td style="padding:5px 4px;color:var(--t1)">24.10</td><td style="padding:5px 4px;color:var(--red2)">+3.30%</td><td style="padding:5px 4px">2.2%</td><td style="padding:5px 4px;color:var(--t3)">D 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">蔚蓝锂芯<br><span style="color:var(--t4);font-size:10px">002245</span></td><td style="padding:5px 4px;color:var(--t1)">15.88</td><td style="padding:5px 4px;color:var(--red2)">+5.03%</td><td style="padding:5px 4px">27.9%</td><td style="padding:5px 4px;color:var(--t3)">D 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中百集团<br><span style="color:var(--t4);font-size:10px">000759</span></td><td style="padding:5px 4px;color:var(--t1)">7.01</td><td style="padding:5px 4px;color:var(--red2)">+5.26%</td><td style="padding:5px 4px">32.6%</td><td style="padding:5px 4px;color:var(--t3)">D 主力回流</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">意华股份<br><span style="color:var(--t4);font-size:10px">002897</span></td><td style="padding:5px 4px;color:var(--t1)">51.98</td><td style="padding:5px 4px;color:var(--red2)">+5.07%</td><td style="padding:5px 4px">57.1%</td><td style="padding:5px 4px;color:var(--t3)">D 主力回流</td></tr></table></div>
+  </details>
+</div>
+</section>
+
+<footer>
+  <p>⚠️ <b>风险提示：</b>本策略为波段信号参考工具，不构成投资建议。单一指标无效，必须多重条件共振。当前大4浪调整环境，所有反弹定性为修复行情，不预期反转，警惕失败4-5浪下跌。游资短线炒作、连板个股不适用本策略。</p>
+  <p style="margin-top:6px">数据来源：自建750日价格分位（贪婪指数/乖离率）、东方财富（板块资金流/实时行情、韩国KOSPI、财经日历重大事件）、腾讯（K线数据、美股七姐妹、韩股、A50·黄金·原油ETF代理）。Arkvol数据可用时作为补充。生成时间：2026-07-31 23:20 · v4.2</p>
+</footer>
+
+</div>
+
+<script>
+const ARKVOL = {"alla": {"as_of": "2026-07-27", "sentiment_score": 43.75, "sentiment_label": "中性", "items": [{"name": "上证50", "etf_name": "华夏上证50 ETF", "code": "510050", "greed": 56.8, "close": 3.058, "reason": "跟踪上证50指数，用于覆盖A股大盘蓝筹样本。"}, {"name": "沪深300", "etf_name": "华泰柏瑞沪深300 ETF", "code": "510300", "greed": 39.6, "close": 4.7583, "reason": "跟踪沪深300指数，用于覆盖A股大盘股样本。"}, {"name": "中证500", "etf_name": "南方中证500 ETF", "code": "510500", "greed": 39.8, "close": 7.7303, "reason": "跟踪中证500指数，用于覆盖A股中盘股样本。"}, {"name": "中证1000", "etf_name": "华夏中证1000 ETF", "code": "159845", "greed": 34.8, "close": 3.0072, "reason": "跟踪中证1000指数，用于覆盖A股小盘股样本。"}, {"name": "中证2000", "etf_name": "华夏中证2000 ETF", "code": "562660", "greed": 32.5, "close": 1.6812, "reason": "跟踪中证2000指数，用于覆盖A股微盘股样本。"}, {"name": "科创50", "etf_name": "华夏科创50 ETF", "code": "588000", "greed": 41.8, "close": 1.9069, "reason": "跟踪科创50指数，用于覆盖科创板样本。"}, {"name": "创业板指", "etf_name": "易方达创业板 ETF", "code": "159915", "greed": 36.2, "close": 3.6146, "reason": "跟踪创业板指数，用于覆盖创业板样本。"}, {"name": "恒生科技指数", "etf_name": "恒生科技 ETF", "code": "513130", "greed": 44.1, "close": 0.5903, "reason": "跟踪恒生科技指数，用于覆盖港股科技样本。"}, {"name": "恒生指数", "etf_name": "恒生指数 ETF", "code": "513600", "greed": 49.0, "close": 2.7676, "reason": "跟踪恒生指数，用于覆盖港股大盘股样本。"}, {"name": "纳斯达克指数", "etf_name": "纳斯达克 ETF", "code": "159632", "greed": 41.4, "close": 2.1642, "reason": "跟踪纳斯达克相关指数，用于覆盖美股科技样本。"}, {"name": "道琼斯指数", "etf_name": "道琼斯 ETF", "code": "513400", "greed": 70.9, "close": 1.2825, "reason": "跟踪道琼斯指数，用于覆盖美股大盘股样本。"}, {"name": "韩国指数", "etf_name": "华泰柏瑞中韩半导体 ETF 联接 C", "code": "019455", "greed": 38.1, "close": 3.6221, "reason": "用于覆盖韩国及中韩半导体相关指数样本。"}, {"name": "日经225指数", "etf_name": "华夏野村日经225 ETF", "code": "513520", "greed": 43.7, "close": 2.1026, "reason": "跟踪日经225指数，用于覆盖日本大盘股样本。"}]}, "alla_tech": {"as_of": "2026-07-27", "sentiment_score": 31.79, "sentiment_label": "恐慌", "items": [{"name": "AI人工智能", "code": "512930", "fund_name": "AI人工智能ETF", "greed": 20.4, "close": 0.6824, "gold_pit": true, "low_sentiment": true}, {"name": "通信CPO", "code": "515880", "fund_name": "通信ETF", "greed": 23.3, "close": 0.6671, "gold_pit": true, "low_sentiment": true}, {"name": "商业航天", "code": "159227", "fund_name": "航空航天ETF", "greed": 25.1, "close": 0.9759, "gold_pit": true, "low_sentiment": true}, {"name": "通信PCB", "code": "515050", "fund_name": "5G通信ETF", "greed": 26.0, "close": 1.0588, "gold_pit": true, "low_sentiment": true}, {"name": "半导体材料设备", "code": "512480", "fund_name": "半导体ETF", "greed": 30.4, "close": 1.1218, "gold_pit": true, "low_sentiment": true}, {"name": "创业板50", "code": "159949", "fund_name": "创业板50ETF", "greed": 35.9, "close": 1.7184, "gold_pit": false, "low_sentiment": false}, {"name": "科创芯片", "code": "588200", "fund_name": "科创芯片ETF", "greed": 38.6, "close": 1.2743, "gold_pit": false, "low_sentiment": false}, {"name": "科创50", "code": "588080", "fund_name": "科创50ETF易方达", "greed": 41.8, "close": 1.8492, "gold_pit": false, "low_sentiment": false}, {"name": "算力租赁", "code": "515400", "fund_name": "大数据ETF", "greed": 44.7, "close": 0.8686, "gold_pit": false, "low_sentiment": false}]}, "funds_greed": {"as_of": "2026-07-27", "sentiment_score": 38.45, "items": [{"code": "023754", "name": "永赢信息产业智选混合发起C", "greed": 16.8, "close": 0.614}, {"code": "024738", "name": "永赢新材料智选混合发起C", "greed": 19.6, "close": 0.7533}, {"code": "004927", "name": "中航军民融合精选C", "greed": 22.6, "close": 0.9567}, {"code": "024736", "name": "永赢港股通科技智选混合发起C", "greed": 22.9, "close": 0.8058}, {"code": "023675", "name": "德邦新兴产业混合发起式C", "greed": 23.2, "close": 0.9694}, {"code": "018939", "name": "长城景气成长混合A", "greed": 24.2, "close": 1.1031}, {"code": "016531", "name": "鹏华碳中和主题混合C", "greed": 24.8, "close": 1.3515}, {"code": "003985", "name": "嘉实新能源新材料股票C", "greed": 24.8, "close": 2.2969}, {"code": "020485", "name": "中欧中证全指软件开发指数发起C", "greed": 24.9, "close": 0.9258}, {"code": "012680", "name": "华泰柏瑞光伏ETF联接C", "greed": 25.7, "close": 0.5141}, {"code": "024320", "name": "永赢新兴产业智选混合发起C", "greed": 25.8, "close": 0.707}, {"code": "025491", "name": "平安中证卫星产业指数C", "greed": 26.0, "close": 0.8855}, {"code": "168501", "name": "华银产业升级", "greed": 26.2, "close": 1.2286}, {"code": "013478", "name": "华宝中证金融科技主题ETF发起式联接C", "greed": 26.2, "close": 0.7786}, {"code": "018125", "name": "永赢先进制造智选混合发起C", "greed": 26.2, "close": 1.7923}, {"code": "023567", "name": "德邦高端装备混合发起式C", "greed": 26.4, "close": 0.8418}, {"code": "013817", "name": "汇添富中证光伏产业指数增强发起式C", "greed": 26.6, "close": 0.5019}, {"code": "013511", "name": "汇丰晋信低碳先锋股票C", "greed": 26.9, "close": 2.0934}, {"code": "016020", "name": "招商中证电池主题ETF联接C", "greed": 27.0, "close": 0.7616}, {"code": "012863", "name": "汇添富中证电池主题ETF发起式联接C", "greed": 27.1, "close": 0.7035}, {"code": "004857", "name": "广发中证全指建筑材料指数C", "greed": 27.1, "close": 0.7771}, {"code": "017223", "name": "富国中证电池主题ETF发起式联接C", "greed": 27.4, "close": 0.9201}, {"code": "018185", "name": "万家先进制造混合发起式C", "greed": 28.5, "close": 1.0916}, {"code": "020624", "name": "信澳新能源精选混合C", "greed": 29.0, "close": 1.5795}, {"code": "008190", "name": "国泰中证钢铁ETF联接C", "greed": 29.0, "close": 1.1359}, {"code": "017825", "name": "华安新材料主题股票发起式C", "greed": 29.2, "close": 1.5632}, {"code": "320016", "name": "诺安多策略混合A", "greed": 29.3, "close": 2.887}, {"code": "022243", "name": "中邮军民融合灵活配置混合C", "greed": 29.3, "close": 1.8315}, {"code": "165531", "name": "中信保诚多策略混合(LOF)A", "greed": 29.3, "close": 2.0001}, {"code": "005698", "name": "华夏全球科技先锋混合(QDII)A(人民币)", "greed": 30.2, "close": 2.7755}, {"code": "005538", "name": "中航新起航灵活配置混合C", "greed": 30.7, "close": 0.7571}, {"code": "016848", "name": "中欧高端装备股票发起C", "greed": 30.8, "close": 0.7036}, {"code": "013082", "name": "中信保诚中证基建工程指数(LOF)C", "greed": 30.8, "close": 0.6896}, {"code": "000690", "name": "前海开源大海洋混合", "greed": 30.9, "close": 1.591}, {"code": "024195", "name": "永赢国证商用卫星通信产业ETF发起联接C", "greed": 31.2, "close": 1.2321}, {"code": "015790", "name": "永赢高端装备智选混合发起C", "greed": 31.8, "close": 1.0536}, {"code": "019924", "name": "华泰柏瑞中证2000指数增强C", "greed": 31.9, "close": 1.7304}, {"code": "019892", "name": "华夏中证2000ETF发起式联接C", "greed": 32.3, "close": 1.4397}, {"code": "012062", "name": "富国全球消费精选混合(QDII)人民币C", "greed": 32.3, "close": 1.449}, {"code": "012810", "name": "鹏华国证钢铁行业指数(LOF)C", "greed": 32.5, "close": 0.8373}, {"code": "562660", "name": "华夏中证2000 ETF", "greed": 32.5, "close": 1.6812}, {"code": "014674", "name": "富国中证港股通互联网ETF发起式联接C", "greed": 32.7, "close": 0.6659}, {"code": "016874", "name": "广发远见智选混合C", "greed": 32.7, "close": 1.6019}, {"code": "017461", "name": "长城久鑫混合C", "greed": 32.8, "close": 2.0039}, {"code": "011036", "name": "嘉实中证稀土产业ETF联接C", "greed": 33.1, "close": 1.1402}, {"code": "019871", "name": "华泰柏瑞中证2000ETF发起式联接C", "greed": 33.2, "close": 1.1983}, {"code": "010052", "name": "长城久嘉创新成长混合C", "greed": 33.3, "close": 2.2905}, {"code": "014332", "name": "华泰柏瑞中证稀土产业ETF发起式联接C", "greed": 33.3, "close": 1.0993}, {"code": "012414", "name": "招商中证白酒指数(LOF)C", "greed": 33.5, "close": 0.541}, {"code": "019875", "name": "广发稀有金属ETF联接C", "greed": 33.6, "close": 1.6764}, {"code": "013360", "name": "华夏磐泰混合C", "greed": 33.7, "close": 1.7336}, {"code": "019919", "name": "招商中证2000指数增强C", "greed": 33.7, "close": 1.7181}, {"code": "014111", "name": "嘉实中证稀有金属主题ETF发起联接C", "greed": 33.8, "close": 0.9118}, {"code": "013943", "name": "华宝中证稀有金属指数增强发起C", "greed": 34.0, "close": 1.0166}, {"code": "001412", "name": "德邦鑫星价值灵活配置混合A", "greed": 34.1, "close": 4.9387}, {"code": "012538", "name": "华宝中证细分化工产业主题ETF联接C", "greed": 34.6, "close": 0.7695}, {"code": "017978", "name": "信澳优享生活混合C", "greed": 34.6, "close": 0.9551}, {"code": "012769", "name": "华夏中证动漫游戏ETF发起式联接C", "greed": 34.9, "close": 1.084}, {"code": "003153", "name": "华富天鑫灵活配置混合C", "greed": 35.2, "close": 1.3839}, {"code": "026429", "name": "永赢上证科创板200指数C", "greed": 35.8, "close": 0.9462}, {"code": "018957", "name": "中航机遇领航混合发起C", "greed": 35.9, "close": 4.4267}, {"code": "020900", "name": "天弘中证全指通信设备指数发起C", "greed": 35.9, "close": 3.4009}, {"code": "022500", "name": "国泰中证全指通信设备ETF联接E", "greed": 36.0, "close": 3.7463}, {"code": "008087", "name": "华夏中证5G通信主题ETF联接C", "greed": 36.0, "close": 2.9709}, {"code": "003305", "name": "前海开源沪港深核心资源混合C", "greed": 36.1, "close": 4.602}, {"code": "014581", "name": "东吴阿尔法灵活配置混合C", "greed": 36.3, "close": 2.9949}, {"code": "016371", "name": "信澳业绩驱动混合C", "greed": 36.4, "close": 2.5146}, {"code": "009941", "name": "格林稳健价值混合C", "greed": 36.5, "close": 0.4301}, {"code": "010524", "name": "银华中证5G通信主题ETF联接C", "greed": 36.5, "close": 2.2998}, {"code": "016387", "name": "永赢低碳环保智选混合发起C", "greed": 37.2, "close": 0.8406}, {"code": "021095", "name": "东方低碳经济混合C", "greed": 37.4, "close": 1.1949}, {"code": "024203", "name": "永赢制造升级智选混合发起C", "greed": 37.5, "close": 1.2959}, {"code": "001302", "name": "前海开源金银珠宝混合A", "greed": 37.8, "close": 2.508}, {"code": "026130", "name": "永赢中证工程机械主题指数C", "greed": 37.8, "close": 0.8692}, {"code": "008714", "name": "国泰中证全指家用电器ETF联接C", "greed": 37.8, "close": 1.3744}, {"code": "010842", "name": "华宝科技先锋混合C", "greed": 37.9, "close": 1.5485}, {"code": "006503", "name": "财通集成电路产业股票C", "greed": 38.0, "close": 6.5253}, {"code": "018301", "name": "华夏消费电子ETF联接C", "greed": 38.1, "close": 2.0305}, {"code": "004512", "name": "海富通沪深300指数增强C", "greed": 38.1, "close": 1.4836}, {"code": "019455", "name": "华泰柏瑞中韩半导体 ETF 联接 C", "greed": 38.1, "close": 3.6221}]}, "gll": {"as_of": "2026-07-28", "items": [{"code": "513530", "name": "港股通红利ETF", "deviation": 3.68, "close": 1.606, "ema20": 1.54791, "status": "适中偏低"}, {"code": "512800", "name": "银行ETF", "deviation": 3.68, "close": 0.818, "ema20": 0.788475, "status": "适中偏低"}, {"code": "512690", "name": "白酒ETF", "deviation": 3.53, "close": 0.43, "ema20": 0.415091, "status": "适中偏低"}, {"code": "159928", "name": "消费ETF", "deviation": 2.91, "close": 0.673, "ema20": 0.653705, "status": "适中偏低"}, {"code": "515170", "name": "食品饮料ETF", "deviation": 2.83, "close": 0.47, "ema20": 0.456882, "status": "适中偏低"}, {"code": "512890", "name": "红利低波ETF", "deviation": 2.53, "close": 1.176, "ema20": 1.14659, "status": "适中偏低"}, {"code": "515100", "name": "中利ETF", "deviation": 2.32, "close": 1.425, "ema20": 1.39236, "status": "适中偏低"}, {"code": "510880", "name": "红利ETF", "deviation": 1.96, "close": 3.232, "ema20": 3.16919, "status": "适中偏低"}, {"code": "513330", "name": "恒生互联网ETF", "deviation": 1.67, "close": 0.387, "ema20": 0.380584, "status": "适中偏低"}, {"code": "159647", "name": "中药ETF", "deviation": 1.67, "close": 0.916, "ema20": 0.900853, "status": "适中偏低"}, {"code": "159931", "name": "金融地产ETF", "deviation": 1.59, "close": 1.854, "ema20": 1.82477, "status": "适中偏低"}, {"code": "159825", "name": "农业ETF", "deviation": 1.46, "close": 0.712, "ema20": 0.701707, "status": "适中偏低"}, {"code": "159930", "name": "能源ETF", "deviation": 1.38, "close": 1.646, "ema20": 1.6234, "status": "适中偏低"}, {"code": "513050", "name": "中概互联网ETF", "deviation": 1.29, "close": 1.098, "ema20": 1.08395, "status": "适中偏低"}, {"code": "159766", "name": "旅游ETF", "deviation": 0.93, "close": 0.558, "ema20": 0.552856, "status": "适中偏低"}, {"code": "513060", "name": "恒生医疗ETF", "deviation": 0.68, "close": 0.529, "ema20": 0.525399, "status": "适中偏低"}, {"code": "516950", "name": "基建ETF", "deviation": 0.63, "close": 1.043, "ema20": 1.03648, "status": "适中偏低"}, {"code": "513030", "name": "德国ETF", "deviation": 0.55, "close": 1.784, "ema20": 1.77418, "status": "适中偏低"}, {"code": "512170", "name": "医疗ETF", "deviation": 0.54, "close": 0.32, "ema20": 0.318271, "status": "适中偏低"}, {"code": "513180", "name": "恒生科技ETF", "deviation": 0.48, "close": 0.596, "ema20": 0.593133, "status": "适中偏低"}, {"code": "512010", "name": "医药ETF", "deviation": 0.45, "close": 0.366, "ema20": 0.364341, "status": "适中偏低"}, {"code": "159730", "name": "龙头家电ETF", "deviation": 0.26, "close": 1.005, "ema20": 1.00236, "status": "适中偏低"}, {"code": "511260", "name": "十年国债ETF", "deviation": 0.05, "close": 135.149, "ema20": 135.078, "status": "适中偏低"}, {"code": "511360", "name": "短融ETF", "deviation": 0.04, "close": 113.726, "ema20": 113.679, "status": "适中偏低"}, {"code": "512290", "name": "生物医药ETF", "deviation": 0.01, "close": 0.995, "ema20": 0.994924, "status": "适中偏低"}, {"code": "512070", "name": "证券保险ETF", "deviation": -0.01, "close": 0.801, "ema20": 0.801077, "status": "接近均线"}, {"code": "561560", "name": "电力ETF", "deviation": -0.02, "close": 1.284, "ema20": 1.28424, "status": "接近均线"}, {"code": "516670", "name": "畜牧ETF", "deviation": -0.17, "close": 0.587, "ema20": 0.588022, "status": "接近均线"}, {"code": "515210", "name": "钢铁ETF", "deviation": -0.22, "close": 1.146, "ema20": 1.1485, "status": "接近均线"}, {"code": "159883", "name": "医疗器械ETF", "deviation": -0.23, "close": 0.426, "ema20": 0.426962, "status": "接近均线"}, {"code": "515220", "name": "煤炭ETF", "deviation": -0.26, "close": 1.174, "ema20": 1.17709, "status": "接近均线"}, {"code": "159865", "name": "养殖ETF", "deviation": -0.34, "close": 0.521, "ema20": 0.522761, "status": "接近均线"}, {"code": "510050", "name": "上证50", "deviation": -0.54, "close": 3.022, "ema20": 3.0383, "status": "接近均线"}, {"code": "159992", "name": "创新药ETF", "deviation": -1.0, "close": 0.839, "ema20": 0.847417, "status": "接近均线"}, {"code": "159934", "name": "黄金ETF", "deviation": -1.13, "close": 8.776, "ema20": 8.87554, "status": "接近均线"}, {"code": "513500", "name": "标普500ETF", "deviation": -1.35, "close": 2.484, "ema20": 2.51768, "status": "接近均线"}, {"code": "512200", "name": "房地产ETF", "deviation": -1.51, "close": 1.159, "ema20": 1.17664, "status": "接近均线"}, {"code": "159996", "name": "家电ETF", "deviation": -1.8, "close": 1.389, "ema20": 1.41429, "status": "接近均线"}, {"code": "159790", "name": "碳中和ETF", "deviation": -1.82, "close": 0.698, "ema20": 0.710786, "status": "接近均线"}, {"code": "159985", "name": "豆粕ETF", "deviation": -2.04, "close": 2.121, "ema20": 2.16473, "status": "接近均线"}, {"code": "512000", "name": "券商ETF", "deviation": -2.15, "close": 0.519, "ema20": 0.530271, "status": "接近均线"}, {"code": "159870", "name": "化工ETF", "deviation": -2.17, "close": 0.774, "ema20": 0.790985, "status": "接近均线"}, {"code": "512880", "name": "证券ETF", "deviation": -2.23, "close": 1.085, "ema20": 1.10952, "status": "接近均线"}, {"code": "512400", "name": "有色金属ETF", "deviation": -2.3, "close": 1.736, "ema20": 1.77643, "status": "接近均线"}, {"code": "512950", "name": "国企改革ETF", "deviation": -2.31, "close": 1.482, "ema20": 1.51658, "status": "接近均线"}, {"code": "513730", "name": "东南亚科技ETF", "deviation": -2.69, "close": 1.115, "ema20": 1.14541, "status": "接近均线"}, {"code": "512980", "name": "传媒ETF", "deviation": -3.15, "close": 0.771, "ema20": 0.795708, "status": "接近均线"}, {"code": "159919", "name": "沪深300ETF嘉实", "deviation": -3.16, "close": 4.83, "ema20": 4.98485, "status": "接近均线"}, {"code": "510300", "name": "沪深300ETF", "deviation": -3.21, "close": 4.627, "ema20": 4.77797, "status": "接近均线"}, {"code": "515400", "name": "大数据ETF", "deviation": -3.27, "close": 0.854, "ema20": 0.882427, "status": "接近均线"}, {"code": "159852", "name": "软件ETF", "deviation": -3.35, "close": 0.657, "ema20": 0.679355, "status": "接近均线"}, {"code": "513100", "name": "纳指ETF", "deviation": -3.42, "close": 2.068, "ema20": 2.13991, "status": "接近均线"}, {"code": "512050", "name": "中证A500ETF华夏", "deviation": -4.34, "close": 1.192, "ema20": 1.24487, "status": "接近均线"}, {"code": "159869", "name": "游戏ETF", "deviation": -4.4, "close": 1.02, "ema20": 1.06592, "status": "接近均线"}, {"code": "512720", "name": "计算机ETF", "deviation": -4.41, "close": 1.158, "ema20": 1.21016, "status": "接近均线"}, {"code": "512710", "name": "军工龙头ETF", "deviation": -4.68, "close": 0.596, "ema20": 0.624567, "status": "接近均线"}, {"code": "159755", "name": "电池ETF", "deviation": -4.85, "close": 0.928, "ema20": 0.974106, "status": "接近均线"}, {"code": "515030", "name": "新能源车ETF", "deviation": -4.85, "close": 1.578, "ema20": 1.65642, "status": "接近均线"}, {"code": "159227", "name": "航空航天ETF", "deviation": -5.56, "close": 0.956, "ema20": 1.01065, "status": "远离均线"}, {"code": "512670", "name": "国防军工ETF", "deviation": -5.9, "close": 0.72, "ema20": 0.763761, "status": "远离均线"}, {"code": "159901", "name": "深证100ETF", "deviation": -5.97, "close": 3.58, "ema20": 3.80039, "status": "远离均线"}, {"code": "515790", "name": "光伏ETF", "deviation": -6.56, "close": 0.813, "ema20": 0.868115, "status": "远离均线"}, {"code": "510500", "name": "中证500ETF", "deviation": -7.54, "close": 7.463, "ema20": 8.04707, "status": "远离均线"}, {"code": "513520", "name": "日经225ETF", "deviation": -7.54, "close": 2.098, "ema20": 2.26242, "status": "远离均线"}, {"code": "159845", "name": "1000ETF华夏", "deviation": -8.05, "close": 2.923, "ema20": 3.16808, "status": "远离均线"}, {"code": "516780", "name": "稀土ETF", "deviation": -8.6, "close": 0.785, "ema20": 0.855476, "status": "远离均线"}, {"code": "562500", "name": "机器人ETF", "deviation": -9.55, "close": 0.923, "ema20": 1.01546, "status": "远离均线"}, {"code": "588080", "name": "科创50ETF易方达", "deviation": -9.79, "close": 1.733, "ema20": 1.91132, "status": "远离均线"}, {"code": "159915", "name": "创业板ETF", "deviation": -10.57, "close": 3.355, "ema20": 3.72888, "status": "远离均线"}, {"code": "159949", "name": "创业板50ETF", "deviation": -11.59, "close": 1.579, "ema20": 1.77302, "status": "远离均线"}, {"code": "588210", "name": "科创100ETF国泰", "deviation": -11.77, "close": 1.623, "ema20": 1.82581, "status": "远离均线"}, {"code": "515260", "name": "电子ETF", "deviation": -12.11, "close": 0.837, "ema20": 0.944725, "status": "远离均线"}, {"code": "512930", "name": "AI人工智能ETF", "deviation": -12.18, "close": 0.635, "ema20": 0.717269, "status": "远离均线"}, {"code": "159218", "name": "卫星产业ETF", "deviation": -12.34, "close": 1.264, "ema20": 1.43007, "status": "远离均线"}, {"code": "159310", "name": "芯片产业ETF", "deviation": -12.55, "close": 2.9, "ema20": 3.28782, "status": "远离均线"}, {"code": "515050", "name": "5G通信ETF", "deviation": -17.49, "close": 0.955, "ema20": 1.13756, "status": "远离均线"}, {"code": "512480", "name": "半导体ETF", "deviation": -29.19, "close": 1.041, "ema20": 1.39389, "status": "远离均线"}, {"code": "515880", "name": "通信ETF", "deviation": -37.43, "close": 0.6, "ema20": 0.872386, "status": "远离均线"}, {"code": "588200", "name": "科创芯片ETF", "deviation": -88.67, "close": 1.175, "ema20": 2.85185, "status": "远离均线"}]}, "global_flow": {"as_of": "2026-07-27", "sentiment_score": 45.21, "items": [{"name": "A股", "short": "CN", "score": 37.99, "share": 1893.0, "color": "#e5484d", "momentum_5": -0.0326, "momentum_20": -0.1939}, {"name": "港股", "short": "HK", "score": 70.61, "share": 3518.0, "color": "#06b6d4", "momentum_5": 0.0339, "momentum_20": 0.1533}, {"name": "美国", "short": "US", "score": 39.7, "share": 1978.0, "color": "#3b82f6", "momentum_5": -0.0637, "momentum_20": -0.1079}, {"name": "日本", "short": "JP", "score": 25.5, "share": 1271.0, "color": "#f4b740", "momentum_5": -0.07, "momentum_20": -0.2891}, {"name": "韩国", "short": "KR", "score": 26.89, "share": 1340.0, "color": "#22a06b", "momentum_5": -0.0495, "momentum_20": -0.3365}]}, "debt": {"as_of": "2026-07-27", "score": 80.26, "label": "过热", "summary": "中国 30 年期国债最新价格温度为 80.3/100。"}};
+let flowTimer = null;
+
+// Tab switch
+document.querySelectorAll('.tab').forEach(function(t){
+  t.onclick = function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active')});
+    document.querySelectorAll('.pane').forEach(function(x){x.classList.remove('active')});
+    t.classList.add('active');
+    document.getElementById('pane-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='global' && !GLOBAL_READY){ renderGlobal(); }
+  };
+});
+
+// Utils
+function jsonp(url, timeout){
+  timeout = timeout || 15000;
+  return new Promise(function(resolve, reject){
+    var cb = '__cb' + Date.now() + '_' + Math.floor(Math.random()*100000);
+    var s = document.createElement('script');
+    var done = false;
+    var clean = function(){ try{delete window[cb]}catch(e){window[cb]=undefined} s.remove(); };
+    window[cb] = function(d){ done=true; clean(); resolve(d); };
+    s.onerror = function(){ if(!done){clean(); reject(new Error('network'));} };
+    s.src = url + (url.indexOf('?')>=0?'&':'?') + 'cb=' + cb;
+    setTimeout(function(){ if(!done){clean(); reject(new Error('timeout'));} }, timeout);
+    document.body.appendChild(s);
+  });
+}
+function getSecid(code){
+  if(code.charAt(0)==='6'||code.charAt(0)==='5'||code.charAt(0)==='9') return '1.'+code;
+  if(code.charAt(0)==='0'||code.charAt(0)==='3') return '0.'+code;
+  return '1.'+code;
+}
+function getTencentCode(code){
+  if(code.charAt(0)==='6'||code.charAt(0)==='5') return 'sh'+code;
+  return 'sz'+code;
+}
+function fmtPct(v){ return (v>=0?'+':'') + v.toFixed(2) + '%'; }
+function fmtMoney(v){ return (v>=0?'+':'') + v.toFixed(2) + '亿'; }
+function sentimentClass(g){ if(g<35) return 's-panic'; if(g>65) return 's-greedy'; return 's-neutral'; }
+function sentimentText(g){ if(g<20) return '极度恐慌'; if(g<35) return '恐慌低位'; if(g<65) return '中性区间'; if(g<80) return '贪婪过热'; return '极度贪婪'; }
+function sentimentBadge(g){ if(g<35) return '<span class="badge b-green">'+sentimentText(g)+'</span>'; if(g>65) return '<span class="badge b-red">'+sentimentText(g)+'</span>'; return '<span class="badge b-amber">'+sentimentText(g)+'</span>'; }
+
+// ===== 全球市场（外围环境）=====
+const GLOBAL_FEED = {
+  mag7: [
+    {code:'usAAPL', name:'苹果 Apple'},
+    {code:'usMSFT', name:'微软 Microsoft'},
+    {code:'usGOOGL', name:'谷歌 Alphabet'},
+    {code:'usAMZN', name:'亚马逊 Amazon'},
+    {code:'usNVDA', name:'英伟达 Nvidia'},
+    {code:'usMETA', name:'Meta'},
+    {code:'usTSLA', name:'特斯拉 Tesla'}
+  ],
+  kr: [
+    {code:'kr005930', name:'三星电子 Samsung'},
+    {code:'kr000660', name:'SK海力士 SK Hynix'}
+  ],
+  proxy: [
+    {code:'sh512550', name:'富时A50ETF', tag:'A50期货'},
+    {code:'sh518880', name:'黄金ETF华安', tag:'黄金'},
+    {code:'sh501018', name:'南方原油LOF', tag:'原油'}
+  ],
+  kospiSecid: '100.KS11'
+};
+var GLOBAL_READY=false;
+var GLOBAL_DATA=null;
+
+// Tencent real-time quote (qt.gtimg.cn) — plain script include, no callback
+function fetchTencentQuotes(codes){
+  return new Promise(function(resolve,reject){
+    var done=false;
+    var s=document.createElement('script');
+    var finish=function(ok,err){
+      if(done) return; done=true;
+      try{ s.remove(); }catch(e){}
+      if(ok) resolve(ok); else reject(err||new Error('network'));
+    };
+    s.onload=function(){
+      var data={};
+      codes.forEach(function(c){ try{ var v=window['v_'+c]; if(v) data[c]=v.split('~'); }catch(e){} });
+      finish(data);
+    };
+    s.onerror=function(){ finish(null, new Error('network')); };
+    s.src='https://qt.gtimg.cn/q='+codes.join(',')+'&_='+Date.now();
+    setTimeout(function(){ finish(null, new Error('timeout')); }, 12000);
+    document.body.appendChild(s);
+  });
+}
+async function fetchKospi(){
+  try{
+    var d=await jsonp('https://push2delay.eastmoney.com/api/qt/stock/get?secid='+GLOBAL_FEED.kospiSecid+'&fields=f43,f44,f57,f58', 10000);
+    if(d&&d.data){ var x=d.data; var px=+x.f43, pc=+x.f44; return {name:x.f58||'韩国KOSPI', price:px, prevclose:pc, pct: pc? (px-pc)/pc*100:0}; }
+  }catch(e){}
+  return null;
+}
+function pctSpan(v){ var cls=v>=0?'up':'dn'; var sign=v>=0?'+':''; return '<span class="'+cls+'">'+sign+v.toFixed(2)+'%</span>'; }
+function safePct(q){ if(!q) return '<span class="s-neutral">—</span>'; if(q.extreme) return '<span style="color:var(--amber)">异常</span>'; return pctSpan(q.pct); }
+function priceTxt(v, unit){ return v&&!isNaN(v)? v.toFixed(2)+(unit||'') : '—'; }
+
+async function renderGlobal(){
+  var loading=document.getElementById('globalLoading');
+  if(loading) loading.style.display='block';
+  var codes=GLOBAL_FEED.mag7.concat(GLOBAL_FEED.kr).concat(GLOBAL_FEED.proxy).map(function(x){return x.code;});
+  var tdata=null, kospi=null;
+  try{ tdata=await fetchTencentQuotes(codes); }catch(e){ tdata={}; }
+  try{ kospi=await fetchKospi(); }catch(e){ kospi=null; }
+
+  function parse(code){
+    var f=tdata&&tdata[code]; if(!f||f.length<5) return null;
+    var price=parseFloat(f[3]), prev=parseFloat(f[4]);
+    var pct = prev? (price-prev)/prev*100:0;
+    return {name:f[1], price:price, prevclose:prev, pct:pct, extreme: Math.abs(pct)>12};
+  }
+
+  // 纳指七姐妹
+  var magHtml='', magPcts=[], magExtreme=0;
+  GLOBAL_FEED.mag7.forEach(function(it){
+    var q=parse(it.code);
+    if(q){
+      if(!q.extreme) magPcts.push(q.pct); else magExtreme++;
+      var pcell = q.extreme ? pctSpan(q.pct)+' <span style="color:var(--amber);font-size:10px">⚠</span>' : pctSpan(q.pct);
+      magHtml+='<tr><td>'+it.name+'</td><td class="c">'+priceTxt(q.price)+'</td><td class="c">'+pcell+'</td></tr>';
+    }
+    else magHtml+='<tr><td>'+it.name+'</td><td class="c" colspan="2" style="color:var(--t3)">加载失败</td></tr>';
+  });
+  document.getElementById('mag7Body').innerHTML=magHtml||'<tr><td colspan="3" class="c" style="color:var(--t3)">无数据</td></tr>';
+
+  // 韩国市场
+  function krCard(q, unit){
+    if(!q) return '';
+    var meta=pctSpan(q.pct);
+    if(q.extreme) meta+=' <span style="color:var(--amber);font-size:10px">⚠拆单?</span>';
+    return '<div class="card"><div class="lbl">'+q.name+'</div><div class="val">'+priceTxt(q.price,unit||'')+'</div><div class="meta">'+meta+'</div></div>';
+  }
+  var sam=parse('kr005930'), hy=parse('kr000660');
+  var krHtml=krCard(kospi)+krCard(sam,'₩')+krCard(hy,'₩');
+  document.getElementById('krCards').innerHTML=krHtml||'<div class="card"><div class="meta">加载失败</div></div>';
+
+  // 大宗商品 & A50
+  var a50=parse('sh512550'), gold=parse('sh518880'), crude=parse('sh501018');
+  function comCard(q,label,note){ if(!q) return '<div class="card"><div class="lbl">'+label+'</div><div class="meta">加载失败</div></div>'; return '<div class="card"><div class="lbl">'+label+'</div><div class="val">'+priceTxt(q.price)+'</div><div class="meta">'+pctSpan(q.pct)+' · '+note+'</div></div>'; }
+  document.getElementById('comCards').innerHTML=
+    comCard(a50,'A50期货','富时A50ETF代理')+
+    comCard(gold,'黄金','黄金ETF代理')+
+    comCard(crude,'原油','原油LOF代理');
+
+  // ===== 综合研判 =====
+  var usAvg = magPcts.length? magPcts.reduce(function(a,b){return a+b;},0)/magPcts.length : 0;
+  var usUp = magPcts.filter(function(p){return p>0;}).length;
+  var krVals=[]; if(kospi) krVals.push(kospi.pct);
+  if(sam && !sam.extreme) krVals.push(sam.pct);
+  if(hy && !hy.extreme) krVals.push(hy.pct);
+  var krAnom = (sam&&sam.extreme)||(hy&&hy.extreme);
+  var krAvg = krVals.length? krVals.reduce(function(a,b){return a+b;},0)/krVals.length:0;
+  var a50v=a50?a50.pct:0, goldv=gold?gold.pct:0, crudev=crude?crude.pct:0;
+
+  var outer=0;
+  if(usAvg>0.3) outer+=1; if(usAvg>1) outer+=1; if(usAvg<-0.3) outer-=1; if(usAvg<-1) outer-=1;
+  if(a50v>0) outer+=1; if(a50v<-0.3) outer-=1;
+  if(krAvg>0.3) outer+=1; if(krAvg<-0.5) outer-=1;
+  var verdict, vcls, vbadge;
+  if(outer>=2){ verdict='外围偏暖，利于A股4-4反弹窗口延续'; vcls='s-pass'; vbadge='b-green'; }
+  else if(outer<=-2){ verdict='外围共振承压，A股反弹阻力大'; vcls='s-fail'; vbadge='b-red'; }
+  else { verdict='外围分化中性，反弹取决于内生信号'; vcls='s-wait'; vbadge='b-amber'; }
+
+  var lines=[];
+  lines.push('美股七姐妹：整体 '+pctSpan(usAvg)+'（'+usUp+'/7上涨）'+(magExtreme>0?'（'+magExtreme+'只涨跌幅疑似异常已不计入均值）':'')+' → 全球风险偏好'+(usAvg>0?'偏暖':'承压'));
+  lines.push('富时A50：'+pctSpan(a50v)+' → 境外对中国资产预期'+(a50v>0?'偏多':'偏空'));
+  var semiTxt = krAnom ? '涨跌幅数据源异常(疑似拆单)，韩股半导体信号以KOSPI代替' :
+    '三星 '+pctSpan(sam?sam.pct:0)+'、海力士 '+pctSpan(hy?hy.pct:0)+' → 存储周期'+(((sam&&hy)&&((sam.pct+hy.pct)/2>0))?'景气上行，利好A股半导体/存储链':'仍在寻底');
+  lines.push('韩国半导体：'+semiTxt);
+  lines.push('黄金 '+pctSpan(goldv)+(goldv>0.5?'（避险升温）':'')+' · 原油 '+pctSpan(crudev)+(crudev>1?'（通胀/成本压力）':''));
+  var advice = outer>=2 ? '外围共振偏暖 + 恐慌低位标的 → 可积极关注4-4反弹，分批低吸博弈。' :
+               outer<=-2 ? '外围共振承压 → 反弹窗口收窄，以观望/控仓为主，不追高。' :
+               '内外分化 → 精选恐慌低位 + 技术共振个股，轻仓试错。';
+
+  document.getElementById('globalVerdict').innerHTML='<span class="badge '+vbadge+'">'+verdict+'</span>';
+  document.getElementById('globalLines').innerHTML=lines.map(function(l){return '<div style="margin-bottom:6px">'+l+'</div>';}).join('');
+  document.getElementById('globalAdvice').textContent=advice+' 反弹≠反转，严禁长线重仓。';
+
+  // 首页外围综述条
+  var banner=document.getElementById('globalBanner');
+  if(banner){
+    banner.className='panel';
+    banner.innerHTML='<h3 style="color:var(--blue)">🌐 外围市场综述</h3><div style="font-size:13px;color:var(--t2);line-height:1.9">'+
+      '<b class="'+vcls+'">'+verdict+'</b><br>'+
+      '美股七姐妹 '+pctSpan(usAvg)+' · 富时A50 '+pctSpan(a50v)+' · 三星 '+safePct(sam)+' · 海力士 '+safePct(hy)+' · 黄金 '+pctSpan(goldv)+' · 原油 '+pctSpan(crudev)+
+      '</div>';
+  }
+  GLOBAL_READY=true;
+  GLOBAL_DATA={usAvg:usAvg, a50v:a50v, krAvg:krAvg, goldv:goldv, crudev:crudev, verdict:verdict};
+  if(loading) loading.style.display='none';
+}
+
+// Self-built greed index: price percentile over last 750 trading days
+function calcGreedFromKline(klineData){
+  if(!klineData||klineData.length<30) return 50;
+  var closes=klineData.map(function(k){return k.close;});
+  var current=closes[closes.length-1];
+  var lookback=Math.min(closes.length-1,750);
+  var hist=closes.slice(-lookback-1,-1);
+  if(hist.length===0) return 50;
+  var below=hist.filter(function(c){return c<current;}).length;
+  return Math.round(below/hist.length*1000)/10;
+}
+
+// ETF list for self-built greed calculation (when Arkvol unavailable)
+const SELF_ETF_LIST=[
+  {name:'上证50',code:'510050',type:'宽基'},
+  {name:'沪深300',code:'510300',type:'宽基'},
+  {name:'中证500',code:'510500',type:'宽基'},
+  {name:'中证1000',code:'159845',type:'宽基'},
+  {name:'中证2000',code:'562660',type:'宽基'},
+  {name:'科创50',code:'588000',type:'宽基'},
+  {name:'创业板指',code:'159915',type:'宽基'},
+  {name:'恒生科技',code:'513130',type:'宽基'},
+  {name:'恒生指数',code:'513600',type:'宽基'},
+  {name:'纳斯达克',code:'159632',type:'宽基'},
+  {name:'日经225',code:'513520',type:'宽基'},
+  {name:'AI人工智能',code:'512930',type:'科技'},
+  {name:'半导体',code:'512480',type:'科技'},
+  {name:'芯片产业',code:'159995',type:'科技'},
+  {name:'机器人',code:'562500',type:'科技'},
+  {name:'5G通信',code:'515050',type:'科技'},
+  {name:'消费电子',code:'159732',type:'科技'},
+  {name:'新能源',code:'516160',type:'科技'},
+  {name:'光伏',code:'515790',type:'科技'},
+  {name:'医药',code:'512010',type:'科技'},
+  {name:'银行',code:'512800',type:'科技'},
+  {name:'证券',code:'512880',type:'科技'},
+  {name:'食品饮料',code:'515170',type:'科技'},
+  {name:'军工',code:'512660',type:'科技'}
+];
+
+// MACD
+function calcEMA(data, period){
+  var k = 2/(period+1);
+  var ema = [data[0]];
+  for(var i=1;i<data.length;i++) ema.push(data[i]*k + ema[i-1]*(1-k));
+  return ema;
+}
+function calcMACD(closes){
+  if(closes.length<30) return null;
+  var ema12 = calcEMA(closes,12);
+  var ema26 = calcEMA(closes,26);
+  var dif = ema12.map(function(v,i){return v-ema26[i];});
+  var dea = calcEMA(dif,9);
+  var macd = dif.map(function(v,i){return (v-dea[i])*2;});
+  return {dif:dif, dea:dea, macd:macd, lastDif:dif[dif.length-1], lastDea:dea[dea.length-1], lastMacd:macd[macd.length-1]};
+}
+function checkMacdDivergence(closes, dif){
+  if(closes.length<20||dif.length<20) return false;
+  var n=closes.length;
+  var low1Idx=-1, low2Idx=-1;
+  var lookback=Math.min(n,60);
+  for(var i=n-lookback;i<n;i++){
+    if(i>0&&i<n-1){
+      if(closes[i]<closes[i-1]&&closes[i]<closes[i+1]){
+        if(low2Idx===-1) low2Idx=i;
+        else if(low1Idx===-1&&i<low2Idx-3) low1Idx=i;
+      }
+    }
+  }
+  if(low1Idx>=0&&low2Idx>=0){
+    if(closes[low2Idx]<closes[low1Idx]&&dif[low2Idx]>dif[low1Idx]) return true;
+  }
+  return false;
+}
+function checkMacdCross(dif, dea){
+  if(dif.length<2) return 'none';
+  var n=dif.length;
+  if(dif[n-2]<=dea[n-2]&&dif[n-1]>dea[n-1]) return 'golden';
+  if(dif[n-2]>=dea[n-2]&&dif[n-1]<dea[n-1]) return 'dead';
+  if(dif[n-1]>dea[n-1]) return 'above';
+  return 'below';
+}
+function checkMacdGreenShorten(macd){
+  if(macd.length<3) return false;
+  var n=macd.length;
+  if(macd[n-1]<0&&macd[n-2]<0&&macd[n-3]<0){
+    return Math.abs(macd[n-1])<Math.abs(macd[n-2])&&Math.abs(macd[n-2])<Math.abs(macd[n-3]);
+  }
+  return false;
+}
+
+// Bollinger
+function calcBollinger(closes, period, mult){
+  period=period||20; mult=mult||2;
+  if(closes.length<period) return null;
+  var n=closes.length;
+  var sma=[], upper=[], lower=[];
+  for(var i=period-1;i<n;i++){
+    var slice=closes.slice(i-period+1,i+1);
+    var mean=slice.reduce(function(a,b){return a+b;},0)/period;
+    var variance=slice.reduce(function(a,b){return a+Math.pow(b-mean,2);},0)/period;
+    var std=Math.sqrt(variance);
+    sma.push(mean); upper.push(mean+mult*std); lower.push(mean-mult*std);
+  }
+  var li=sma.length-1;
+  return {
+    mid:sma[li], upper:upper[li], lower:lower[li], price:closes[n-1],
+    position: closes[n-1]<=lower[li]?'下轨支撑':closes[n-1]<=sma[li]?'中轨附近':closes[n-1]>=upper[li]?'上轨突破':'中上轨间'
+  };
+}
+
+// K-line fetch (Tencent)
+function fetchKline(code, period){
+  period=period||'day';
+  var tsCode=getTencentCode(code);
+  var varName='k'+code+'_'+Date.now()+'_'+Math.floor(Math.random()*100000);
+  var url;
+  if(period==='min15'){
+    url='https://ifzq.gtimg.cn/appstock/app/kline/mkline?_var='+varName+'&param='+tsCode+',min15,,,320';
+  } else {
+    url='https://ifzq.gtimg.cn/appstock/app/kline/kline?_var='+varName+'&param='+tsCode+',day,,,320';
+  }
+  return new Promise(function(resolve){
+    var s=document.createElement('script');
+    var done=false;
+    s.onload=function(){
+      if(done) return; done=true;
+      try{
+        var raw=window[varName];
+        if(!raw){resolve([]);return;}
+        var klines=[];
+        var data=raw.data||raw;
+        if(data[tsCode]){
+          var kd=data[tsCode];
+          if(period==='min15'&&kd.m15) klines=kd.m15;
+          else if(kd.day) klines=kd.day;
+          else if(kd.qfqday) klines=kd.qfqday;
+        } else if(data.day){ klines=data.day; }
+        else if(data.qfqday){ klines=data.qfqday; }
+        var parsed=klines.map(function(k){return {date:k[0], open:+k[1], close:+k[2], high:+k[3], low:+k[4], volume:+k[5]||0};});
+        resolve(parsed);
+      }catch(e){ resolve([]); }
+      try{delete window[varName];}catch(e){}
+      s.remove();
+    };
+    s.onerror=function(){ if(!done){done=true; resolve([]); s.remove();} };
+    s.src=url;
+    setTimeout(function(){ if(!done){done=true; resolve([]); s.remove();} }, 12000);
+    document.body.appendChild(s);
+  });
+}
+
+// Quote fetch (East Money)
+async function fetchQuote(code){
+  var secid=getSecid(code);
+  var url='https://push2delay.eastmoney.com/api/qt/stock/get?secid='+secid+'&fields=f43,f44,f45,f46,f57,f58,f170,f47,f48';
+  try{ var d=await jsonp(url); if(d&&d.data) return d.data; }catch(e){}
+  return null;
+}
+
+// Fund flow fetch (East Money) - try push2 first, then push2delay
+// Supplement missing days with K-line volume-based estimation
+async function fetchFundFlow(code, klineDay){
+  var secid=getSecid(code);
+  var fields='&fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64,f65';
+  var flows=[];
+  var urls=[
+    'https://push2.eastmoney.com/api/qt/stock/fflow/daykline/get?secid='+secid+'&lmt=5'+fields,
+    'https://push2delay.eastmoney.com/api/qt/stock/fflow/daykline/get?secid='+secid+'&lmt=5'+fields
+  ];
+  for(var i=0;i<urls.length;i++){
+    try{
+      var d=await jsonp(urls[i], 8000);
+      if(d&&d.data&&d.data.klines&&d.data.klines.length>0){
+        flows=d.data.klines.map(function(k){
+          var p=k.split(',');
+          return {date:p[0], main:+p[1]};
+        });
+        if(flows.length>=3) break;
+      }
+    }catch(e){}
+  }
+  // Supplement with K-line estimates if less than 5 days
+  if(flows.length<5 && klineDay && klineDay.length>0){
+    var realDates={};
+    flows.forEach(function(f){realDates[f.date]=true;});
+    var last5=klineDay.slice(-5);
+    for(var j=0;j<last5.length;j++){
+      var k=last5[j];
+      if(k.date && !realDates[k.date] && k.open>0 && k.volume>0){
+        var avgPrice=(k.open+k.close)/2;
+        var turnover=k.volume*100*avgPrice;
+        var pctChange=(k.close-k.open)/k.open;
+        var estMain=turnover*pctChange;
+        flows.push({date:k.date, main:estMain, estimated:true});
+      }
+    }
+    flows.sort(function(a,b){return a.date<b.date?-1:1;});
+  }
+  return flows;
+}
+
+// Match greed
+function matchGreed(code, sectorName){
+  var allEtfs=[];
+  if(ARKVOL.alla&&ARKVOL.alla.items) allEtfs=allEtfs.concat(ARKVOL.alla.items);
+  if(ARKVOL.alla_tech&&ARKVOL.alla_tech.items) allEtfs=allEtfs.concat(ARKVOL.alla_tech.items);
+  if(ARKVOL.funds_greed&&ARKVOL.funds_greed.items) allEtfs=allEtfs.concat(ARKVOL.funds_greed.items);
+  for(var i=0;i<allEtfs.length;i++){
+    if(allEtfs[i].code===code){
+      var nm=allEtfs[i].name||allEtfs[i].etf_name||allEtfs[i].fund_name||'';
+      return {greed:allEtfs[i].greed, name:nm, source:'direct'};
+    }
+  }
+  if(sectorName&&sectorName!=='auto'){
+    var lists=[];
+    if(ARKVOL.alla&&ARKVOL.alla.items) lists.push(ARKVOL.alla.items);
+    if(ARKVOL.alla_tech&&ARKVOL.alla_tech.items) lists.push(ARKVOL.alla_tech.items);
+    for(var l=0;l<lists.length;l++){
+      for(var j=0;j<lists[l].length;j++){
+        if(lists[l][j].name===sectorName) return {greed:lists[l][j].greed, name:lists[l][j].name, source:'sector'};
+      }
+    }
+  }
+  return {greed:(ARKVOL.alla&&ARKVOL.alla.sentiment_score)||50, name:'A股整体', source:'market'};
+}
+
+// Blacklist
+function checkBlacklist(code){
+  var b300=document.getElementById('block300');
+  var b688=document.getElementById('block688');
+  if(code.indexOf('300')===0&&b300&&b300.checked) return '创业板(300)已屏蔽';
+  if(code.indexOf('688')===0&&b688&&b688.checked) return '科创板(688)已屏蔽';
+  return null;
+}
+
+// 4-layer screening
+async function runScreening(code, sectorName){
+  var result={
+    code:code, name:'', price:0, change:0,
+    layer1:{status:'wait',greed:0,source:'',detail:''},
+    layer2:{status:'wait',wave:'',detail:''},
+    layer3:{status:'wait',macd:'',boll:'',divergence:false,dkProxy:false,detail:''},
+    layer4:{status:'wait',flow:'',detail:''},
+    template:'', suggestion:'', stopPrice:0, profitPrice:0
+  };
+  var blocked=checkBlacklist(code);
+  if(blocked){
+    result.template='D'; result.suggestion='黑名单过滤：'+blocked;
+    result.layer1.status='fail'; result.layer1.detail=blocked;
+    return result;
+  }
+  var quote=await fetchQuote(code);
+  if(quote){
+    result.name=quote.f58||code;
+    result.price=quote.f43/100;
+    result.change=quote.f170/100;
+  }
+  // Fetch K-line first (needed for Layer 1 self-built greed + Layer 2 wave + Layer 4 fund flow estimation)
+  var klineDay=await fetchKline(code,'day');
+
+  // Layer 1: Greed index - try Arkvol first, then self-built from K-line
+  var gm=matchGreed(code, sectorName);
+  if(gm.source==='market' && klineDay.length>=30){
+    // Arkvol doesn't have this stock, use self-built greed index
+    var selfGreed=calcGreedFromKline(klineDay);
+    result.layer1.greed=selfGreed; result.layer1.source='self-built';
+    if(selfGreed<35){ result.layer1.status='pass'; result.layer1.detail=result.name+' 自建贪婪指数 '+selfGreed.toFixed(1)+'% → 恐慌低位，入观察池'; }
+    else if(selfGreed>65){ result.layer1.status='fail'; result.layer1.detail=result.name+' 自建贪婪指数 '+selfGreed.toFixed(1)+'% → 贪婪过热，禁止开仓'; }
+    else{ result.layer1.status='neutral'; result.layer1.detail=result.name+' 自建贪婪指数 '+selfGreed.toFixed(1)+'% → 中性区间，观望'; }
+  } else {
+    result.layer1.greed=gm.greed; result.layer1.source=gm.source;
+    if(gm.greed<35){ result.layer1.status='pass'; result.layer1.detail=gm.name+' 贪婪指数 '+gm.greed.toFixed(1)+'% → 恐慌低位，入观察池'; }
+    else if(gm.greed>65){ result.layer1.status='fail'; result.layer1.detail=gm.name+' 贪婪指数 '+gm.greed.toFixed(1)+'% → 贪婪过热，禁止开仓'; }
+    else{ result.layer1.status='neutral'; result.layer1.detail=gm.name+' 贪婪指数 '+gm.greed.toFixed(1)+'% → 中性区间，观望'; }
+  }
+
+  // Layer 2: Wave analysis (K-line already fetched)
+  if(klineDay.length>30){
+    var dayCloses=klineDay.map(function(k){return k.close;});
+    var dayMacd=calcMACD(dayCloses);
+    if(dayMacd){
+      var cross=checkMacdCross(dayMacd.dif,dayMacd.dea);
+      if(cross==='golden'||cross==='above'){
+        result.layer2.status='pass'; result.layer2.wave='反弹窗口';
+        result.layer2.detail='日线MACD金叉/DIF在DEA上方，存在反弹窗口';
+      } else {
+        var gs=checkMacdGreenShorten(dayMacd.macd);
+        if(gs){ result.layer2.status='wait'; result.layer2.wave='下跌末端'; result.layer2.detail='日线MACD在零轴下方但绿柱持续缩短，可能酝酿反弹'; }
+        else{ result.layer2.status='fail'; result.layer2.wave='主跌阶段'; result.layer2.detail='日线MACD死叉且绿柱未缩短，持续下行风险高'; }
+      }
+    }
+  } else { result.layer2.status='wait'; result.layer2.detail='K线数据不足，无法判断浪型'; }
+
+  // Layer 3
+  var kline15=await fetchKline(code,'min15');
+  var techSignals=0;
+  if(kline15.length>30){
+    var m15c=kline15.map(function(k){return k.close;});
+    var macd15=calcMACD(m15c);
+    if(macd15){
+      var c15=checkMacdCross(macd15.dif,macd15.dea);
+      var div=checkMacdDivergence(m15c,macd15.dif);
+      var gs15=checkMacdGreenShorten(macd15.macd);
+      if(div){ result.layer3.divergence=true; techSignals++; }
+      if(c15==='golden'){ techSignals++; result.layer3.macd='15min金叉'; }
+      else if(gs15){ techSignals++; result.layer3.macd='绿柱缩短'; }
+      else if(c15==='above'){ result.layer3.macd='DIF在DEA上方'; }
+      else{ result.layer3.macd='无明确信号'; }
+      result.layer3.detail='15min MACD: '+result.layer3.macd;
+      if(div) result.layer3.detail+=' | 底背离✓';
+      if(gs15) result.layer3.detail+=' | 绿柱缩短✓';
+    }
+  }
+  if(klineDay.length>20){
+    var dc=klineDay.map(function(k){return k.close;});
+    var boll=calcBollinger(dc);
+    if(boll){
+      result.layer3.boll=boll.position;
+      if(boll.position==='下轨支撑'||boll.position==='中轨附近') techSignals++;
+      result.layer3.detail+=' | 布林: '+boll.position;
+    }
+  }
+  result.layer3.dkProxy=techSignals>=2;
+  result.layer3.status=techSignals>=2?'pass':(techSignals>=1?'wait':'fail');
+  if(!result.layer3.detail) result.layer3.detail='K线数据不足';
+
+  // Layer 4 - Fund flow with 5-day breakdown (real + K-line estimated)
+  var flows=await fetchFundFlow(code, klineDay);
+  result.layer4.flows=flows;
+  if(flows.length>=1){
+    var recent=flows.slice(-3);
+    var allOut=recent.every(function(f){return f.main<0;});
+    var slowing=allOut&&Math.abs(recent[recent.length-1].main)<Math.abs(recent[0].main);
+    var lastFlow=recent[recent.length-1];
+    var lastIn=lastFlow.main>0;
+    var lastAmt=lastFlow.main/1e8;
+    var hasEst=flows.some(function(f){return f.estimated;});
+    var estNote=hasEst?' (部分为价量估算)':'';
+    if(lastIn){ result.layer4.status='pass'; result.layer4.flow='主力回流'; result.layer4.detail='最近一日主力净流入 '+fmtMoney(lastAmt)+estNote; }
+    else if(slowing){ result.layer4.status='wait'; result.layer4.flow='流出放缓'; result.layer4.detail='近3日持续流出但幅度收窄'+estNote; }
+    else if(allOut){ result.layer4.status='fail'; result.layer4.flow='持续流出'; result.layer4.detail='近3日主力持续净流出'+estNote; }
+    else{ result.layer4.status='neutral'; result.layer4.flow='资金mixed'; result.layer4.detail='资金流向不明朗'+estNote; }
+  } else { result.layer4.status='wait'; result.layer4.detail='资金流数据不足'; }
+
+  // Template
+  var stopLossPct=parseFloat(document.getElementById('stopLossInput')?document.getElementById('stopLossInput').value:6)||6;
+  var takeProfitPct=parseFloat(document.getElementById('takeProfitInput')?document.getElementById('takeProfitInput').value:10)||10;
+  if(result.price>0){
+    result.stopPrice=(result.price*(1-stopLossPct/100)).toFixed(3);
+    result.profitPrice=(result.price*(1+takeProfitPct/100)).toFixed(3);
+  }
+  if(result.layer1.status==='fail'){ result.template='C'; result.suggestion='贪婪过热，禁止新开仓，持仓逢高逐步兑现。'; }
+  else if(result.layer2.status==='fail'){ result.template='D'; result.suggestion='主跌阶段，观望，规避下跌风险。'; }
+  else if(result.layer1.status==='pass'&&result.layer3.status==='pass'){
+    result.template='A'; result.suggestion='多重条件共振，小仓位分批低吸博弈波段反弹，设置止损'+stopLossPct+'%，目标'+takeProfitPct+'%，反弹属于4浪内部修复，不长期持有。';
+  } else { result.template='B'; result.suggestion='纳入观察池，等待D点信号共振，暂不入场。'; }
+  return result;
+}
+
+// Render result
+function renderResult(r){
+  var tplClass='suggest-'+r.template.toLowerCase();
+  var tplIcon={A:'✅',B:'⏳',C:'🔴',D:'⛔'}[r.template];
+  var tplTitle={A:'建议低吸建仓',B:'纳入观察池',C:'禁止开仓',D:'观望规避'}[r.template];
+  var ls=function(s){ return s==='pass'?'<span class="s-pass">✓ 通过</span>':s==='fail'?'<span class="s-fail">✗ 未通过</span>':'<span class="s-wait">⏳ 观望</span>'; };
+  var layers='';
+  if(r.template==='D'&&r.suggestion.indexOf('黑名单')>=0){
+    layers='<div style="color:var(--red);font-size:13px">🚫 '+r.layer1.detail+'</div>';
+  } else {
+    layers='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">'+
+      '<div class="card" style="padding:10px"><div class="lbl">1️⃣ 情绪海选</div><div style="font-size:13px;margin-top:4px">'+ls(r.layer1.status)+'</div><div style="font-size:11px;color:var(--t3);margin-top:4px">'+(r.layer1.detail||'—')+'</div></div>'+
+      '<div class="card" style="padding:10px"><div class="lbl">2️⃣ 浪型过滤</div><div style="font-size:13px;margin-top:4px">'+ls(r.layer2.status)+'</div><div style="font-size:11px;color:var(--t3);margin-top:4px">'+(r.layer2.detail||'—')+'</div></div>'+
+      '<div class="card" style="padding:10px"><div class="lbl">3️⃣ 技术共振</div><div style="font-size:13px;margin-top:4px">'+ls(r.layer3.status)+'</div><div style="font-size:11px;color:var(--t3);margin-top:4px">'+(r.layer3.detail||'—')+'</div></div>'+
+      '<div class="card" style="padding:10px"><div class="lbl">4️⃣ 资金校验</div><div style="font-size:13px;margin-top:4px">'+ls(r.layer4.status)+'</div><div style="font-size:11px;color:var(--t3);margin-top:4px">'+(r.layer4.flow?r.layer4.flow+'：':'')+(r.layer4.detail||'—')+'</div>'+(r.layer4.flows&&r.layer4.flows.length>0?'<table style="width:100%;font-size:10px;margin-top:6px;border-collapse:collapse"><thead><tr style="color:var(--t3)"><th style="text-align:left;padding:2px">日期</th><th style="text-align:right;padding:2px">主力净流入</th></tr></thead><tbody>'+r.layer4.flows.map(function(f){var v=f.main/1e8;var cls=v>=0?'color:var(--green)':'color:var(--red)';var dot=f.estimated?' <span style="font-size:8px;color:var(--t4)">估</span>':'';var style=f.estimated?cls+';font-weight:400':cls+';font-weight:600';return '<tr><td style="padding:2px">'+f.date+dot+'</td><td style="text-align:right;padding:2px;'+style+'">'+fmtMoney(v)+'</td></tr>';}).join('')+'</tbody></table>':'')+'</div>'+
+      '</div>';
+  }
+  var riskInfo='';
+  if(r.price>0&&r.stopPrice>0){
+    riskInfo='<div class="grid g3" style="margin-top:8px">'+
+      '<div class="card" style="padding:8px"><div class="lbl">现价</div><div style="font-size:16px;font-weight:700">'+r.price.toFixed(3)+'</div></div>'+
+      '<div class="card" style="padding:8px;border-top:2px solid var(--red)"><div class="lbl">止损价</div><div style="font-size:16px;font-weight:700;color:var(--red)">'+r.stopPrice+'</div></div>'+
+      '<div class="card" style="padding:8px;border-top:2px solid var(--green)"><div class="lbl">止盈价</div><div style="font-size:16px;font-weight:700;color:var(--green)">'+r.profitPrice+'</div></div>'+
+      '</div>';
+  }
+  var nd=r.name?r.name+' ('+r.code+')':r.code;
+  return '<div class="suggest '+tplClass+'"><h4>'+tplIcon+' '+nd+' — '+tplTitle+'</h4>'+layers+riskInfo+'<div class="tpl"><b>策略建议：</b>'+r.suggestion+'</div></div>';
+}
+
+// Screen button
+document.getElementById('screenBtn').onclick=async function(){
+  var input=document.getElementById('stockInput').value.trim();
+  if(!input) return;
+  // Save to localStorage
+  try{ localStorage.setItem('wolf_last_input', input); }catch(e){}
+  var sector=document.getElementById('sectorSelect').value;
+  var codes=input.split(/[,\n\s]+/).map(function(c){return c.trim();}).filter(function(c){return c.length>=5&&/^\d+$/.test(c);});
+  if(codes.length===0){ document.getElementById('screenResults').innerHTML='<div class="panel"><div class="loading">请输入有效的股票/ETF代码</div></div>'; return; }
+  document.getElementById('screenSummary').style.display='none';
+  document.getElementById('screenResults').innerHTML='<div class="panel"><div class="loading"><div class="spinner"></div><div style="margin-top:8px">正在筛选 '+codes.length+' 个标的... (每个约3-5秒)</div></div></div>';
+  var html='';
+  var stats={pass:0,wait:0,fail:0,total:codes.length,passList:[],waitList:[],failList:[]};
+  for(var i=0;i<codes.length;i++){
+    try{
+      var r=await runScreening(codes[i], sector);
+      html+=renderResult(r);
+      var label=r.name?r.name+'('+r.code+')':r.code;
+      if(r.template==='A'){ stats.pass++; stats.passList.push(label); }
+      else if(r.template==='C'||r.template==='D'){ stats.fail++; stats.failList.push(label); }
+      else { stats.wait++; stats.waitList.push(label); }
+      // Update progress
+      document.getElementById('screenResults').innerHTML='<div class="panel"><div class="loading"><div class="spinner"></div><div style="margin-top:8px">已分析 '+(i+1)+'/'+codes.length+'... (通过:'+stats.pass+' 观望:'+stats.wait+' 排除:'+stats.fail+')</div></div></div>'+html;
+    }catch(e){
+      html+='<div class="suggest suggest-d"><h4>⛔ '+codes[i]+' — 筛选失败</h4><div class="tpl">'+e.message+'</div></div>';
+      stats.fail++; stats.failList.push(codes[i]);
+    }
+  }
+  // Summary bar
+  var sumHtml='<div class="suggest suggest-'+(stats.pass>0?'a':stats.wait>0?'b':'d')+'"><h4>📊 批量筛选完成 — '+stats.total+'个标的</h4><div style="font-size:13px;line-height:1.9;margin-top:4px">';
+  sumHtml+='<div><span class="badge b-green">✅ 建议低吸 '+stats.pass+'</span> '+(stats.passList.join('、')||'无')+'</div>';
+  sumHtml+='<div style="margin-top:4px"><span class="badge b-amber">⏳ 纳入观察 '+stats.wait+'</span> '+(stats.waitList.join('、')||'无')+'</div>';
+  sumHtml+='<div style="margin-top:4px"><span class="badge b-red">⛔ 观望规避 '+stats.fail+'</span> '+(stats.failList.join('、')||'无')+'</div>';
+  sumHtml+='</div></div>';
+  document.getElementById('screenSummary').innerHTML=sumHtml;
+  document.getElementById('screenSummary').style.display='block';
+  document.getElementById('screenResults').innerHTML=html||'<div class="panel"><div class="loading">无结果</div></div>';
+};
+
+// Preset buttons
+document.querySelectorAll('.preset-btn').forEach(function(btn){
+  btn.onclick=function(){
+    document.getElementById('stockInput').value=btn.dataset.codes;
+    document.getElementById('screenBtn').click();
+  };
+});
+// Clear button
+document.getElementById('clearInputBtn').onclick=function(){
+  document.getElementById('stockInput').value='';
+  try{ localStorage.removeItem('wolf_last_input'); }catch(e){}
+  document.getElementById('stockInput').focus();
+};
+// Restore last input from localStorage
+try{
+  var lastInput=localStorage.getItem('wolf_last_input');
+  if(lastInput) document.getElementById('stockInput').value=lastInput;
+}catch(e){}
+
+// Overview - auto-scan all ETFs for greed index, show ranking + opportunities
+async function autoScanOverview(){
+  var hasArkvol = ARKVOL.alla && ARKVOL.alla.items && ARKVOL.alla.items.length>0;
+  if(hasArkvol) document.getElementById('dataTag').textContent='Arkvol+自建';
+  else document.getElementById('dataTag').textContent='自建指标';
+
+  // If Arkvol available, use its data directly (fast path)
+  if(hasArkvol){
+    var arkvolItems=[];
+    (ARKVOL.alla.items||[]).forEach(function(it){arkvolItems.push({name:it.name||it.etf_name||'',code:it.code,greed:it.greed,close:it.close,type:'宽基',source:'Arkvol'});});
+    (ARKVOL.alla_tech.items||[]).forEach(function(it){arkvolItems.push({name:it.name||it.fund_name||'',code:it.code,greed:it.greed,close:it.close,type:'科技',source:'Arkvol'});});
+    renderScanResults(arkvolItems);
+  } else {
+    // Self-built: scan each ETF via K-line
+    var results=[];
+    var total=SELF_ETF_LIST.length;
+    for(var i=0;i<total;i++){
+      var etf=SELF_ETF_LIST[i];
+      if(document.getElementById('scanProgress'))
+        document.getElementById('scanProgress').textContent='正在扫描 '+(i+1)+'/'+total+': '+etf.name;
+      var kl=await fetchKline(etf.code,'day');
+      if(kl.length>=30){
+        var g=calcGreedFromKline(kl);
+        var closes=kl.map(function(k){return k.close;});
+        var ema20=calcEMA(closes,20);
+        var dev=ema20[ema20.length-1]>0?((closes[closes.length-1]-ema20[ema20.length-1])/ema20[ema20.length-1]*100):0;
+        results.push({name:etf.name,code:etf.code,greed:g,close:closes[closes.length-1],deviation:dev,type:etf.type,source:'自建'});
+      }
+    }
+    renderScanResults(results);
+  }
+}
+
+function renderScanResults(results){
+  document.getElementById('scanLoading').style.display='none';
+  document.getElementById('scanResults').style.display='block';
+  results.sort(function(a,b){return a.greed-b.greed;});
+  var panic=results.filter(function(r){return r.greed<35;});
+  var neutral=results.filter(function(r){return r.greed>=35&&r.greed<=65;});
+  var greedy=results.filter(function(r){return r.greed>65;});
+  // Summary cards
+  var sumHtml='<div class="card" style="border-top:3px solid var(--green)"><div class="lbl">恐慌低位</div><div class="val s-panic">'+panic.length+'</div><div class="meta">可观察入池</div></div>';
+  sumHtml+='<div class="card" style="border-top:3px solid var(--amber)"><div class="lbl">中性区间</div><div class="val s-neutral">'+neutral.length+'</div><div class="meta">选择性观望</div></div>';
+  sumHtml+='<div class="card" style="border-top:3px solid var(--red)"><div class="lbl">贪婪过热</div><div class="val s-greedy">'+greedy.length+'</div><div class="meta">禁止开仓</div></div>';
+  sumHtml+='<div class="card"><div class="lbl">扫描总数</div><div class="val">'+results.length+'</div><div class="meta">'+(results[0]?results[0].source:'—')+'指标</div></div>';
+  document.getElementById('scanSummary').innerHTML=sumHtml;
+  // Panic alert
+  if(panic.length>0){
+    var alertHtml='<div class="suggest suggest-a" style="margin-bottom:12px"><h4>✅ 恐慌低位标的 — 可纳入观察池</h4><p style="font-size:13px">';
+    panic.forEach(function(r){
+      alertHtml+='<button class="btn" style="margin:4px;font-size:12px;padding:6px 10px" onclick="analyzeFromOverview(\''+r.code+'\')">'+r.name+' '+r.greed.toFixed(1)+'%</button>';
+    });
+    alertHtml+='</p><div class="tpl">点击标的直接进入四层筛选 → 情绪海选通过后需等待技术信号共振</div></div>';
+    document.getElementById('panicAlert').innerHTML=alertHtml;
+  } else {
+    document.getElementById('panicAlert').innerHTML='<div class="suggest suggest-d" style="margin-bottom:12px"><h4>⏳ 当前无恐慌低位标的</h4><p style="font-size:13px">所有ETF均在中性或贪婪区间，暂无符合第一层筛选的标的。建议观望等待。</p></div>';
+  }
+  // Ranking table
+  var html='';
+  results.forEach(function(r,i){
+    var cls=sentimentClass(r.greed);
+    var badge=sentimentBadge(r.greed);
+    var devCls=r.deviation>=0?'up':'dn';
+    var devTxt=r.deviation?(r.deviation>=0?'+':'')+r.deviation.toFixed(2)+'%':'—';
+    var advice=r.greed<35?'<span class="badge b-green">可观察</span>':r.greed>65?'<span class="badge b-red">禁止</span>':'<span class="badge b-gray">观望</span>';
+    html+='<tr><td class="c">'+(i+1)+'</td><td>'+r.name+'<br><span style="font-size:10px;color:var(--t4)">'+r.type+'</span></td><td class="c">'+r.code+'</td><td class="c"><span class="'+cls+'">'+r.greed.toFixed(1)+'%</span></td><td class="c">'+badge+'</td><td class="c">'+(r.close?r.close.toFixed(3):'—')+'</td><td class="c '+devCls+'">'+devTxt+'</td><td class="c"><button class="btn" style="font-size:11px;padding:4px 8px" onclick="analyzeFromOverview(\''+r.code+'\')">分析</button></td></tr>';
+  });
+  document.getElementById('greedRanking').querySelector('tbody').innerHTML=html;
+}
+
+// Jump to screener tab and auto-analyze a code
+function analyzeFromOverview(code){
+  document.querySelector('.tab[data-tab="screener"]').click();
+  document.getElementById('stockInput').value=code;
+  document.getElementById('screenBtn').click();
+}
+
+// Load sector flow TOP5 for overview (independent of ETF scan, with retry)
+async function loadOverviewFlow(){
+  async function tryFetch(){
+    var sectors=await fetchFlowData(false);
+    if(!sectors||sectors.length===0) throw new Error('empty');
+    var real=sectors.filter(function(r){return !isBasket(r[1]);});
+    if(real.length===0) throw new Error('filtered');
+    return real;
+  }
+  var real=null;
+  for(var attempt=0;attempt<2;attempt++){
+    try{ real=await tryFetch(); break; }catch(e){ real=null; }
+  }
+  if(!real){
+    document.getElementById('ovFlowIn').querySelector('tbody').innerHTML='<tr><td class="c" style="color:var(--t3)">加载失败，请刷新</td></tr>';
+    document.getElementById('ovFlowOut').querySelector('tbody').innerHTML='<tr><td class="c" style="color:var(--t3)">加载失败，请刷新</td></tr>';
+    return;
+  }
+  var inflow=real.filter(function(r){return r[2]>0;}).slice(0,5);
+  var outflow=real.filter(function(r){return r[2]<0;}).sort(function(a,b){return a[2]-b[2];}).slice(0,5);
+  var htmlIn='';
+  inflow.forEach(function(r,i){htmlIn+='<tr><td class="c">'+(i+1)+'</td><td>'+r[1]+'</td><td class="c up">'+fmtMoney(r[2]/1e8)+'</td></tr>';});
+  document.getElementById('ovFlowIn').querySelector('tbody').innerHTML=htmlIn||'<tr><td class="c" style="color:var(--t3)">无数据</td></tr>';
+  var htmlOut='';
+  outflow.forEach(function(r,i){htmlOut+='<tr><td class="c">'+(i+1)+'</td><td>'+r[1]+'</td><td class="c dn">'+fmtMoney(r[2]/1e8)+'</td></tr>';});
+  document.getElementById('ovFlowOut').querySelector('tbody').innerHTML=htmlOut||'<tr><td class="c" style="color:var(--t3)">无数据</td></tr>';
+}
+
+// ETF table - uses Arkvol if available, otherwise self-built from K-line
+async function renderEtfTable(){
+  var filter=document.getElementById('etfFilter').value;
+  var sentFilter=document.getElementById('sentimentFilter').value;
+  var hasArkvol = ARKVOL.alla && ARKVOL.alla.items && ARKVOL.alla.items.length>0;
+  
+  if(hasArkvol){
+    // Arkvol mode (existing behavior)
+    var items=[];
+    if(filter==='all'||filter==='broad'){
+      (ARKVOL.alla&&ARKVOL.alla.items||[]).forEach(function(it){items.push(Object.assign({},it,{type:'宽基'}));});
+    }
+    if(filter==='all'||filter==='tech'){
+      (ARKVOL.alla_tech&&ARKVOL.alla_tech.items||[]).forEach(function(it){items.push(Object.assign({},it,{type:'科技'}));});
+    }
+    if(filter==='all'||filter==='funds'){
+      (ARKVOL.funds_greed&&ARKVOL.funds_greed.items||[]).forEach(function(it){items.push(Object.assign({},it,{type:'基金'}));});
+    }
+    if(sentFilter==='panic') items=items.filter(function(it){return it.greed<35;});
+    else if(sentFilter==='neutral') items=items.filter(function(it){return it.greed>=35&&it.greed<=65;});
+    else if(sentFilter==='greedy') items=items.filter(function(it){return it.greed>65;});
+    items.sort(function(a,b){return a.greed-b.greed;});
+    var html='';
+    items.forEach(function(it){
+      var advice='', badge=sentimentBadge(it.greed);
+      if(it.greed<35){ advice='<span class="badge b-green">可观察</span>'; if(it.gold_pit) advice+=' <span class="badge b-amber">黄金坑</span>'; }
+      else if(it.greed>65){ advice='<span class="badge b-red">禁止开仓</span>'; }
+      else{ advice='<span class="badge b-gray">观望</span>'; }
+      var nm=it.name||it.etf_name||it.fund_name||'—';
+      html+='<tr><td>'+nm+'<br><span style="font-size:10px;color:var(--t4)">'+(it.type||'')+'</span></td><td class="c">'+it.code+'</td><td class="c"><span class="'+sentimentClass(it.greed)+'">'+it.greed.toFixed(1)+'%</span></td><td class="c">'+badge+'</td><td class="c">'+(it.close?it.close.toFixed(3):'—')+'</td><td class="c">'+advice+'</td><td class="c"><button class="btn" style="font-size:11px;padding:4px 8px" onclick="analyzeFromOverview(\''+it.code+'\')">分析</button></td></tr>';
+    });
+    document.getElementById('etfTable').querySelector('tbody').innerHTML=html||'<tr><td colspan="7" class="c" style="color:var(--t3)">无数据</td></tr>';
+    var gll=ARKVOL.gll;
+    if(gll&&gll.items){
+      var valid=gll.items.filter(function(it){return Math.abs(it.deviation)<20;});
+      var strong=valid.slice().sort(function(a,b){return b.deviation-a.deviation;}).slice(0,8);
+      var weak=valid.slice().sort(function(a,b){return a.deviation-b.deviation;}).slice(0,10);
+      document.getElementById('devStrong').querySelector('tbody').innerHTML=strong.map(function(it){return '<tr><td>'+it.name+'</td><td class="c up">'+fmtPct(it.deviation)+'</td></tr>';}).join('');
+      document.getElementById('devWeak').querySelector('tbody').innerHTML=weak.map(function(it){return '<tr><td>'+it.name+'</td><td class="c dn">'+fmtPct(it.deviation)+'</td></tr>';}).join('');
+    }
+  } else {
+    // Self-built mode - fetch K-line for each ETF, calculate greed + deviation
+    document.getElementById('etfTable').querySelector('tbody').innerHTML='<tr><td colspan="6" class="c" style="color:var(--t3);padding:20px"><div class="spinner"></div><div style="margin-top:8px">自建指标计算中...</div></td></tr>';
+    var etfList = SELF_ETF_LIST.filter(function(e){
+      if(filter==='broad') return e.type==='宽基';
+      if(filter==='tech') return e.type==='科技';
+      return true;
+    });
+    var results=[];
+    for(var i=0;i<etfList.length;i++){
+      var kl=await fetchKline(etfList[i].code,'day');
+      if(kl.length>=30){
+        var g=calcGreedFromKline(kl);
+        var closes=kl.map(function(k){return k.close;});
+        var ema20=calcEMA(closes,20);
+        var dev=((closes[closes.length-1]-ema20[ema20.length-1])/ema20[ema20.length-1]*100);
+        results.push({name:etfList[i].name, code:etfList[i].code, type:etfList[i].type, greed:g, close:closes[closes.length-1], deviation:dev});
+      }
+    }
+    if(sentFilter==='panic') results=results.filter(function(it){return it.greed<35;});
+    else if(sentFilter==='neutral') results=results.filter(function(it){return it.greed>=35&&it.greed<=65;});
+    else if(sentFilter==='greedy') results=results.filter(function(it){return it.greed>65;});
+    results.sort(function(a,b){return a.greed-b.greed;});
+    var html2='';
+    results.forEach(function(it){
+      var advice='', badge=sentimentBadge(it.greed);
+      if(it.greed<35) advice='<span class="badge b-green">可观察</span>';
+      else if(it.greed>65) advice='<span class="badge b-red">禁止开仓</span>';
+      else advice='<span class="badge b-gray">观望</span>';
+      html2+='<tr><td>'+it.name+'<br><span style="font-size:10px;color:var(--t4)">'+it.type+'</span></td><td class="c">'+it.code+'</td><td class="c"><span class="'+sentimentClass(it.greed)+'">'+it.greed.toFixed(1)+'%</span></td><td class="c">'+badge+'</td><td class="c">'+it.close.toFixed(3)+'</td><td class="c">'+advice+'</td><td class="c"><button class="btn" style="font-size:11px;padding:4px 8px" onclick="analyzeFromOverview(\''+it.code+'\')">分析</button></td></tr>';
+    });
+    document.getElementById('etfTable').querySelector('tbody').innerHTML=html2||'<tr><td colspan="7" class="c" style="color:var(--t3)">无数据</td></tr>';
+    // Self-built deviation table
+    var valid=results.filter(function(it){return Math.abs(it.deviation)<20;});
+    var strong=valid.slice().sort(function(a,b){return b.deviation-a.deviation;}).slice(0,8);
+    var weak=valid.slice().sort(function(a,b){return a.deviation-b.deviation;}).slice(0,10);
+    document.getElementById('devStrong').querySelector('tbody').innerHTML=strong.map(function(it){return '<tr><td>'+it.name+'</td><td class="c up">'+fmtPct(it.deviation)+'</td></tr>';}).join('')||'<tr><td class="c" style="color:var(--t3)">无数据</td></tr>';
+    document.getElementById('devWeak').querySelector('tbody').innerHTML=weak.map(function(it){return '<tr><td>'+it.name+'</td><td class="c dn">'+fmtPct(it.deviation)+'</td></tr>';}).join('')||'<tr><td class="c" style="color:var(--t3)">无数据</td></tr>';
+  }
+}
+document.getElementById('etfFilter').onchange=renderEtfTable;
+document.getElementById('sentimentFilter').onchange=renderEtfTable;
+
+// Sector flow
+var BLOCK_SUBSTR=["融资融券","富时","罗素","MSCI","标普","道琼斯","股通","北向","北上","大盘","中盘","小盘","沪深300","上证50","上证180","中证","创业板综","科创板","AH股","含H股","含B股","含可转债","重仓","预盈","预增","预减","预亏","高送转","破净","国企改革","央企","标准普尔","权重","深成","HS300","沪深","深证","上证","全指","成份","成分","百元股","热股","振幅","昨日","涨停","跌停","连板","近端次新","次新股","龙头","白马股","蓝筹","风格","趋势股","茅指数","组合","微盘","ST股","低价","举牌","红利","扭亏","季报","年报","中报"];
+function isBasket(n){ return BLOCK_SUBSTR.some(function(k){return n.indexOf(k)>=0;}); }
+
+async function fetchFlowData(industry){
+  var fs=industry?'m:90+t:2':'m:90+t:3';
+  var merged={};
+  for(var pn=1;pn<=5;pn++){
+    var url='https://push2delay.eastmoney.com/api/qt/clist/get?fid=f62&po=1&pz=100&pn='+pn+'&np=1&fltt=2&invt=2&fs='+fs+'&fields=f12,f14,f62';
+    try{
+      var d=await jsonp(url);
+      var diff=(d.data&&d.data.diff)||[];
+      if(!diff.length) break;
+      for(var i=0;i<diff.length;i++) merged[diff[i].f12]=[diff[i].f12, diff[i].f14, +diff[i].f62];
+      if(diff.length<100) break;
+    }catch(e){ break; }
+  }
+  return Object.values(merged).sort(function(a,b){return b[2]-a[2];});
+}
+
+async function refreshFlow(){
+  var industry=document.getElementById('flowKind').value==='industry';
+  var sectors=await fetchFlowData(industry);
+  var real=sectors.filter(function(r){return industry?true:!isBasket(r[1]);});
+  var nin=real.filter(function(r){return r[2]>0;}).length;
+  var nout=real.filter(function(r){return r[2]<0;}).length;
+  var topIn=real.find(function(r){return r[2]>0;});
+  var topOut=real.slice().reverse().find(function(r){return r[2]<0;});
+  var cn=function(n){return industry?n.replace(/[ⅡⅢ]+$/,''):n;};
+  document.getElementById('flowCardIn').textContent=topIn?cn(topIn[1]):'—';
+  document.getElementById('flowCardInMeta').textContent=topIn?fmtMoney(topIn[2]/1e8):'—';
+  document.getElementById('flowCardOut').textContent=topOut?cn(topOut[1]):'—';
+  document.getElementById('flowCardOutMeta').textContent=topOut?fmtMoney(topOut[2]/1e8):'—';
+  document.getElementById('flowCardNin').textContent=nin;
+  document.getElementById('flowCardNinMeta').textContent='共 '+real.length+' 板块';
+  document.getElementById('flowCardNout').textContent=nout;
+  // Top 10 inflow
+  var inflow=real.filter(function(r){return r[2]>0;}).slice(0,10);
+  var htmlIn='';
+  inflow.forEach(function(r,i){
+    var name=cn(r[1]); var v=r[2]/1e8;
+    htmlIn+='<tr><td class="c">'+(i+1)+'</td><td>'+name+'</td><td class="c up">'+fmtMoney(v)+'</td></tr>';
+  });
+  document.getElementById('flowTableIn').querySelector('tbody').innerHTML=htmlIn||'<tr><td colspan="3" class="c" style="color:var(--t3)">无数据</td></tr>';
+  // Top 10 outflow
+  var outflow=real.filter(function(r){return r[2]<0;}).sort(function(a,b){return a[2]-b[2];}).slice(0,10);
+  var htmlOut='';
+  outflow.forEach(function(r,i){
+    var name=cn(r[1]); var v=r[2]/1e8;
+    htmlOut+='<tr><td class="c">'+(i+1)+'</td><td>'+name+'</td><td class="c dn">'+fmtMoney(v)+'</td></tr>';
+  });
+  document.getElementById('flowTableOut').querySelector('tbody').innerHTML=htmlOut||'<tr><td colspan="3" class="c" style="color:var(--t3)">无数据</td></tr>';
+}
+document.getElementById('flowRefreshBtn').onclick=refreshFlow;
+document.getElementById('flowKind').onchange=refreshFlow;
+document.getElementById('flowAuto').onchange=function(){
+  if(this.checked){ flowTimer=setInterval(refreshFlow,300000); }
+  else{ if(flowTimer){clearInterval(flowTimer); flowTimer=null;} }
+};
+
+// Calculator
+document.getElementById('calcBtn').onclick=function(){
+  var buy=parseFloat(document.getElementById('buyPrice').value);
+  var stop=parseFloat(document.getElementById('calcStop').value);
+  var profit=parseFloat(document.getElementById('calcProfit').value);
+  if(!buy||!stop||!profit) return;
+  var sp=buy*(1-stop/100), pp=buy*(1+profit/100), ratio=profit/stop;
+  document.getElementById('calcResult').style.display='block';
+  document.getElementById('stopPrice').textContent=sp.toFixed(3);
+  document.getElementById('stopMeta').textContent='亏损 '+stop+'% = '+((buy-sp)*10000).toFixed(0)+' 元/万';
+  document.getElementById('profitPrice').textContent=pp.toFixed(3);
+  document.getElementById('profitMeta').textContent='盈利 '+profit+'% = '+((pp-buy)*10000).toFixed(0)+' 元/万';
+  document.getElementById('ratio').textContent='1:'+ratio.toFixed(1);
+  document.getElementById('ratioMeta').textContent=ratio>=1.5?'✓ 盈亏比良好':ratio>=1?'⚠ 盈亏比偏低':'✗ 盈亏比不足';
+};
+
+// ===== 今日重大事件（东方财富财经日历 RPT_CPH_FECALENDAR）=====
+function jsonpDC(url, timeout){
+  timeout = timeout || 12000;
+  return new Promise(function(resolve, reject){
+    var cb='__dc'+Date.now()+'_'+Math.floor(Math.random()*100000);
+    var s=document.createElement('script'); var done=false;
+    var clean=function(){ try{delete window[cb]}catch(e){window[cb]=undefined} try{s.remove();}catch(e){} };
+    window[cb]=function(d){ done=true; clean(); resolve(d); };
+    s.onerror=function(){ if(!done){clean(); reject(new Error('network'));} };
+    s.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+cb;
+    setTimeout(function(){ if(!done){clean(); reject(new Error('timeout'));} }, timeout);
+    document.body.appendChild(s);
+  });
+}
+function evtTime(s){ if(!s) return ''; var d=new Date(String(s).replace(' ','T')); if(isNaN(d)) return ''; var hh=('0'+d.getHours()).slice(-2), mm=('0'+d.getMinutes()).slice(-2); return (hh+':'+mm==='00:00')?'':(hh+':'+mm); }
+function evtDayLabel(s){
+  if(!s) return '';
+  var d=new Date(String(s).replace(' ','T')); if(isNaN(d)) return '';
+  var today=new Date(); today.setHours(0,0,0,0); d.setHours(0,0,0,0);
+  var diff=Math.round((d-today)/86400000);
+  if(diff===0) return '今日'; if(diff===1) return '明日';
+  var wd=['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  return (diff>0?('+'+diff+'天 '):'')+wd;
+}
+function evtTypeBadge(type, name){
+  if(type==='经济数据') return '<span class="badge b-blue">经济数据</span>';
+  if(type==='行业会议') return '<span class="badge" style="background:rgba(140,125,255,.15);color:#c4b5fd;border:1px solid rgba(140,125,255,.3)">会议</span>';
+  if(type==='其他'){ if(name&&name.indexOf('新股申购')>=0) return '<span class="badge b-green">新股</span>'; return '<span class="badge b-amber">其他</span>'; }
+  return '<span class="badge b-gray">事件</span>';
+}
+// 是否影响全球资金流动性（美联储/央行/利率/非农/通胀等）→ 置顶
+function evtGlobalFlag(r){
+  var txt=((r.FE_NAME||'')+' '+(r.CONTENT||'')+' '+(r.FE_TYPE||'')).toLowerCase();
+  var kw=['美联储','联邦储备','议息','加息','降息','利率决议','利率','流动性','缩表','扩表','鲍威尔','非农','失业率','初请','失业金','cpi','ppi','gdp','pmi','ism','制造业','服务业','通胀','消费者信心','零售销售','贸易帐','新屋','成屋','工业产出','adp','markit','货币政策','货币供应','央行','欧央行','欧洲央行','日本央行','英国央行','联储','汇率','美元','美债','国债收益率','消费者物价','存款准备金','mlf','lpr','量化宽松','qe','货币政策报告'];
+  for(var i=0;i<kw.length;i++){ if(txt.indexOf(kw[i])>=0) return true; }
+  return false;
+}
+function renderEvtList(list, isPri){
+  return list.map(function(r){
+    var nm=r.FE_NAME||''; var type=r.FE_TYPE; var content=(r.CONTENT||'').trim();
+    var t=evtTime(r.START_DATE); var dl=evtDayLabel(r.START_DATE);
+    var isMajor=(nm.indexOf('新股申购')>=0)||content.length>0||type==='行业会议';
+    var accent=isPri?'border-left:3px solid var(--red);':(isMajor?'border-left:3px solid var(--blue);':'border-left:3px solid var(--line);');
+    var timeCell=t?'<span style="color:var(--cyan);font-weight:700">'+t+'</span>':'<span style="color:var(--t4)">'+dl+'</span>';
+    var liq=isPri?' <span class="badge" style="background:rgba(255,77,79,.15);color:var(--red2);border:1px solid rgba(255,77,79,.3)">🌍流动性</span>':'';
+    var row='<div style="padding:8px 10px;margin-bottom:6px;background:'+(isPri?'rgba(255,77,79,.06)':'var(--bg2)')+';border-radius:8px;'+accent+'">';
+    row+='<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline">';
+    row+='<div style="font-size:13px;color:var(--t1);font-weight:600">'+nm+'</div>';
+    row+='<div style="font-size:12px;white-space:nowrap">'+timeCell+'</div></div>';
+    row+='<div style="margin-top:4px;font-size:11px;color:var(--t3)">'+evtTypeBadge(type,nm)+liq+' <span style="margin-left:6px">'+dl+'</span>'+(r.CITY?' · '+r.CITY:'');
+    if(content) row+='</div><div style="margin-top:3px;font-size:12px;color:var(--t2);line-height:1.5">'+content.slice(0,60)+(content.length>60?'…':'')+'</div>';
+    else row+='</div>';
+    row+='</div>';
+    return row;
+  }).join('');
+}
+async function loadMajorEvents(){
+  var loading=document.getElementById('eventsLoading'), body=document.getElementById('eventsBody');
+  if(loading) loading.style.display='block';
+  if(body) body.style.display='none';
+  try{
+    var today=new Date(); today.setHours(0,0,0,0);
+    var end=new Date(today.getTime()+3*86400000);
+    function fs(x){ return x.getFullYear()+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+('0'+x.getDate()).slice(-2)+' 00:00:00'; }
+    var filter="(END_DATE>='"+fs(today)+"')(START_DATE<'"+fs(end)+"')";
+    var url='https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_CPH_FECALENDAR&columns=ALL&pageSize=80&sortColumns=START_DATE&sortTypes=1&source=WEB&client=WEB&filter='+encodeURIComponent(filter);
+    var d=await jsonpDC(url, 12000);
+    var rows=(d&&d.result&&d.result.data)||[];
+    if(!rows.length){ if(body) body.innerHTML='<div class="loading" style="padding:16px;color:var(--t3)">近期无重大事件</div>'; }
+    else{
+      var pri=[], rest=[];
+      rows.forEach(function(r){ (evtGlobalFlag(r)?pri:rest).push(r); });
+      var html='';
+      if(pri.length){
+        html+='<div style="font-size:12px;font-weight:700;color:var(--red2);margin:2px 2px 8px">🌍 全球资金流动性（美联储 / 央行 / 利率 / 非农 / 通胀）— 重点关注 · 置顶</div>';
+        html+=renderEvtList(pri, true);
+      }
+      if(rest.length){
+        if(pri.length) html+='<div style="font-size:12px;font-weight:700;color:var(--t3);margin:12px 2px 8px">📋 其他重大事件</div>';
+        html+=renderEvtList(rest, false);
+      }
+      if(body) body.innerHTML=html;
+    }
+    if(body) body.style.display='block';
+  }catch(e){
+    if(body) body.innerHTML='<div class="loading" style="padding:16px;color:var(--t3)">重大事件加载失败，请点击刷新重试</div>';
+    if(body) body.style.display='block';
+  }
+  if(loading) loading.style.display='none';
+}
+
+// Init
+loadOverviewFlow(); // independent, loads immediately
+autoScanOverview();
+renderEtfTable();
+refreshFlow();
+renderGlobal(); // independent global market scan
+loadMajorEvents(); // independent major-events calendar
+if(document.getElementById('flowAuto').checked) flowTimer=setInterval(refreshFlow,300000);
+document.getElementById('refreshBtn').onclick=function(){ location.reload(); };
+document.getElementById('globalRefreshBtn').onclick=function(){ GLOBAL_READY=false; renderGlobal(); };
+document.getElementById('eventsRefreshBtn').onclick=loadMajorEvents;
+(function(){ var d=new Date(); var p=function(x){return ('0'+x).slice(-2);}; var el=document.getElementById('updateTime'); if(el) el.textContent=d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes()); })();
+</script>
+</body>
+</html>

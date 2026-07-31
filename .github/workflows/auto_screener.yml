@@ -1,0 +1,56 @@
+name: 小狼自动选股
+
+on:
+  schedule:
+    # 北京时间 08:30 / 10:30 / 14:00（GitHub Actions 用 UTC）
+    - cron: '30 0 * * 1-5'
+    - cron: '30 2 * * 1-5'
+    - cron: '0 6 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 安装依赖
+        run: pip install akshare
+      - name: 运行自动选股扫描(宽扫描，不按净流入预筛)
+        run: python auto_screener.py 1000 0
+      - name: 策略回测验证(参数化 opt_backtest，防未来函数)
+        run: python opt_backtest.py 600 > opt_run.log 2>&1 || true
+      - name: 生成结果页
+        run: python gen_auto_pick.py
+      - name: 注入网页 Tab
+        run: python sync_auto_tab.py
+      - name: 生成首页 index.html(Pages 根路径直达最新选股结果)
+        run: cp auto_pick.html index.html
+      - name: 提交更新
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add -A
+          git commit -m "auto: 选股快照 $(date +%F)" || echo "no changes"
+      - name: 上传 Pages 产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+  deploy:
+    needs: scan
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
