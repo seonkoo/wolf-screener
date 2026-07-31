@@ -2,10 +2,10 @@ name: 小狼自动选股
 
 on:
   schedule:
-    # 北京时间 08:30 / 10:30 / 14:00（GitHub Actions 用 UTC）
-    - cron: '30 0 * * 1-5'
-    - cron: '30 2 * * 1-5'
-    - cron: '0 6 * * 1-5'
+    # 北京时间 每天 08:30 / 10:30 / 14:00（GitHub Actions 用 UTC，去掉 1-5 即每天跑）
+    - cron: '30 0 * * *'
+    - cron: '30 2 * * *'
+    - cron: '0 6 * * *'
   workflow_dispatch:
 
 permissions:
