@@ -1953,6 +1953,65 @@ function evtGlobalFlag(r){
   for(var i=0;i<kw.length;i++){ if(txt.indexOf(kw[i])>=0) return true; }
   return false;
 }
+// ===== 系统自动研判（规则引擎：基于事件标题/内容关键词给出方向性观点）=====
+function evtView(r){
+  var nm=(r.FE_NAME||''); var ct=(r.CONTENT||'');
+  var s=(nm+' '+ct); var L=s.toLowerCase();
+  var out={tone:'neu', tag:'关注', text:''};
+  function set(tone,tag,text){ out.tone=tone; out.tag=tag; out.text=text; }
+  if(nm.indexOf('新股申购')>=0 || L.indexOf('新股申购')>=0){
+    set('neg','中性偏空','新股集中申购短期对二级市场有抽血效应，资金面阶段性承压，宜控制仓位、避免追高。'); return out;
+  }
+  var cn_ease=(L.indexOf('降准')>=0)||(L.indexOf('降息')>=0)||(nm.indexOf('LPR')>=0&&s.indexOf('下调')>=0)||(L.indexOf('mlf')>=0&&s.indexOf('下调')>=0)||(L.indexOf('逆回购利率')>=0&&s.indexOf('下调')>=0);
+  var cn_tight=(nm.indexOf('LPR')>=0&&s.indexOf('上调')>=0)||(L.indexOf('mlf')>=0&&s.indexOf('上调')>=0)||(L.indexOf('正回购')>=0)||(L.indexOf('加息')>=0&&L.indexOf('央行')>=0);
+  if(cn_ease){ set('pos','利好','国内货币宽松信号（降准/降息/利率下调），改善A股流动性环境，红利与成长板块均受益，债市偏多。'); return out; }
+  if(cn_tight){ set('neg','利空','国内流动性边际收紧（利率上调），短期压制估值，关注资金利率与北向流向。'); return out; }
+  var fed=(L.indexOf('美联储')>=0)||(L.indexOf('联邦储备')>=0)||(L.indexOf('议息')>=0)||(L.indexOf('利率决议')>=0)||(L.indexOf('fomc')>=0)||(L.indexOf('欧央行')>=0)||(L.indexOf('欧洲央行')>=0)||(L.indexOf('日本央行')>=0)||(L.indexOf('英国央行')>=0)||(L.indexOf('鲍威尔')>=0)||(L.indexOf('联储')>=0);
+  if(fed){
+    if(L.indexOf('降息')>=0||L.indexOf('宽松')>=0||L.indexOf('qe')>=0||L.indexOf('扩表')>=0){ set('pos','利好','海外央行宽松/降息预期升温，全球流动性改善，利好A股成长、港股、黄金与数字货币，压制美元美债。'); return out; }
+    if(L.indexOf('加息')>=0||L.indexOf('缩表')>=0||L.indexOf('收紧')>=0){ set('neg','利空','海外央行收紧/加息信号，全球流动性承压，利空风险资产与黄金，美元美债走强，新兴市场承压。'); return out; }
+    set('neu','关注','央行议息/利率决议待揭晓，市场已部分定价；偏鸽则利好风险资产、偏鹰则利空，公布前宜观望。'); return out;
+  }
+  var cpi=(L.indexOf('cpi')>=0)||(L.indexOf('通胀')>=0)||(L.indexOf('消费者物价')>=0)||(L.indexOf('ppi')>=0)||(L.indexOf('物价')>=0);
+  var nfp=(L.indexOf('非农')>=0)||(L.indexOf('失业率')>=0)||(L.indexOf('初请')>=0)||(L.indexOf('失业金')>=0)||(L.indexOf('adp')>=0);
+  var growth=(L.indexOf('gdp')>=0)||(L.indexOf('pmi')>=0)||(L.indexOf('ism')>=0)||(L.indexOf('制造业')>=0)||(L.indexOf('服务业')>=0)||(L.indexOf('零售销售')>=0)||(L.indexOf('工业产出')>=0);
+  if(cpi){
+    if(L.indexOf('超预期')>=0||L.indexOf('高于预期')>=0||L.indexOf('走高')>=0||L.indexOf('回升')>=0||L.indexOf('升温')>=0){ set('neg','利空','通胀强于预期，强化紧缩/加息路径，压制风险资产与黄金，美债收益率上行。'); return out; }
+    if(L.indexOf('低于预期')>=0||L.indexOf('回落')>=0||L.indexOf('降温')>=0||L.indexOf('下行')>=0||L.indexOf('放缓')>=0){ set('pos','利好','通胀降温/低于预期，打开宽松空间，利好成长股与黄金，美债收益率回落。'); return out; }
+    set('neu','关注','通胀数据公布在即，强弱将左右利率预期，公布前保持观望。'); return out;
+  }
+  if(nfp){
+    if(L.indexOf('超预期')>=0||L.indexOf('高于预期')>=0||L.indexOf('强劲')>=0||L.indexOf('走强')>=0){ set('neg','利空','就业强劲强化经济韧性，支撑高利率更久，利空黄金与成长股。'); return out; }
+    if(L.indexOf('不及预期')>=0||L.indexOf('低于预期')>=0||L.indexOf('走弱')>=0||L.indexOf('上升')>=0||L.indexOf('攀升')>=0){ set('pos','利好','就业走弱抬升宽松/降息预期，利好黄金、成长股与债券。'); return out; }
+    set('neu','关注','就业数据将验证经济冷暖、影响降息节奏，公布前观望。'); return out;
+  }
+  if(growth){
+    if(L.indexOf('超预期')>=0||L.indexOf('高于预期')>=0||L.indexOf('扩张')>=0||L.indexOf('回升')>=0||L.indexOf('走强')>=0){ set('pos','利好','经济数据好于预期，衰退担忧缓和，利好周期/消费与风险偏好，但或推迟降息。'); return out; }
+    if(L.indexOf('不及预期')>=0||L.indexOf('低于预期')>=0||L.indexOf('萎缩')>=0||L.indexOf('收缩')>=0||L.indexOf('走弱')>=0||L.indexOf('荣枯线下方')>=0){ set('neu','关注','经济走弱，增长担忧上升，短期压制周期股但抬升政策宽松预期，结构分化。'); return out; }
+    set('neu','关注','基本面数据公布在即，强弱影响盈利预期与政策取向，观望。'); return out;
+  }
+  if(L.indexOf('关税')>=0||L.indexOf('贸易摩擦')>=0||L.indexOf('贸易战')>=0){ set('neg','利空','贸易摩擦/关税扰动外部需求与风险偏好，出口链与新兴市场承压，关注反制与谈判进展。'); return out; }
+  if(L.indexOf('贸易协定')>=0||L.indexOf('经贸协议')>=0||L.indexOf('缓和')>=0){ set('pos','利好','贸易关系缓和，外部不确定性下降，利好出口链与风险偏好。'); return out; }
+  if(L.indexOf('财报')>=0||L.indexOf('业绩')>=0||L.indexOf('季报')>=0||r.FE_TYPE==='行业会议'){ set('neu','关注','属个股/行业层面事件，关注超预期方向与指引，对大盘系统性影响有限。'); return out; }
+  set('neu','关注','事件方向需结合落地细节判断，建议跟踪后续官方表述与市场反应。'); return out;
+}
+function evtSummary(pri, rest){
+  var all=pri.concat(rest); var n=all.length, np=pri.length;
+  var cnt={pos:0,neg:0,neu:0};
+  all.forEach(function(r){ var v=evtView(r); cnt[v.tone]=(cnt[v.tone]||0)+1; });
+  var focus=pri.slice(0,3).concat(rest.slice(0,2));
+  var focusNames=focus.map(function(r){ return (r.FE_NAME||'').replace(/（.*?）/g,''); }).filter(Boolean);
+  var toneWord=(cnt.pos>cnt.neg)?'整体偏利好（宽松/数据向好占上风）':(cnt.neg>cnt.pos?'整体偏利空（收紧/风险占上风）':'多空交织、以中性观望为主');
+  var html='<div style="margin:2px 0 10px;padding:10px 12px;border-radius:10px;background:linear-gradient(135deg,rgba(56,139,253,.10),rgba(140,125,255,.08));border:1px solid rgba(56,139,253,.25)">';
+  html+='<div style="font-size:13px;font-weight:700;color:var(--t1);margin-bottom:4px">📊 本期事件综述 <span style="font-weight:400;font-size:11px;color:var(--t3)">· 系统自动研判，非投资建议</span></div>';
+  html+='<div style="font-size:12px;color:var(--t2);line-height:1.6">共 <b>'+n+'</b> 条重大事件，其中 <b style="color:var(--red2)">'+np+' 条</b> 影响全球资金流动性，'+toneWord+'。';
+  if(focusNames.length) html+=' 当前焦点：'+focusNames.join('、')+'。';
+  html+='</div><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">';
+  html+='<span class="badge" style="background:rgba(255,77,79,.15);color:var(--red2);border:1px solid rgba(255,77,79,.3)">利好 '+cnt.pos+'</span>';
+  html+='<span class="badge" style="background:rgba(82,196,26,.15);color:var(--green2);border:1px solid rgba(82,196,26,.3)">利空 '+cnt.neg+'</span>';
+  html+='<span class="badge b-amber">关注 '+cnt.neu+'</span></div></div>';
+  return html;
+}
 function renderEvtList(list, isPri){
   return list.map(function(r){
     var nm=r.FE_NAME||''; var type=r.FE_TYPE; var content=(r.CONTENT||'').trim();
@@ -1966,8 +2025,12 @@ function renderEvtList(list, isPri){
     row+='<div style="font-size:13px;color:var(--t1);font-weight:600">'+nm+'</div>';
     row+='<div style="font-size:12px;white-space:nowrap">'+timeCell+'</div></div>';
     row+='<div style="margin-top:4px;font-size:11px;color:var(--t3)">'+evtTypeBadge(type,nm)+liq+' <span style="margin-left:6px">'+dl+'</span>'+(r.CITY?' · '+r.CITY:'');
-    if(content) row+='</div><div style="margin-top:3px;font-size:12px;color:var(--t2);line-height:1.5">'+content.slice(0,60)+(content.length>60?'…':'')+'</div>';
+    if(content) row+='</div><div style="margin-top:3px;font-size:12px;color:var(--t2);line-height:1.5">'+content.slice(0,80)+(content.length>80?'…':'')+'</div>';
     else row+='</div>';
+    var v=evtView(r);
+    var vbg=v.tone==='pos'?'rgba(255,77,79,.12)':(v.tone==='neg'?'rgba(82,196,26,.12)':'rgba(56,139,253,.12)');
+    var vcol=v.tone==='pos'?'var(--red2)':(v.tone==='neg'?'var(--green2)':'var(--blue)');
+    row+='<div style="margin-top:5px;font-size:12px;line-height:1.5;background:'+vbg+';border-radius:6px;padding:5px 8px;color:'+vcol+'">💡 <b>'+v.tag+'</b> · '+v.text+'</div>';
     row+='</div>';
     return row;
   }).join('');
@@ -1989,6 +2052,7 @@ async function loadMajorEvents(){
       var pri=[], rest=[];
       rows.forEach(function(r){ (evtGlobalFlag(r)?pri:rest).push(r); });
       var html='';
+      html+=evtSummary(pri, rest);
       if(pri.length){
         html+='<div style="font-size:12px;font-weight:700;color:var(--red2);margin:2px 2px 8px">🌍 全球资金流动性（美联储 / 央行 / 利率 / 非农 / 通胀）— 重点关注 · 置顶</div>';
         html+=renderEvtList(pri, true);
