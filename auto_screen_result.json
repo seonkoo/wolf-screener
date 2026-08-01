@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-01 08:06",
+ "generated": "2026-08-01 14:53",
  "summary": {
   "cand": 1000,
   "A": 46,
@@ -33342,11 +33342,36 @@
     "proxy": true
    },
    "l4": {
-    "status": "wait",
-    "flow": "",
-    "detail": "资金流数据不足"
+    "status": "neutral",
+    "flow": "资金mixed",
+    "detail": "资金流向不明朗 (部分为价量估算)"
    },
-   "flows": [],
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 471133.9840367968,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": 945363.0161117063,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": 2687582.749090905,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": 282176.7326732713,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": -3343613.0
+    }
+   ],
    "fund": {
     "good": false,
     "detail": ""
@@ -53973,67 +53998,6 @@
    }
   },
   {
-   "code": "000883",
-   "name": "湖北能源",
-   "price": 4.72,
-   "change": -0.84,
-   "inflow": 14064869.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 4.342,
-   "target": 5.428,
-   "l1": {
-    "status": "fail",
-    "greed": 68.3,
-    "detail": "自建贪婪指数 68.3% → 68.3"
-   },
-   "l2": {
-    "status": "pass",
-    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 站上MA20",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "pass",
-    "flow": "主力回流",
-    "detail": "最近一日主力净流入 0.14亿 (部分为价量估算)"
-   },
-   "flows": [
-    {
-     "date": "2026-07-27",
-     "main": 633999.6008583555,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-28",
-     "main": -1434065.0214592223,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-29",
-     "main": 3857552.2516268776,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-30",
-     "main": 1384640.668789804,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-31",
-     "main": 14064869.0
-    }
-   ],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "000893",
    "name": "亚钾国际",
    "price": 51.86,
@@ -54087,6 +54051,67 @@
     {
      "date": "2026-07-31",
      "main": -15393451.0
+    }
+   ],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
+   "code": "000883",
+   "name": "湖北能源",
+   "price": 4.72,
+   "change": -0.84,
+   "inflow": 14064869.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 4.342,
+   "target": 5.428,
+   "l1": {
+    "status": "fail",
+    "greed": 68.3,
+    "detail": "自建贪婪指数 68.3% → 68.3"
+   },
+   "l2": {
+    "status": "pass",
+    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
+   },
+   "l3": {
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 站上MA20",
+    "tech": 1,
+    "proxy": true
+   },
+   "l4": {
+    "status": "pass",
+    "flow": "主力回流",
+    "detail": "最近一日主力净流入 0.14亿 (部分为价量估算)"
+   },
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 633999.6008583555,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": -1434065.0214592223,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": 3857552.2516268776,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": 1384640.668789804,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": 14064869.0
     }
    ],
    "fund": {
@@ -57572,67 +57597,6 @@
    }
   },
   {
-   "code": "002080",
-   "name": "中材科技",
-   "price": 43.14,
-   "change": 1.91,
-   "inflow": 289442912.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 39.689,
-   "target": 49.611,
-   "l1": {
-    "status": "fail",
-    "greed": 70.2,
-    "detail": "自建贪婪指数 70.2% → 70.2"
-   },
-   "l2": {
-    "status": "wait",
-    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 布林中轨附近",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "pass",
-    "flow": "主力回流",
-    "detail": "最近一日主力净流入 2.89亿 (部分为价量估算)"
-   },
-   "flows": [
-    {
-     "date": "2026-07-27",
-     "main": 210031372.10891482,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-28",
-     "main": -132894808.3125,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-29",
-     "main": -172363056.80293834,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-30",
-     "main": -82700893.9628013,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-31",
-     "main": 289442912.0
-    }
-   ],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "000691",
    "name": "亚太实业",
    "price": 9.27,
@@ -57686,6 +57650,67 @@
     {
      "date": "2026-07-31",
      "main": 642787.0
+    }
+   ],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
+   "code": "002080",
+   "name": "中材科技",
+   "price": 43.14,
+   "change": 1.91,
+   "inflow": 289442912.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 39.689,
+   "target": 49.611,
+   "l1": {
+    "status": "fail",
+    "greed": 70.2,
+    "detail": "自建贪婪指数 70.2% → 70.2"
+   },
+   "l2": {
+    "status": "wait",
+    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
+   },
+   "l3": {
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 布林中轨附近",
+    "tech": 1,
+    "proxy": true
+   },
+   "l4": {
+    "status": "pass",
+    "flow": "主力回流",
+    "detail": "最近一日主力净流入 2.89亿 (部分为价量估算)"
+   },
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 210031372.10891482,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": -132894808.3125,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": -172363056.80293834,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": -82700893.9628013,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": 289442912.0
     }
    ],
    "fund": {
