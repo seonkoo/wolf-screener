@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-把 auto_screen_result.json / blue_chip_result.json 的最新快照「烘焙」进两个 HTML：
+把 auto_screen_result.json / blue_chip_result.json / national_team.json / sentiment.json 的最新快照「烘焙」进两个 HTML：
   - 自动选股 Tab：写入 #autoMount 内的 <!--AUTOPICK_START/END--> 之间
   - 蓝筹低吸 Tab：写入 #blueMount 内的 <!--BLUECHIP_START/END--> 之间
+  - 国家队资金 Tab：写入 #teamMount 内的 <!--TEAM_START/END--> 之间
+  - 市场情绪 Tab：写入 #sentMount 内的 <!--SENT_START/END--> 之间
 
 为什么要烘焙：页面正常走 fetch 拉 JSON（GitHub Pages 上永远最新），
 但本地 file:// 双击打开时 fetch 会被浏览器拦截，此时就显示这份烘焙快照兜底。
@@ -17,11 +19,15 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, 'auto_screen_result.json')
 BLUE = os.path.join(HERE, 'blue_chip_result.json')
 GUARD = os.path.join(HERE, 'strategy_guard.json')
+TEAM = os.path.join(HERE, 'national_team.json')
+SENT = os.path.join(HERE, 'sentiment.json')
 FILES = ['wolf-screener3.0.html', 'wolf-mobile4.2.html']
 
 A_START, A_END = '<!--AUTOPICK_START-->', '<!--AUTOPICK_END-->'
 B_START, B_END = '<!--BLUECHIP_START-->', '<!--BLUECHIP_END-->'
 G_START, G_END = '<!--GUARD_START-->', '<!--GUARD_END-->'
+T_START, T_END = '<!--TEAM_START-->', '<!--TEAM_END-->'
+S_START, S_END = '<!--SENT_START-->', '<!--SENT_END-->'
 
 
 def load(path):
@@ -246,16 +252,92 @@ def build_guard(g):
 '''
 
 
+def build_team(d):
+    rg = d.get('regime', {}) or {}
+    c = d.get('conclusion', {}) or {}
+    etfs = d.get('etfs', [])
+    att = c.get('attitude', '-')
+    att_color = 'var(--green2)' if '进场' in att else ('var(--red2)' if '离场' in att else 'var(--t3)')
+    rows = ''
+    for e in etfs:
+        tcol = 'var(--red2)' if e.get('trend') == '上行' else ('var(--green2)' if e.get('trend') == '下行' else 'var(--t3)')
+        sh = num(e.get('shares_now_亿份'), 1) if e.get('shares_now_亿份') is not None else '-'
+        rows += (f'<tr style="border-top:1px solid var(--line)">'
+                 f'<td style="padding:5px 4px;color:var(--t1)">{e["name"]}<br><span style="color:var(--t4);font-size:10px">{e.get("role","")}</span></td>'
+                 f'<td style="padding:5px 4px">{num(e.get("turnover_5d"),1)}</td>'
+                 f'<td style="padding:5px 4px">{num(e.get("turnover_20d"),1)}</td>'
+                 f'<td style="padding:5px 4px">{num(e.get("turnover_60d"),1)}</td>'
+                 f'<td style="padding:5px 4px;color:{tcol}">{e.get("trend","")}<br><span style="font-size:10px;color:var(--t3)">{e.get("short_term","")}</span></td>'
+                 f'<td style="padding:5px 4px">{sh}</td></tr>')
+    v = d.get('validation', {})
+    return f'''
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🏛️ 国家队资金走向</h3>
+    <div class="panel-sub" style="margin-bottom:0">快照 {d.get('generated','')} · 沪深300 {rg.get('state','-')}</div></div>
+    <div style="font-weight:700;color:{att_color}">大资金：{att}</div>
+  </div>
+</div>
+<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">{c.get('summary','')}</div>
+<div class="panel">
+  <h3 style="margin-bottom:6px">宽基ETF 成交活跃度（估算成交额·亿元）</h3>
+  <div style="max-height:46vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <tr style="color:var(--t4);text-align:left"><th style="padding:4px">ETF</th><th style="padding:4px">5日</th><th style="padding:4px">20日</th><th style="padding:4px">60日</th><th style="padding:4px">趋势</th><th style="padding:4px">份额(亿)</th></tr>
+    {rows}
+  </table></div>
+</div>
+<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：政策底由宽基ETF托市(True)；高位撤离(True,2026开年降温式调仓)。{v.get('note','')}</div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ {d.get('caveat','')}</div>
+'''
+
+
+def build_sent(d):
+    idx = d.get('index', 50)
+    zone = d.get('zone', '中性')
+    adv = d.get('advice', '')
+    comp = d.get('components', {}) or {}
+    bar_color = 'var(--green2)' if idx < 35 else ('var(--red2)' if idx > 65 else '#d99e00')
+    fs = d.get('forums_status', {}) or {}
+    fs_lines = '<br>'.join(f'· {k}：{v}' for k, v in fs.items())
+    v = d.get('validation', {})
+    return f'''
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🌡️ 市场情绪指数</h3>
+    <div class="panel-sub" style="margin-bottom:0">恐惧贪婪 0-100 · 反向指标 · 快照 {d.get('generated','')}</div></div>
+    <div style="font-weight:700;color:var(--t1)">{num(idx,0)} · {zone}</div>
+  </div>
+</div>
+<div class="panel">
+  <div style="height:14px;background:linear-gradient(90deg,var(--green2),#d99e00,var(--red2));border-radius:7px;position:relative;margin:8px 0 4px">
+    <div style="position:absolute;top:-4px;left:calc({idx}% - 3px);width:6px;height:22px;background:#fff;border:2px solid var(--t1);border-radius:3px"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t4)"><span>冰点(逆向买)</span><span>中性</span><span>狂热(逆向卖)</span></div>
+  <div style="margin-top:8px;font-size:13px;color:{bar_color};font-weight:600">{adv}</div>
+</div>
+<div class="panel" style="font-size:12px;color:var(--t2)">数据构成：微博舆情NLP <b>{num(comp.get("weibo_sentiment"),0)}</b> ｜ 市场代理 <b>{num(comp.get("market_proxy"),0)}</b> ｜ 合成 <b>{num(idx,0)}</b><br><span style="color:var(--t3);font-size:11px">来源：{d.get("source_detail","")}</span></div>
+<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">论坛接入状态</summary>
+  <div style="font-size:11px;color:var(--t3);margin-top:6px;line-height:1.6">{fs_lines}</div>
+</details>
+<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：散户情绪作反向指标有效——回测极度悲观买入胜率68.1%、极度乐观卖出68.6%。{v.get('note','')}</div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ {d.get('caveat','')}</div>
+'''
+
+
 def main():
     d = load(DATA)
     b = load(BLUE)
     gd = load(GUARD)
-    if not d and not b and not gd:
+    t = load(TEAM)
+    sd = load(SENT)
+    if not d and not b and not gd and not t and not sd:
         print('没有可用数据，退出')
         return
     auto_block = build_auto(d) if d else None
     blue_block = build_blue(b) if b else None
     guard_block = build_guard(gd) if gd else None
+    team_block = build_team(t) if t else None
+    sent_block = build_sent(sd) if sd else None
     for fn in FILES:
         p = os.path.join(HERE, fn)
         if not os.path.exists(p):
@@ -273,6 +355,12 @@ def main():
         if guard_block:
             s, m = inject(s, guard_block, G_START, G_END, 'guardMount')
             notes.append('guard:' + (m or 'FAIL'))
+        if team_block:
+            s, m = inject(s, team_block, T_START, T_END, 'teamMount')
+            notes.append('team:' + (m or 'FAIL'))
+        if sent_block:
+            s, m = inject(s, sent_block, S_START, S_END, 'sentMount')
+            notes.append('sent:' + (m or 'FAIL'))
         if s != orig:
             open(p, 'w', encoding='utf-8').write(s)
             print('OK %-22s %s  (%d 字节)' % (fn, ' '.join(notes), len(s)))

@@ -21,6 +21,10 @@ LOADING_AUTO = ('<div class="panel"><div class="loading"><div class="spinner"></
                 '<div style="margin-top:8px">正在加载自动选股数据…</div></div></div>')
 LOADING_BLUE = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
                 '<div style="margin-top:8px">正在加载蓝筹低吸数据…</div></div></div>')
+LOADING_TEAM = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
+                '<div style="margin-top:8px">正在加载国家队资金数据…</div></div></div>')
+LOADING_SENT = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
+                '<div style="margin-top:8px">正在加载市场情绪数据…</div></div></div>')
 
 # ---- 自动选股 pane（fetch 渲染 + 离线兜底标记）----
 AUTO_PANE = '''<section class="pane" id="pane-auto">
@@ -36,6 +40,20 @@ BLUE_PANE = '''<section class="pane" id="pane-bluechip">
 </section>'''
 
 BLUE_TAB_BTN = '  <button class="tab" data-tab="bluechip">💎 蓝筹低吸</button>'
+TEAM_TAB_BTN = '  <button class="tab" data-tab="team">🏛️ 国家队资金</button>'
+SENT_TAB_BTN = '  <button class="tab" data-tab="sent">🌡️ 情绪指数</button>'
+
+# ---- 国家队资金 pane ----
+TEAM_PANE = '''<section class="pane" id="pane-team">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🏛️ 国家队资金走向：中证1000/科创50/创业板/沪深300 宽基ETF 成交活跃度 + 实时份额 + 市场状态，推断大资金进场/离场。结论为活跃度推断，非精确持仓复刻，不构成投资建议。</div>
+  <div id="teamMount"><!--TEAM_START-->''' + LOADING_TEAM + '''<!--TEAM_END--></div>
+</section>'''
+
+# ---- 市场情绪 pane ----
+SENT_PANE = '''<section class="pane" id="pane-sent">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🌡️ 市场情绪指数（恐惧贪婪 0-100，反向指标）：冰点逆向买入、狂热逆向卖出。数据=微博财经NLP舆情 + 市场代理。非投资建议。</div>
+  <div id="sentMount"><!--SENT_START-->''' + LOADING_SENT + '''<!--SENT_END--></div>
+</section>'''
 
 JS_START = '<!--WOLF_RENDER_JS_START-->'
 JS_END = '<!--WOLF_RENDER_JS_END-->'
@@ -178,7 +196,62 @@ SCRIPT = JS_START + r'''
     var btn=document.querySelector('.tab[data-tab="'+h+'"]');
     if(btn) btn.click();
   }
-  function boot(){ loadAuto(); loadBlue(); loadGuard(); applyHash(); }
+  function loadTeam(){
+    loadJSON('national_team.json').then(function(d){
+      var rg=d.regime||{}; var c=d.conclusion||{}; var etfs=d.etfs||[];
+      var att=c.attitude||'-';
+      var attColor = att.indexOf('进场')>=0?'var(--green2)':(att.indexOf('离场')>=0?'var(--red2)':'var(--t3)');
+      var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+        +'<div><h3>🏛️ 国家队资金走向</h3><div class="panel-sub" style="margin-bottom:0">生成于 '+esc(d.generated)+' · 沪深300 '+esc(rg.state||'-')+'</div></div>'
+        +'<div style="font-weight:700;color:'+attColor+'">大资金：'+esc(att)+'</div></div></div>';
+      h+='<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">'+esc(c.summary||'')+'</div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">宽基ETF 成交活跃度（估算成交额·亿元）</h3>';
+      h+='<div style="max-height:46vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+      h+='<tr style="color:var(--t4);text-align:left"><th style="padding:4px">ETF</th><th style="padding:4px">5日</th><th style="padding:4px">20日</th><th style="padding:4px">60日</th><th style="padding:4px">趋势</th><th style="padding:4px">份额(亿)</th></tr>';
+      etfs.forEach(function(e){
+        var tcol = e.trend==='上行'?'var(--red2)':(e.trend==='下行'?'var(--green2)':'var(--t3)');
+        h+='<tr style="border-top:1px solid var(--line)">'
+          +'<td style="padding:5px 4px;color:var(--t1)">'+esc(e.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(e.role||'')+'</span></td>'
+          +'<td style="padding:5px 4px">'+num(e.turnover_5d,1)+'</td>'
+          +'<td style="padding:5px 4px">'+num(e.turnover_20d,1)+'</td>'
+          +'<td style="padding:5px 4px">'+num(e.turnover_60d,1)+'</td>'
+          +'<td style="padding:5px 4px;color:'+tcol+'">'+esc(e.trend)+'<br><span style="font-size:10px;color:var(--t3)">'+esc(e.short_term)+'</span></td>'
+          +'<td style="padding:5px 4px">'+((e.shares_now_亿份!=null)?num(e.shares_now_亿份,1):'-')+'</td></tr>';
+      });
+      h+='</table></div></div>';
+      var v=d.validation||{};
+      h+='<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：政策底由宽基ETF托市(True)；高位撤离(True,2026开年降温式调仓)。'+esc(v.note||'')+'</div>';
+      h+='<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ '+esc(d.caveat||'')+'</div>';
+      var el=document.getElementById('teamMount'); if(el) el.innerHTML=h;
+    }).catch(function(e){
+      fallback('teamMount','📴 未能实时拉取 national_team.json（'+esc(e.message)+'），以下为本地烘焙快照。');
+    });
+  }
+  function loadSent(){
+    loadJSON('sentiment.json').then(function(d){
+      var idx=d.index==null?50:d.index; var zone=d.zone||'中性'; var adv=d.advice||'';
+      var barColor = idx<35?'var(--green2)':(idx>65?'var(--red2)':'#d99e00');
+      var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+        +'<div><h3>🌡️ 市场情绪指数</h3><div class="panel-sub" style="margin-bottom:0">恐惧贪婪 0-100 · 反向指标 · 生成于 '+esc(d.generated)+'</div></div>'
+        +'<div style="font-weight:700;color:var(--t1)">'+num(idx,0)+' · '+esc(zone)+'</div></div></div>';
+      h+='<div class="panel"><div style="height:14px;background:linear-gradient(90deg,var(--green2),#d99e00,var(--red2));border-radius:7px;position:relative;margin:8px 0 4px">'
+        +'<div style="position:absolute;top:-4px;left:calc('+idx+'% - 3px);width:6px;height:22px;background:#fff;border:2px solid var(--t1);border-radius:3px"></div></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t4)"><span>冰点(逆向买)</span><span>中性</span><span>狂热(逆向卖)</span></div>';
+      h+='<div style="margin-top:8px;font-size:13px;color:'+barColor+';font-weight:600">'+esc(adv)+'</div></div>';
+      var comp=d.components||{};
+      h+='<div class="panel" style="font-size:12px;color:var(--t2)">数据构成：微博舆情NLP <b>'+num(comp.weibo_sentiment,0)+'</b> ｜ 市场代理 <b>'+num(comp.market_proxy,0)+'</b> ｜ 合成 <b>'+num(idx,0)+'</b><br><span style="color:var(--t3);font-size:11px">来源：'+esc(d.source_detail||'')+'</span></div>';
+      var fs=d.forums_status||{};
+      h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">论坛接入状态</summary><div style="font-size:11px;color:var(--t3);margin-top:6px;line-height:1.6">'
+        + Object.keys(fs).map(function(k){return '· '+esc(k)+'：'+esc(fs[k]);}).join('<br>') +'</div></details>';
+      var v=d.validation||{};
+      h+='<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：散户情绪作反向指标有效——回测极度悲观买入胜率68.1%、极度乐观卖出68.6%。'+esc(v.note||'')+'</div>';
+      h+='<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ '+esc(d.caveat||'')+'</div>';
+      var el=document.getElementById('sentMount'); if(el) el.innerHTML=h;
+    }).catch(function(e){
+      fallback('sentMount','📴 未能实时拉取 sentiment.json（'+esc(e.message)+'），以下为本地烘焙快照。');
+    });
+  }
+  function boot(){ loadAuto(); loadBlue(); loadGuard(); loadTeam(); loadSent(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();
@@ -204,15 +277,18 @@ def patch(fn):
     s = open(p, encoding='utf-8').read()
     orig = s
 
-    # 1) 蓝筹 tab 按钮（在 auto tab 按钮之后）
-    if 'data-tab="bluechip"' not in s:
+    # 1) tab 按钮（在 auto tab 按钮之后，按 bluechip/team/sent 顺序一次性插入）
+    tabs_to_add = []
+    for key, btn in [('bluechip', BLUE_TAB_BTN), ('team', TEAM_TAB_BTN), ('sent', SENT_TAB_BTN)]:
+        if ('data-tab="%s"' % key) not in s:
+            tabs_to_add.append(btn)
+    if tabs_to_add:
         idx = s.find('data-tab="auto"')
         if idx >= 0:
-            # 必须插在「自动选股」按钮 </button> 之后，否则会变成嵌套 button
             end = s.find('</button>', idx)
             end = (end + len('</button>')) if end >= 0 else (s.find('>', idx) + 1)
-            s = s[:end] + '\n' + BLUE_TAB_BTN + s[end:]
-            print('  + 蓝筹tab按钮')
+            s = s[:end] + '\n' + '\n'.join(tabs_to_add) + s[end:]
+            print('  + tab按钮:', ' '.join(t.split('data-tab="')[1].split('"')[0] for t in tabs_to_add))
         else:
             print('  ! 未找到 auto tab 按钮')
 
@@ -243,6 +319,44 @@ def patch(fn):
     if baked_blue and '正在加载' not in baked_blue:
         s = s.replace('<!--BLUECHIP_START-->' + LOADING_BLUE + '<!--BLUECHIP_END-->',
                       '<!--BLUECHIP_START-->' + baked_blue + '<!--BLUECHIP_END-->', 1)
+        print('    · 保留原离线快照')
+
+    # 3b) 国家队资金 pane
+    m = re.search(r'<!--TEAM_START-->(.*?)<!--TEAM_END-->', s, re.S)
+    baked_team = m.group(1) if m else None
+    s, ok = replace_section(s, 'pane-team', TEAM_PANE)
+    if not ok:
+        ins = s.find('</section>', s.find('<section class="pane" id="pane-bluechip">'))
+        if ins >= 0:
+            ins += len('</section>')
+            s = s[:ins] + '\n' + TEAM_PANE + s[ins:]
+            print('  + 国家队资金pane（新建）')
+        else:
+            print('  ! 无法定位国家队pane插入点')
+    else:
+        print('  ~ 国家队资金pane已刷新')
+    if baked_team and '正在加载' not in baked_team:
+        s = s.replace('<!--TEAM_START-->' + LOADING_TEAM + '<!--TEAM_END-->',
+                      '<!--TEAM_START-->' + baked_team + '<!--TEAM_END-->', 1)
+        print('    · 保留原离线快照')
+
+    # 3c) 市场情绪 pane
+    m = re.search(r'<!--SENT_START-->(.*?)<!--SENT_END-->', s, re.S)
+    baked_sent = m.group(1) if m else None
+    s, ok = replace_section(s, 'pane-sent', SENT_PANE)
+    if not ok:
+        ins = s.find('</section>', s.find('<section class="pane" id="pane-team">'))
+        if ins >= 0:
+            ins += len('</section>')
+            s = s[:ins] + '\n' + SENT_PANE + s[ins:]
+            print('  + 市场情绪pane（新建）')
+        else:
+            print('  ! 无法定位情绪pane插入点')
+    else:
+        print('  ~ 市场情绪pane已刷新')
+    if baked_sent and '正在加载' not in baked_sent:
+        s = s.replace('<!--SENT_START-->' + LOADING_SENT + '<!--SENT_END-->',
+                      '<!--SENT_START-->' + baked_sent + '<!--SENT_END-->', 1)
         print('    · 保留原离线快照')
 
     # 4) 渲染脚本（带标记，可覆盖）

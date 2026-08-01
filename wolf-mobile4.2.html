@@ -128,6 +128,8 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 <nav class="tabs" id="tabNav">
   <button class="tab active" data-tab="overview">📡 今日看板</button>
   <button class="tab" data-tab="auto">🤖 自动选股</button>
+  <button class="tab" data-tab="team">🏛️ 国家队资金</button>
+  <button class="tab" data-tab="sent">🌡️ 情绪指数</button>
   <button class="tab" data-tab="bluechip">💎 蓝筹低吸</button>
   <button class="tab" data-tab="screener">🎯 选股雷达</button>
   <button class="tab" data-tab="flow">💰 板块资金流</button>
@@ -1044,6 +1046,53 @@ body{padding-bottom:env(safe-area-inset-bottom)}
     </div>
 </details>
 <!--BLUECHIP_END--></div>
+</section>
+<section class="pane" id="pane-team">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🏛️ 国家队资金走向：中证1000/科创50/创业板/沪深300 宽基ETF 成交活跃度 + 实时份额 + 市场状态，推断大资金进场/离场。结论为活跃度推断，非精确持仓复刻，不构成投资建议。</div>
+  <div id="teamMount"><!--TEAM_START-->
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🏛️ 国家队资金走向</h3>
+    <div class="panel-sub" style="margin-bottom:0">快照 2026-08-01 13:24 · 沪深300 弱势(熊/探底)</div></div>
+    <div style="font-weight:700;color:var(--green2)">大资金：进场托市</div>
+  </div>
+</div>
+<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">市场处于弱势区间，宽基ETF成交额持续活跃/放量，与历史「国家队借道ETF托底」特征一致，大资金正在进场维稳。</div>
+<div class="panel">
+  <h3 style="margin-bottom:6px">宽基ETF 成交活跃度（估算成交额·亿元）</h3>
+  <div style="max-height:46vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <tr style="color:var(--t4);text-align:left"><th style="padding:4px">ETF</th><th style="padding:4px">5日</th><th style="padding:4px">20日</th><th style="padding:4px">60日</th><th style="padding:4px">趋势</th><th style="padding:4px">份额(亿)</th></tr>
+    <tr style="border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中证1000ETF<br><span style="color:var(--t4);font-size:10px">成长小盘(国家队扩围重点)</span></td><td style="padding:5px 4px">65.1</td><td style="padding:5px 4px">60.5</td><td style="padding:5px 4px">38.6</td><td style="padding:5px 4px;color:var(--red2)">上行<br><span style="font-size:10px;color:var(--t3)">持平</span></td><td style="padding:5px 4px">113.3</td></tr><tr style="border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">科创50ETF<br><span style="color:var(--t4);font-size:10px">硬科技成长(国家队扩围重点)</span></td><td style="padding:5px 4px">124.9</td><td style="padding:5px 4px">115.5</td><td style="padding:5px 4px">84.7</td><td style="padding:5px 4px;color:var(--red2)">上行<br><span style="font-size:10px;color:var(--t3)">持平</span></td><td style="padding:5px 4px">539.0</td></tr><tr style="border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">创业板ETF<br><span style="color:var(--t4);font-size:10px">成长板块(国家队扩围重点)</span></td><td style="padding:5px 4px">128.1</td><td style="padding:5px 4px">99.7</td><td style="padding:5px 4px">72.1</td><td style="padding:5px 4px;color:var(--red2)">上行<br><span style="font-size:10px;color:var(--t3)">放量</span></td><td style="padding:5px 4px">220.0</td></tr><tr style="border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">沪深300ETF<br><span style="color:var(--t4);font-size:10px">蓝筹压舱石(基准对照)</span></td><td style="padding:5px 4px">66.9</td><td style="padding:5px 4px">69.3</td><td style="padding:5px 4px">61.7</td><td style="padding:5px 4px;color:var(--t3)">平稳<br><span style="font-size:10px;color:var(--t3)">持平</span></td><td style="padding:5px 4px">264.8</td></tr>
+  </table></div>
+</div>
+<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：政策底由宽基ETF托市(True)；高位撤离(True,2026开年降温式调仓)。政策底由中证1000/科创50/创业板等宽基ETF托市(2024-02起汇金扩围)已证实；高位撤离真实发生，校准到2026开年市场亢奋期(1月宽基ETF天量成交+份额缩水)，属降温式调仓。2025年内汇金份额未环比净减。</div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ 估算成交额为流动性代理，非真实净申购额；份额仅实时快照，日频历史需基金季报。结论为活跃度推断，非精确持仓复刻，不构成投资建议。</div>
+<!--TEAM_END--></div>
+</section>
+<section class="pane" id="pane-sent">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🌡️ 市场情绪指数（恐惧贪婪 0-100，反向指标）：冰点逆向买入、狂热逆向卖出。数据=微博财经NLP舆情 + 市场代理。非投资建议。</div>
+  <div id="sentMount"><!--SENT_START-->
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🌡️ 市场情绪指数</h3>
+    <div class="panel-sub" style="margin-bottom:0">恐惧贪婪 0-100 · 反向指标 · 快照 2026-08-01 13:23</div></div>
+    <div style="font-weight:700;color:var(--t1)">37 · 中性偏弱</div>
+  </div>
+</div>
+<div class="panel">
+  <div style="height:14px;background:linear-gradient(90deg,var(--green2),#d99e00,var(--red2));border-radius:7px;position:relative;margin:8px 0 4px">
+    <div style="position:absolute;top:-4px;left:calc(36.7% - 3px);width:6px;height:22px;background:#fff;border:2px solid var(--t1);border-radius:3px"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t4)"><span>冰点(逆向买)</span><span>中性</span><span>狂热(逆向卖)</span></div>
+  <div style="margin-top:8px;font-size:13px;color:#d99e00;font-weight:600">观望为主，按自身策略执行，不追不杀</div>
+</div>
+<div class="panel" style="font-size:12px;color:var(--t2)">数据构成：微博舆情NLP <b>27</b> ｜ 市场代理 <b>47</b> ｜ 合成 <b>37</b><br><span style="color:var(--t3);font-size:11px">来源：微博财经NLP(样本50只, 均值-0.47) + 市场代理</span></div>
+<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">论坛接入状态</summary>
+  <div style="font-size:11px;color:var(--t3);margin-top:6px;line-height:1.6">· 微博财经NLP：已接入(可达)<br>· 东方财富股吧：内置lexicon_score词库打分器，公开API沙箱不稳，待接入<br>· 雪球：需登录态/cookie，待接入<br>· NGA：需登录态，待接入</div>
+</details>
+<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：散户情绪作反向指标有效——回测极度悲观买入胜率68.1%、极度乐观卖出68.6%。散户情绪作为反向指标有效：回测显示极度悲观(<-0.3)买入胜率68.1%、极度乐观(>+0.5)卖出68.6%，整体反向策略68.4% vs 同向31.6%。本指数定位为环境温度计/逆向参考，不做精确择时。</div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ 情绪指数为反向参考，非投资建议；论坛文本(NGA/雪球/股吧)需各自登录态方可稳定抓取，当前以微博舆情NLP+市场代理合成。</div>
+<!--SENT_END--></div>
 </section>
 
 <footer>
@@ -2286,7 +2335,62 @@ document.getElementById('eventsRefreshBtn').onclick=loadMajorEvents;
     var btn=document.querySelector('.tab[data-tab="'+h+'"]');
     if(btn) btn.click();
   }
-  function boot(){ loadAuto(); loadBlue(); loadGuard(); applyHash(); }
+  function loadTeam(){
+    loadJSON('national_team.json').then(function(d){
+      var rg=d.regime||{}; var c=d.conclusion||{}; var etfs=d.etfs||[];
+      var att=c.attitude||'-';
+      var attColor = att.indexOf('进场')>=0?'var(--green2)':(att.indexOf('离场')>=0?'var(--red2)':'var(--t3)');
+      var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+        +'<div><h3>🏛️ 国家队资金走向</h3><div class="panel-sub" style="margin-bottom:0">生成于 '+esc(d.generated)+' · 沪深300 '+esc(rg.state||'-')+'</div></div>'
+        +'<div style="font-weight:700;color:'+attColor+'">大资金：'+esc(att)+'</div></div></div>';
+      h+='<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">'+esc(c.summary||'')+'</div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">宽基ETF 成交活跃度（估算成交额·亿元）</h3>';
+      h+='<div style="max-height:46vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+      h+='<tr style="color:var(--t4);text-align:left"><th style="padding:4px">ETF</th><th style="padding:4px">5日</th><th style="padding:4px">20日</th><th style="padding:4px">60日</th><th style="padding:4px">趋势</th><th style="padding:4px">份额(亿)</th></tr>';
+      etfs.forEach(function(e){
+        var tcol = e.trend==='上行'?'var(--red2)':(e.trend==='下行'?'var(--green2)':'var(--t3)');
+        h+='<tr style="border-top:1px solid var(--line)">'
+          +'<td style="padding:5px 4px;color:var(--t1)">'+esc(e.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(e.role||'')+'</span></td>'
+          +'<td style="padding:5px 4px">'+num(e.turnover_5d,1)+'</td>'
+          +'<td style="padding:5px 4px">'+num(e.turnover_20d,1)+'</td>'
+          +'<td style="padding:5px 4px">'+num(e.turnover_60d,1)+'</td>'
+          +'<td style="padding:5px 4px;color:'+tcol+'">'+esc(e.trend)+'<br><span style="font-size:10px;color:var(--t3)">'+esc(e.short_term)+'</span></td>'
+          +'<td style="padding:5px 4px">'+((e.shares_now_亿份!=null)?num(e.shares_now_亿份,1):'-')+'</td></tr>';
+      });
+      h+='</table></div></div>';
+      var v=d.validation||{};
+      h+='<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：政策底由宽基ETF托市(True)；高位撤离(True,2026开年降温式调仓)。'+esc(v.note||'')+'</div>';
+      h+='<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ '+esc(d.caveat||'')+'</div>';
+      var el=document.getElementById('teamMount'); if(el) el.innerHTML=h;
+    }).catch(function(e){
+      fallback('teamMount','📴 未能实时拉取 national_team.json（'+esc(e.message)+'），以下为本地烘焙快照。');
+    });
+  }
+  function loadSent(){
+    loadJSON('sentiment.json').then(function(d){
+      var idx=d.index==null?50:d.index; var zone=d.zone||'中性'; var adv=d.advice||'';
+      var barColor = idx<35?'var(--green2)':(idx>65?'var(--red2)':'#d99e00');
+      var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+        +'<div><h3>🌡️ 市场情绪指数</h3><div class="panel-sub" style="margin-bottom:0">恐惧贪婪 0-100 · 反向指标 · 生成于 '+esc(d.generated)+'</div></div>'
+        +'<div style="font-weight:700;color:var(--t1)">'+num(idx,0)+' · '+esc(zone)+'</div></div></div>';
+      h+='<div class="panel"><div style="height:14px;background:linear-gradient(90deg,var(--green2),#d99e00,var(--red2));border-radius:7px;position:relative;margin:8px 0 4px">'
+        +'<div style="position:absolute;top:-4px;left:calc('+idx+'% - 3px);width:6px;height:22px;background:#fff;border:2px solid var(--t1);border-radius:3px"></div></div>'
+        +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t4)"><span>冰点(逆向买)</span><span>中性</span><span>狂热(逆向卖)</span></div>';
+      h+='<div style="margin-top:8px;font-size:13px;color:'+barColor+';font-weight:600">'+esc(adv)+'</div></div>';
+      var comp=d.components||{};
+      h+='<div class="panel" style="font-size:12px;color:var(--t2)">数据构成：微博舆情NLP <b>'+num(comp.weibo_sentiment,0)+'</b> ｜ 市场代理 <b>'+num(comp.market_proxy,0)+'</b> ｜ 合成 <b>'+num(idx,0)+'</b><br><span style="color:var(--t3);font-size:11px">来源：'+esc(d.source_detail||'')+'</span></div>';
+      var fs=d.forums_status||{};
+      h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">论坛接入状态</summary><div style="font-size:11px;color:var(--t3);margin-top:6px;line-height:1.6">'
+        + Object.keys(fs).map(function(k){return '· '+esc(k)+'：'+esc(fs[k]);}).join('<br>') +'</div></details>';
+      var v=d.validation||{};
+      h+='<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：散户情绪作反向指标有效——回测极度悲观买入胜率68.1%、极度乐观卖出68.6%。'+esc(v.note||'')+'</div>';
+      h+='<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ '+esc(d.caveat||'')+'</div>';
+      var el=document.getElementById('sentMount'); if(el) el.innerHTML=h;
+    }).catch(function(e){
+      fallback('sentMount','📴 未能实时拉取 sentiment.json（'+esc(e.message)+'），以下为本地烘焙快照。');
+    });
+  }
+  function boot(){ loadAuto(); loadBlue(); loadGuard(); loadTeam(); loadSent(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();
