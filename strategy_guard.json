@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-01 12:55",
+ "generated": "2026-08-01 08:15",
  "risk_level": "AMBER",
  "risk_reasons": [
   "市场状态=WEAK，需调整仓位/止损"
@@ -16,20 +16,13 @@
  },
  "logic_check": {
   "params_ok": true,
-  "warn": "回测 7/7 个变体相对「全市场等权持有」超额为负(最优约 -3.9%)，说明本策略属风险控制/均值回归型而非 Alpha 增强型；牛市跑输指数属预期内，不应误判为策略失效。",
-  "backtest": {
-   "win": 0.6549,
-   "avg": 0.0591,
-   "med": 0.0603,
-   "excess": -0.0261,
-   "stop_r": 0.2283,
-   "tp_r": 0.372
-  }
+  "warn": "未找到 opt_result.json([Errno 2] No such file or directory: 'opt_result.json')，无法核对回测基线，按参数默认自检。",
+  "backtest": {}
  },
  "live": {
   "has_data": false,
   "status": "N/A",
-  "note": "暂无实盘记录。建议按 trade_log.json 格式记录真实买卖，闭环验证「预期盈利率」并触发自动纠错。"
+  "note": "暂无实盘记录（观察池样本也不足）。观察池会随每日扫描自动累积，建议先看观察池的「实盘验证」Tab，或按 trade_log.json 格式补记真实买卖。"
  },
  "position_rule": {
   "max_positions": 6,
