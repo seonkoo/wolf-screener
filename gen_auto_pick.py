@@ -58,6 +58,11 @@ HTML = '''<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
 <div style="font-size:20px;font-weight:800;margin:6px 0">🤖 小狼雷达 · 今日自动选股</div>
 <div style="font-size:12px;color:#72839c;margin-bottom:4px">生成时间 %(gen)s · 全自动扫描全A股，四层标准同 wolf-screener</div>
 <div style="font-size:12px;color:#72839c;margin-bottom:10px">候选 %(cand)d 只 → A建议买入 <b style="color:#52c41a">%(a)d</b> · B观察 %(b)d · C禁止 %(c)d · D观望 %(d)d</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+<a href="wolf-mobile4.2.html" style="flex:1;min-width:130px;text-align:center;padding:10px;background:#121a2b;border:1px solid #2b3a52;border-radius:10px;color:#4a9eff;text-decoration:none;font-size:13px;font-weight:600">📱 手机完整版</a>
+<a href="wolf-screener3.0.html" style="flex:1;min-width:130px;text-align:center;padding:10px;background:#121a2b;border:1px solid #2b3a52;border-radius:10px;color:#4a9eff;text-decoration:none;font-size:13px;font-weight:600">🖥️ 电脑完整版</a>
+<a href="wolf-mobile4.2.html#bluechip" style="flex:1;min-width:130px;text-align:center;padding:10px;background:#121a2b;border:1px solid #2b3a52;border-radius:10px;color:#69db7c;text-decoration:none;font-size:13px;font-weight:600">💎 蓝筹低吸</a>
+</div>
 <div style="font-size:12px;color:#fdba74;line-height:1.6;background:rgba(250,140,22,.08);border:1px solid rgba(250,140,22,.3);border-radius:8px;padding:8px;margin-bottom:12px">
 ⚠️ 扫描环境取不到15分钟K线，第3层"技术共振"用日线代理(布林/MA20/放量/底背离)。网页端(wolf-screener3.0.html)以真实15min复核可得严格结论，第1/2/4层完全一致。本结果仅为波段信号参考，非投资建议。
 </div>

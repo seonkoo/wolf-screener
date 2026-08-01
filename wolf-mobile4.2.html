@@ -127,8 +127,8 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 
 <nav class="tabs" id="tabNav">
   <button class="tab active" data-tab="overview">📡 今日看板</button>
-  <button class="tab" data-tab="auto">
-  <button class="tab" data-tab="bluechip">💎 蓝筹低吸</button>🤖 自动选股</button>
+  <button class="tab" data-tab="auto">🤖 自动选股</button>
+  <button class="tab" data-tab="bluechip">💎 蓝筹低吸</button>
   <button class="tab" data-tab="screener">🎯 选股雷达</button>
   <button class="tab" data-tab="flow">💰 板块资金流</button>
   <button class="tab" data-tab="etf">📈 ETF扫描</button>
@@ -368,12 +368,672 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 
 <!-- 自动选股 Tab：快照由 sync_auto_tab.py 注入 -->
 <section class="pane" id="pane-auto">
-  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">⚠️ 波段反弹信号，非投资建议；止损8%% / 目标15%%。第3层技术共振在扫描环境用「日线代理」（沙箱取不到15min K线），切到本Tab后用「🎯 选股雷达」以真实15min MACD复核。</div>
-  <div id="autoMount"><div class="panel"><div class="loading"><div class="spinner"></div><div style="margin-top:8px">正在加载自动选股数据…</div></div></div></div>
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">⚠️ 波段反弹信号，非投资建议；止损8% / 目标15%。第3层技术共振在扫描环境用「日线代理」（沙箱取不到15min K线），切到本Tab后用「🎯 选股雷达」以真实15min MACD复核。</div>
+  <div id="autoMount"><!--AUTOPICK_START-->
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🤖 自动选股 · 全A四层扫描</h3>
+    <div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 快照 2026-08-01 10:36</div></div>
+    <div style="font-size:12px;color:var(--t2)">候选 <b>100</b> · 🟢A <b>22</b> · 🔵B <b>47</b> · 🔴C <b>25</b> · ⚪D <b>6</b></div>
+  </div>
+</div>
+<div class="panel">
+  <h3 style="margin-bottom:6px">🟢 A · 建议低吸（四层全过 22只）</h3>
+  
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">沃尔核材 <span style="color:var(--t3);font-weight:400;font-size:12px">002130 ★好公司</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">16.70</div>
+          <div style="font-size:12px;color:var(--green2)">-2.28%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 4.4%</span> <span>主力 <b style="color:var(--green2)">-0.89亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>15.364</b> · 目标 <b>19.205</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">好公司+低位共振：小仓位分批低吸，持有约40日做均值回归，止损8%目标15%，反弹属急跌修复，不长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">强邦新材 <span style="color:var(--t3);font-weight:400;font-size:12px">001279</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">24.46</div>
+          <div style="font-size:12px;color:var(--green2)">-1.09%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 2.5%</span> <span>主力 <b style="color:var(--green2)">-0.00亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>22.503</b> · 目标 <b>28.129</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">联创电子 <span style="color:var(--t3);font-weight:400;font-size:12px">002036</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">6.79</div>
+          <div style="font-size:12px;color:var(--green2)">-1.31%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 3.1%</span> <span>主力 <b style="color:var(--green2)">-0.03亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>6.247</b> · 目标 <b>7.808</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">北新建材 <span style="color:var(--t3);font-weight:400;font-size:12px">000786</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">19.28</div>
+          <div style="font-size:12px;color:var(--green2)">-5.54%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 6.9%</span> <span>主力 <b style="color:var(--green2)">+0.22亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-green">④资金 ✓通过</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>17.738</b> · 目标 <b>22.172</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">悍高集团 <span style="color:var(--t3);font-weight:400;font-size:12px">001221</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">39.92</div>
+          <div style="font-size:12px;color:var(--green2)">-4.20%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 7.4%</span> <span>主力 <b style="color:var(--green2)">+0.13亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-green">④资金 ✓通过</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>36.726</b> · 目标 <b>45.908</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">老板电器 <span style="color:var(--t3);font-weight:400;font-size:12px">002508</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">15.94</div>
+          <div style="font-size:12px;color:var(--green2)">-3.63%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 8.2%</span> <span>主力 <b style="color:var(--green2)">-0.26亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>14.665</b> · 目标 <b>18.331</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">陕西金叶 <span style="color:var(--t3);font-weight:400;font-size:12px">000812</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">3.45</div>
+          <div style="font-size:12px;color:var(--green2)">-1.15%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 9.7%</span> <span>主力 <b style="color:var(--green2)">-0.08亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>3.174</b> · 目标 <b>3.967</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">东鹏控股 <span style="color:var(--t3);font-weight:400;font-size:12px">003012</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">4.74</div>
+          <div style="font-size:12px;color:var(--green2)">-2.27%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 10.3%</span> <span>主力 <b style="color:var(--green2)">+0.01亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-green">④资金 ✓通过</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>4.361</b> · 目标 <b>5.451</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">华尔泰 <span style="color:var(--t3);font-weight:400;font-size:12px">001217</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">9.54</div>
+          <div style="font-size:12px;color:var(--green2)">-3.73%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 10.3%</span> <span>主力 <b style="color:var(--green2)">-0.09亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>8.777</b> · 目标 <b>10.971</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">国光股份 <span style="color:var(--t3);font-weight:400;font-size:12px">002749</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">8.91</div>
+          <div style="font-size:12px;color:var(--green2)">-4.91%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 11.3%</span> <span>主力 <b style="color:var(--green2)">-0.01亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>8.197</b> · 目标 <b>10.246</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">特  力Ａ <span style="color:var(--t3);font-weight:400;font-size:12px">000025</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">15.23</div>
+          <div style="font-size:12px;color:var(--green2)">-2.62%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 11.6%</span> <span>主力 <b style="color:var(--green2)">+0.02亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-green">④资金 ✓通过</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>14.012</b> · 目标 <b>17.514</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">钱江摩托 <span style="color:var(--t3);font-weight:400;font-size:12px">000913</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">12.00</div>
+          <div style="font-size:12px;color:var(--green2)">-1.32%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 12.9%</span> <span>主力 <b style="color:var(--green2)">-0.03亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>11.040</b> · 目标 <b>13.800</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">塔牌集团 <span style="color:var(--t3);font-weight:400;font-size:12px">002233</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">7.50</div>
+          <div style="font-size:12px;color:var(--green2)">-4.09%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 13.5%</span> <span>主力 <b style="color:var(--green2)">+0.12亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-green">④资金 ✓通过</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>6.900</b> · 目标 <b>8.625</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">东方嘉盛 <span style="color:var(--t3);font-weight:400;font-size:12px">002889</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">12.12</div>
+          <div style="font-size:12px;color:var(--green2)">-2.10%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 13.5%</span> <span>主力 <b style="color:var(--green2)">-0.05亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>11.150</b> · 目标 <b>13.938</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">富森美 <span style="color:var(--t3);font-weight:400;font-size:12px">002818</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">10.92</div>
+          <div style="font-size:12px;color:var(--green2)">-2.24%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 13.5%</span> <span>主力 <b style="color:var(--green2)">-0.05亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>10.046</b> · 目标 <b>12.558</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">朗姿股份 <span style="color:var(--t3);font-weight:400;font-size:12px">002612</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">14.79</div>
+          <div style="font-size:12px;color:var(--green2)">-5.19%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 14.1%</span> <span>主力 <b style="color:var(--green2)">-0.14亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>13.607</b> · 目标 <b>17.008</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">神州信息 <span style="color:var(--t3);font-weight:400;font-size:12px">000555</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">11.14</div>
+          <div style="font-size:12px;color:var(--green2)">-0.98%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 15.4%</span> <span>主力 <b style="color:var(--green2)">-0.31亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>10.249</b> · 目标 <b>12.811</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">西安饮食 <span style="color:var(--t3);font-weight:400;font-size:12px">000721</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">6.65</div>
+          <div style="font-size:12px;color:var(--green2)">-2.35%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 15.7%</span> <span>主力 <b style="color:var(--green2)">+0.09亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-green">④资金 ✓通过</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>6.118</b> · 目标 <b>7.647</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">盈方微 <span style="color:var(--t3);font-weight:400;font-size:12px">000670</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">6.93</div>
+          <div style="font-size:12px;color:var(--green2)">-1.00%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 18.2%</span> <span>主力 <b style="color:var(--green2)">-0.48亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>6.376</b> · 目标 <b>7.969</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">金禾实业 <span style="color:var(--t3);font-weight:400;font-size:12px">002597</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">21.02</div>
+          <div style="font-size:12px;color:var(--green2)">-1.91%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 29.8%</span> <span>主力 <b style="color:var(--green2)">-0.29亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-amber">④资金 ⏳观望</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>19.338</b> · 目标 <b>24.173</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">学大教育 <span style="color:var(--t3);font-weight:400;font-size:12px">000526</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">35.55</div>
+          <div style="font-size:12px;color:var(--green2)">-2.15%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 31.7%</span> <span>主力 <b style="color:var(--green2)">+0.45亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-green">④资金 ✓通过</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>32.706</b> · 目标 <b>40.882</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">博源化工 <span style="color:var(--t3);font-weight:400;font-size:12px">000683</span></div>
+        <div style="text-align:right">
+          <div style="color:var(--t1);font-weight:700">5.98</div>
+          <div style="font-size:12px;color:var(--green2)">-5.23%</div>
+        </div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">恐慌低位 32.3%</span> <span>主力 <b style="color:var(--green2)">+0.33亿</b></span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        <span class="badge b-green">①情绪 ✓通过</span>
+        <span class="badge b-green">②浪型 ✓通过</span>
+        <span class="badge b-green">③技术⚠代理 ✓通过</span>
+        <span class="badge b-green">④资金 ✓通过</span>
+      </div>
+      <div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>5.502</b> · 目标 <b>6.877</b></div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。</div>
+    </div>
+</div>
+<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔵 B · 观察（47只）</summary>
+<div style="max-height:52vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse"><tr style="color:var(--t4);font-size:11px;text-align:left"><th style="padding:4px">名称</th><th style="padding:4px">价</th><th style="padding:4px">涨跌</th><th style="padding:4px">贪婪</th><th style="padding:4px">判定</th></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">久立特材<br><span style="color:var(--t4);font-size:10px">002318</span></td><td style="padding:5px 4px;color:var(--t1)">20.16</td><td style="padding:5px 4px;color:var(--green2)">-1.27%</td><td style="padding:5px 4px">4.1%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">招商蛇口<br><span style="color:var(--t4);font-size:10px">001979</span></td><td style="padding:5px 4px;color:var(--t1)">6.95</td><td style="padding:5px 4px;color:var(--green2)">-1.00%</td><td style="padding:5px 4px">6.9%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">航发控制<br><span style="color:var(--t4);font-size:10px">000738</span></td><td style="padding:5px 4px;color:var(--t1)">18.12</td><td style="padding:5px 4px;color:var(--green2)">-1.31%</td><td style="padding:5px 4px">7.8%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">招商积余<br><span style="color:var(--t4);font-size:10px">001914</span></td><td style="padding:5px 4px;color:var(--t1)">9.04</td><td style="padding:5px 4px;color:var(--green2)">-1.20%</td><td style="padding:5px 4px">8.5%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">洽洽食品<br><span style="color:var(--t4);font-size:10px">002557</span></td><td style="padding:5px 4px;color:var(--t1)">20.43</td><td style="padding:5px 4px;color:var(--green2)">-1.83%</td><td style="padding:5px 4px">9.7%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">海安集团<br><span style="color:var(--t4);font-size:10px">001233</span></td><td style="padding:5px 4px;color:var(--t1)">43.96</td><td style="padding:5px 4px;color:var(--green2)">-1.24%</td><td style="padding:5px 4px">9.7%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">苏 泊 尔<br><span style="color:var(--t4);font-size:10px">002032</span></td><td style="padding:5px 4px;color:var(--t1)">43.59</td><td style="padding:5px 4px;color:var(--green2)">-3.00%</td><td style="padding:5px 4px">11.3%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">浙江建投<br><span style="color:var(--t4);font-size:10px">002761</span></td><td style="padding:5px 4px;color:var(--t1)">7.40</td><td style="padding:5px 4px;color:var(--green2)">-1.20%</td><td style="padding:5px 4px">11.3%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">索菲亚<br><span style="color:var(--t4);font-size:10px">002572</span></td><td style="padding:5px 4px;color:var(--t1)">8.64</td><td style="padding:5px 4px;color:var(--green2)">-3.79%</td><td style="padding:5px 4px">11.6%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">华菱钢铁<br><span style="color:var(--t4);font-size:10px">000932</span></td><td style="padding:5px 4px;color:var(--t1)">3.93</td><td style="padding:5px 4px;color:var(--green2)">-1.26%</td><td style="padding:5px 4px">11.9%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">豪迈科技<br><span style="color:var(--t4);font-size:10px">002595</span></td><td style="padding:5px 4px;color:var(--t1)">52.18</td><td style="padding:5px 4px;color:var(--green2)">-1.17%</td><td style="padding:5px 4px">12.2%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">奥瑞金<br><span style="color:var(--t4);font-size:10px">002701</span></td><td style="padding:5px 4px;color:var(--t1)">4.94</td><td style="padding:5px 4px;color:var(--green2)">-1.40%</td><td style="padding:5px 4px">12.2%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">九阳股份<br><span style="color:var(--t4);font-size:10px">002242</span></td><td style="padding:5px 4px;color:var(--t1)">9.06</td><td style="padding:5px 4px;color:var(--green2)">-1.63%</td><td style="padding:5px 4px">13.2%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">鞍钢股份<br><span style="color:var(--t4);font-size:10px">000898</span></td><td style="padding:5px 4px;color:var(--t1)">2.05</td><td style="padding:5px 4px;color:var(--green2)">-0.97%</td><td style="padding:5px 4px">14.1%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">悦心健康<br><span style="color:var(--t4);font-size:10px">002162</span></td><td style="padding:5px 4px;color:var(--t1)">3.91</td><td style="padding:5px 4px;color:var(--green2)">-1.01%</td><td style="padding:5px 4px">14.1%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">滨江集团<br><span style="color:var(--t4);font-size:10px">002244</span></td><td style="padding:5px 4px;color:var(--t1)">9.28</td><td style="padding:5px 4px;color:var(--green2)">-2.01%</td><td style="padding:5px 4px">14.1%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中通客车<br><span style="color:var(--t4);font-size:10px">000957</span></td><td style="padding:5px 4px;color:var(--t1)">10.37</td><td style="padding:5px 4px;color:var(--green2)">-2.08%</td><td style="padding:5px 4px">15.7%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">龙佰集团<br><span style="color:var(--t4);font-size:10px">002601</span></td><td style="padding:5px 4px;color:var(--t1)">16.38</td><td style="padding:5px 4px;color:var(--green2)">-2.38%</td><td style="padding:5px 4px">15.7%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">泰山石油<br><span style="color:var(--t4);font-size:10px">000554</span></td><td style="padding:5px 4px;color:var(--t1)">6.38</td><td style="padding:5px 4px;color:var(--green2)">-1.09%</td><td style="padding:5px 4px">19.7%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">仁和药业<br><span style="color:var(--t4);font-size:10px">000650</span></td><td style="padding:5px 4px;color:var(--t1)">5.43</td><td style="padding:5px 4px;color:var(--green2)">-1.09%</td><td style="padding:5px 4px">21.9%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">联发股份<br><span style="color:var(--t4);font-size:10px">002394</span></td><td style="padding:5px 4px;color:var(--t1)">8.92</td><td style="padding:5px 4px;color:var(--green2)">-1.65%</td><td style="padding:5px 4px">25.1%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">葵花药业<br><span style="color:var(--t4);font-size:10px">002737</span></td><td style="padding:5px 4px;color:var(--t1)">13.52</td><td style="padding:5px 4px;color:var(--green2)">-1.02%</td><td style="padding:5px 4px">27.0%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">尚太科技<br><span style="color:var(--t4);font-size:10px">001301</span></td><td style="padding:5px 4px;color:var(--t1)">55.22</td><td style="padding:5px 4px;color:var(--green2)">-2.27%</td><td style="padding:5px 4px">33.5%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">徐工机械<br><span style="color:var(--t4);font-size:10px">000425</span></td><td style="padding:5px 4px;color:var(--t1)">8.96</td><td style="padding:5px 4px;color:var(--green2)">-2.50%</td><td style="padding:5px 4px">34.2%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">大金重工<br><span style="color:var(--t4);font-size:10px">002487</span></td><td style="padding:5px 4px;color:var(--t1)">39.41</td><td style="padding:5px 4px;color:var(--green2)">-0.98%</td><td style="padding:5px 4px">34.2%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">和泰机电<br><span style="color:var(--t4);font-size:10px">001225</span></td><td style="padding:5px 4px;color:var(--t1)">42.43</td><td style="padding:5px 4px;color:var(--green2)">-2.82%</td><td style="padding:5px 4px">41.4%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">佛燃能源<br><span style="color:var(--t4);font-size:10px">002911</span></td><td style="padding:5px 4px;color:var(--t1)">11.37</td><td style="padding:5px 4px;color:var(--green2)">-2.49%</td><td style="padding:5px 4px">42.6%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">滨海能源<br><span style="color:var(--t4);font-size:10px">000695</span></td><td style="padding:5px 4px;color:var(--t1)">12.62</td><td style="padding:5px 4px;color:var(--green2)">-0.94%</td><td style="padding:5px 4px">42.6%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">永兴材料<br><span style="color:var(--t4);font-size:10px">002756</span></td><td style="padding:5px 4px;color:var(--t1)">45.12</td><td style="padding:5px 4px;color:var(--green2)">-1.46%</td><td style="padding:5px 4px">45.1%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中联重科<br><span style="color:var(--t4);font-size:10px">000157</span></td><td style="padding:5px 4px;color:var(--t1)">7.60</td><td style="padding:5px 4px;color:var(--green2)">-1.68%</td><td style="padding:5px 4px">45.8%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">海南海药<br><span style="color:var(--t4);font-size:10px">000566</span></td><td style="padding:5px 4px;color:var(--t1)">5.86</td><td style="padding:5px 4px;color:var(--green2)">-1.51%</td><td style="padding:5px 4px">49.2%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">招商公路<br><span style="color:var(--t4);font-size:10px">001965</span></td><td style="padding:5px 4px;color:var(--t1)">10.11</td><td style="padding:5px 4px;color:var(--green2)">-2.13%</td><td style="padding:5px 4px">49.8%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">伟星股份<br><span style="color:var(--t4);font-size:10px">002003</span></td><td style="padding:5px 4px;color:var(--t1)">10.61</td><td style="padding:5px 4px;color:var(--green2)">-2.39%</td><td style="padding:5px 4px">51.7%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">国风新材<br><span style="color:var(--t4);font-size:10px">000859</span></td><td style="padding:5px 4px;color:var(--t1)">8.28</td><td style="padding:5px 4px;color:var(--green2)">-1.08%</td><td style="padding:5px 4px">51.7%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">佛塑科技<br><span style="color:var(--t4);font-size:10px">000973</span></td><td style="padding:5px 4px;color:var(--t1)">12.07</td><td style="padding:5px 4px;color:var(--green2)">-1.07%</td><td style="padding:5px 4px">52.0%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">芭田股份<br><span style="color:var(--t4);font-size:10px">002170</span></td><td style="padding:5px 4px;color:var(--t1)">11.62</td><td style="padding:5px 4px;color:var(--green2)">-0.94%</td><td style="padding:5px 4px">57.1%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">恩捷股份<br><span style="color:var(--t4);font-size:10px">002812</span></td><td style="padding:5px 4px;color:var(--t1)">52.59</td><td style="padding:5px 4px;color:var(--green2)">-1.09%</td><td style="padding:5px 4px">57.1%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">盐湖股份<br><span style="color:var(--t4);font-size:10px">000792</span></td><td style="padding:5px 4px;color:var(--t1)">27.32</td><td style="padding:5px 4px;color:var(--green2)">-1.94%</td><td style="padding:5px 4px">57.7%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">兔 宝 宝<br><span style="color:var(--t4);font-size:10px">002043</span></td><td style="padding:5px 4px;color:var(--t1)">13.18</td><td style="padding:5px 4px;color:var(--green2)">-2.95%</td><td style="padding:5px 4px">58.3%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">神火股份<br><span style="color:var(--t4);font-size:10px">000933</span></td><td style="padding:5px 4px;color:var(--t1)">26.07</td><td style="padding:5px 4px;color:var(--green2)">-1.10%</td><td style="padding:5px 4px">59.9%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">双汇发展<br><span style="color:var(--t4);font-size:10px">000895</span></td><td style="padding:5px 4px;color:var(--t1)">25.99</td><td style="padding:5px 4px;color:var(--green2)">-3.20%</td><td style="padding:5px 4px">59.9%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">立讯精密<br><span style="color:var(--t4);font-size:10px">002475</span></td><td style="padding:5px 4px;color:var(--t1)">57.48</td><td style="padding:5px 4px;color:var(--green2)">-1.49%</td><td style="padding:5px 4px">59.9%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">万泽股份<br><span style="color:var(--t4);font-size:10px">000534</span></td><td style="padding:5px 4px;color:var(--t1)">24.70</td><td style="padding:5px 4px;color:var(--green2)">-1.16%</td><td style="padding:5px 4px">60.2%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">宏桥控股<br><span style="color:var(--t4);font-size:10px">002379</span></td><td style="padding:5px 4px;color:var(--t1)">20.77</td><td style="padding:5px 4px;color:var(--green2)">-1.10%</td><td style="padding:5px 4px">60.5%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">川恒股份<br><span style="color:var(--t4);font-size:10px">002895</span></td><td style="padding:5px 4px;color:var(--t1)">34.57</td><td style="padding:5px 4px;color:var(--green2)">-2.48%</td><td style="padding:5px 4px">60.5%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">东方铁塔<br><span style="color:var(--t4);font-size:10px">002545</span></td><td style="padding:5px 4px;color:var(--t1)">18.74</td><td style="padding:5px 4px;color:var(--green2)">-1.73%</td><td style="padding:5px 4px">64.6%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">三变科技<br><span style="color:var(--t4);font-size:10px">002112</span></td><td style="padding:5px 4px;color:var(--t1)">16.40</td><td style="padding:5px 4px;color:var(--green2)">-1.09%</td><td style="padding:5px 4px">64.9%</td><td style="padding:5px 4px;color:var(--t3)">B</td></tr></table></div>
+</details>
+<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔴 C · 禁止（25只）</summary>
+<div style="max-height:52vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse"><tr style="color:var(--t4);font-size:11px;text-align:left"><th style="padding:4px">名称</th><th style="padding:4px">价</th><th style="padding:4px">涨跌</th><th style="padding:4px">贪婪</th><th style="padding:4px">判定</th></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">顺钠股份<br><span style="color:var(--t4);font-size:10px">000533</span></td><td style="padding:5px 4px;color:var(--t1)">10.41</td><td style="padding:5px 4px;color:var(--green2)">-4.67%</td><td style="padding:5px 4px">71.5%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">星帅尔<br><span style="color:var(--t4);font-size:10px">002860</span></td><td style="padding:5px 4px;color:var(--t1)">16.68</td><td style="padding:5px 4px;color:var(--green2)">-4.14%</td><td style="padding:5px 4px">97.2%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">东晶电子<br><span style="color:var(--t4);font-size:10px">002199</span></td><td style="padding:5px 4px;color:var(--t1)">13.67</td><td style="padding:5px 4px;color:var(--green2)">-4.00%</td><td style="padding:5px 4px">95.6%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">宁波银行<br><span style="color:var(--t4);font-size:10px">002142</span></td><td style="padding:5px 4px;color:var(--t1)">31.88</td><td style="padding:5px 4px;color:var(--green2)">-3.10%</td><td style="padding:5px 4px">88.4%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">联化科技<br><span style="color:var(--t4);font-size:10px">002250</span></td><td style="padding:5px 4px;color:var(--t1)">15.08</td><td style="padding:5px 4px;color:var(--green2)">-2.71%</td><td style="padding:5px 4px">69.0%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">森马服饰<br><span style="color:var(--t4);font-size:10px">002563</span></td><td style="padding:5px 4px;color:var(--t1)">6.21</td><td style="padding:5px 4px;color:var(--green2)">-2.36%</td><td style="padding:5px 4px">94.7%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">雅克科技<br><span style="color:var(--t4);font-size:10px">002409</span></td><td style="padding:5px 4px;color:var(--t1)">133.80</td><td style="padding:5px 4px;color:var(--green2)">-2.31%</td><td style="padding:5px 4px">89.7%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">风华高科<br><span style="color:var(--t4);font-size:10px">000636</span></td><td style="padding:5px 4px;color:var(--t1)">49.35</td><td style="padding:5px 4px;color:var(--green2)">-2.28%</td><td style="padding:5px 4px">89.0%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中国重汽<br><span style="color:var(--t4);font-size:10px">000951</span></td><td style="padding:5px 4px;color:var(--t1)">23.21</td><td style="padding:5px 4px;color:var(--green2)">-2.11%</td><td style="padding:5px 4px">93.4%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">融捷股份<br><span style="color:var(--t4);font-size:10px">002192</span></td><td style="padding:5px 4px;color:var(--t1)">61.52</td><td style="padding:5px 4px;color:var(--green2)">-1.99%</td><td style="padding:5px 4px">73.4%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">汉缆股份<br><span style="color:var(--t4);font-size:10px">002498</span></td><td style="padding:5px 4px;color:var(--t1)">6.83</td><td style="padding:5px 4px;color:var(--green2)">-1.87%</td><td style="padding:5px 4px">73.0%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">利尔化学<br><span style="color:var(--t4);font-size:10px">002258</span></td><td style="padding:5px 4px;color:var(--t1)">15.90</td><td style="padding:5px 4px;color:var(--green2)">-1.73%</td><td style="padding:5px 4px">90.3%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">新 和 成<br><span style="color:var(--t4);font-size:10px">002001</span></td><td style="padding:5px 4px;color:var(--t1)">30.01</td><td style="padding:5px 4px;color:var(--green2)">-1.67%</td><td style="padding:5px 4px">74.3%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">华峰化学<br><span style="color:var(--t4);font-size:10px">002064</span></td><td style="padding:5px 4px;color:var(--t1)">10.98</td><td style="padding:5px 4px;color:var(--green2)">-1.52%</td><td style="padding:5px 4px">76.5%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">美的集团<br><span style="color:var(--t4);font-size:10px">000333</span></td><td style="padding:5px 4px;color:var(--t1)">87.60</td><td style="padding:5px 4px;color:var(--green2)">-1.52%</td><td style="padding:5px 4px">99.7%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">孚日股份<br><span style="color:var(--t4);font-size:10px">002083</span></td><td style="padding:5px 4px;color:var(--t1)">11.10</td><td style="padding:5px 4px;color:var(--green2)">-1.42%</td><td style="padding:5px 4px">71.5%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">罗莱生活<br><span style="color:var(--t4);font-size:10px">002293</span></td><td style="padding:5px 4px;color:var(--t1)">11.14</td><td style="padding:5px 4px;color:var(--green2)">-1.24%</td><td style="padding:5px 4px">96.2%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">贤丰控股<br><span style="color:var(--t4);font-size:10px">002141</span></td><td style="padding:5px 4px;color:var(--t1)">5.60</td><td style="padding:5px 4px;color:var(--green2)">-1.23%</td><td style="padding:5px 4px">96.6%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">三全食品<br><span style="color:var(--t4);font-size:10px">002216</span></td><td style="padding:5px 4px;color:var(--t1)">13.25</td><td style="padding:5px 4px;color:var(--green2)">-1.19%</td><td style="padding:5px 4px">92.8%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">荣盛石化<br><span style="color:var(--t4);font-size:10px">002493</span></td><td style="padding:5px 4px;color:var(--t1)">12.36</td><td style="padding:5px 4px;color:var(--green2)">-1.20%</td><td style="padding:5px 4px">83.1%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">承德露露<br><span style="color:var(--t4);font-size:10px">000848</span></td><td style="padding:5px 4px;color:var(--t1)">9.00</td><td style="padding:5px 4px;color:var(--green2)">-1.10%</td><td style="padding:5px 4px">74.6%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">东阿阿胶<br><span style="color:var(--t4);font-size:10px">000423</span></td><td style="padding:5px 4px;color:var(--t1)">54.62</td><td style="padding:5px 4px;color:var(--green2)">-1.12%</td><td style="padding:5px 4px">78.4%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">东方盛虹<br><span style="color:var(--t4);font-size:10px">000301</span></td><td style="padding:5px 4px;color:var(--t1)">11.77</td><td style="padding:5px 4px;color:var(--green2)">-1.09%</td><td style="padding:5px 4px">74.6%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">苏州银行<br><span style="color:var(--t4);font-size:10px">002966</span></td><td style="padding:5px 4px;color:var(--t1)">8.49</td><td style="padding:5px 4px;color:var(--green2)">-1.05%</td><td style="padding:5px 4px">74.3%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">德明利<br><span style="color:var(--t4);font-size:10px">001309</span></td><td style="padding:5px 4px;color:var(--t1)">385.90</td><td style="padding:5px 4px;color:var(--green2)">-1.06%</td><td style="padding:5px 4px">75.9%</td><td style="padding:5px 4px;color:var(--t3)">C</td></tr></table></div>
+</details>
+<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">⚪ D · 观望（6只）</summary>
+<div style="max-height:52vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse"><tr style="color:var(--t4);font-size:11px;text-align:left"><th style="padding:4px">名称</th><th style="padding:4px">价</th><th style="padding:4px">涨跌</th><th style="padding:4px">贪婪</th><th style="padding:4px">判定</th></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">山东墨龙<br><span style="color:var(--t4);font-size:10px">002490</span></td><td style="padding:5px 4px;color:var(--t1)">7.47</td><td style="padding:5px 4px;color:var(--green2)">-2.99%</td><td style="padding:5px 4px">58.6%</td><td style="padding:5px 4px;color:var(--t3)">D</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">皇氏集团<br><span style="color:var(--t4);font-size:10px">002329</span></td><td style="padding:5px 4px;color:var(--t1)">3.01</td><td style="padding:5px 4px;color:var(--green2)">-2.59%</td><td style="padding:5px 4px">4.1%</td><td style="padding:5px 4px;color:var(--t3)">D</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">大博医疗<br><span style="color:var(--t4);font-size:10px">002901</span></td><td style="padding:5px 4px;color:var(--t1)">43.20</td><td style="padding:5px 4px;color:var(--green2)">-2.28%</td><td style="padding:5px 4px">38.6%</td><td style="padding:5px 4px;color:var(--t3)">D</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">祥鑫科技<br><span style="color:var(--t4);font-size:10px">002965</span></td><td style="padding:5px 4px;color:var(--t1)">29.04</td><td style="padding:5px 4px;color:var(--green2)">-1.69%</td><td style="padding:5px 4px">2.5%</td><td style="padding:5px 4px;color:var(--t3)">D</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">牧原股份<br><span style="color:var(--t4);font-size:10px">002714</span></td><td style="padding:5px 4px;color:var(--t1)">39.26</td><td style="padding:5px 4px;color:var(--green2)">-1.65%</td><td style="padding:5px 4px">14.1%</td><td style="padding:5px 4px;color:var(--t3)">D</td></tr><tr style="font-size:12px;border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">华东医药<br><span style="color:var(--t4);font-size:10px">000963</span></td><td style="padding:5px 4px;color:var(--t1)">29.11</td><td style="padding:5px 4px;color:var(--green2)">-1.29%</td><td style="padding:5px 4px">8.2%</td><td style="padding:5px 4px;color:var(--t3)">D</td></tr></table></div>
+</details>
+<!--AUTOPICK_END--></div>
 </section>
 <section class="pane" id="pane-bluechip">
-  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">💎 蓝筹价值 + 低吸区：适合长期持有，当前可分批慢慢低吸，以年为单位，忽略短期波动。非投资建议。</div>
-  <div id="blueMount"><div class="panel"><div class="loading"><div class="spinner"></div><div style="margin-top:8px">正在加载蓝筹低吸数据…</div></div></div></div>
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">💎 蓝筹价值 + 低吸区：沪深300里连续3年ROE&gt;12%、经营现金流为正、估值处近一年低位的公司。适合长期持有、分批慢慢低吸，以年为单位，忽略短期波动。非投资建议。</div>
+  <div id="blueMount"><!--BLUECHIP_START-->
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>💎 蓝筹低吸 · 沪深300</h3>
+    <div class="panel-sub" style="margin-bottom:0">长期价值 + 低吸区 · 快照 2026-08-01 10:58</div></div>
+    <div style="font-size:12px;color:var(--t2)">蓝筹池 <b>300</b> → 质量过 <b>68</b> → 估值过 <b>15</b> → 推荐 <b>14</b></div>
+  </div>
+</div>
+<div class="panel">
+  <h3 style="margin-bottom:6px">🟢 现在就可分批低吸（7只）</h3>
+  <div style="font-size:11px;color:var(--t3);margin-bottom:8px">质地过关 + 估值低位 + 价格已在年线下方或近52周低位，建议分3-5批、每批间隔≥2周买入。</div>
+  
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">新奥股份 <span style="color:var(--t3);font-weight:400;font-size:12px">600803</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">17.80</div>
+        <div style="font-size:11px;color:var(--t3)">评分 63.4</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 26.6%</span>
+        <span>PE 12.6 · PB 2.28</span>
+        <span class="badge b-green">PE近一年分位 29%</span><span>毛利 12.3%</span><span class="badge b-green">低吸区·低于年线</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">现价低于250日均线（中期回撤），估值又处近一年低位，适合逢低慢慢低吸。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">青岛啤酒 <span style="color:var(--t3);font-weight:400;font-size:12px">600600</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">56.00</div>
+        <div style="font-size:11px;color:var(--t3)">评分 62.6</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 15.6%</span>
+        <span>PE 16.3 · PB 2.35</span>
+        <span class="badge b-green">PE近一年分位 20%</span><span>毛利 42.7%</span><span class="badge b-green">低吸区·低于年线</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">处年线下方且近52周低位，低吸区明确，可分批慢慢建仓，长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">中国人寿 <span style="color:var(--t3);font-weight:400;font-size:12px">601628</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">39.52</div>
+        <div style="font-size:11px;color:var(--t3)">评分 61.6</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 20.4%</span>
+        <span>PE 7.7 · PB 1.87</span>
+        <span class="badge b-green">PE近一年分位 26%</span><span class="badge b-green">低吸区·低于年线</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">现价低于250日均线（中期回撤），估值又处近一年低位，适合逢低慢慢低吸。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">华东医药 <span style="color:var(--t3);font-weight:400;font-size:12px">000963</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">29.11</div>
+        <div style="font-size:11px;color:var(--t3)">评分 61.0</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 14.6%</span>
+        <span>PE 14.6 · PB 1.98</span>
+        <span class="badge b-green">PE近一年分位 14%</span><span>毛利 33.9%</span><span class="badge b-green">低吸区·低于年线</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">现价低于250日均线（中期回撤），估值又处近一年低位，适合逢低慢慢低吸。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">华润三九 <span style="color:var(--t3);font-weight:400;font-size:12px">000999</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">25.81</div>
+        <div style="font-size:11px;color:var(--t3)">评分 59.4</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 16.1%</span>
+        <span>PE 13.1 · PB 1.85</span>
+        <span class="badge b-green">PE近一年分位 23%</span><span>毛利 57.7%</span><span class="badge b-green">低吸区·低于年线</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">现价低于250日均线（中期回撤），估值又处近一年低位，适合逢低慢慢低吸。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">泸州老窖 <span style="color:var(--t3);font-weight:400;font-size:12px">000568</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">90.93</div>
+        <div style="font-size:11px;color:var(--t3)">评分 59.1</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 30.4%</span>
+        <span>PE 13.5 · PB 2.59</span>
+        <span class="badge b-green">PE近一年分位 42%</span><span>毛利 85.8%</span><span class="badge b-green">低吸区·低于年线</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">现价低于250日均线（中期回撤），估值又处近一年低位，适合逢低慢慢低吸。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">招商银行 <span style="color:var(--t3);font-weight:400;font-size:12px">600036</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">39.62</div>
+        <div style="font-size:11px;color:var(--t3)">评分 57.4</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 15.3%</span>
+        <span>PE 6.6 · PB 0.88</span>
+        <span class="badge b-green">PE近一年分位 38%</span><span class="badge b-green">低吸区·低于年线</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">现价低于250日均线（中期回撤），估值又处近一年低位，适合逢低慢慢低吸。</div>
+    </div>
+</div>
+<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🟡 优质但仍需等回调（7只）</summary>
+  <div style="font-size:11px;color:var(--t3);margin:6px 0">质地与估值都合格，但价格未进入低吸区，可加自选等回踩年线。</div>
+  
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">云铝股份 <span style="color:var(--t3);font-weight:400;font-size:12px">000807</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">26.62</div>
+        <div style="font-size:11px;color:var(--t3)">评分 52.5</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 18.8%</span>
+        <span>PE 10.6 · PB 2.59</span>
+        <span class="badge b-green">PE近一年分位 11%</span><span>毛利 31.6%</span><span class="badge b-amber">估值合理·待回调</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">ROE稳定高、现金流为正、估值处近一年低位，可逢回调慢慢低吸，长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">烟台万华 <span style="color:var(--t3);font-weight:400;font-size:12px">600309</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">74.51</div>
+        <div style="font-size:11px;color:var(--t3)">评分 51.5</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 17.5%</span>
+        <span>PE 17.7 · PB 2.09</span>
+        <span class="badge b-green">PE近一年分位 18%</span><span>毛利 14.7%</span><span class="badge b-amber">估值合理·待回调</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">ROE稳定高、现金流为正、估值处近一年低位，可逢回调慢慢低吸，长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">伊利股份 <span style="color:var(--t3);font-weight:400;font-size:12px">600887</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">27.10</div>
+        <div style="font-size:11px;color:var(--t3)">评分 50.2</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 19.0%</span>
+        <span>PE 14.2 · PB 2.88</span>
+        <span class="badge b-green">PE近一年分位 14%</span><span>毛利 38.4%</span><span class="badge b-amber">估值合理·待回调</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">ROE稳定高、现金流为正、估值处近一年低位，可逢回调慢慢低吸，长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">中信特钢 <span style="color:var(--t3);font-weight:400;font-size:12px">000708</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">14.98</div>
+        <div style="font-size:11px;color:var(--t3)">评分 45.4</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 15.9%</span>
+        <span>PE 12.5 · PB 1.70</span>
+        <span class="badge b-green">PE近一年分位 35%</span><span>毛利 14.4%</span><span class="badge b-amber">估值合理·待回调</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">ROE稳定高、现金流为正、估值处近一年低位，可逢回调慢慢低吸，长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">中国海油 <span style="color:var(--t3);font-weight:400;font-size:12px">600938</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">32.26</div>
+        <div style="font-size:11px;color:var(--t3)">评分 44.8</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 20.1%</span>
+        <span>PE 12.3 · PB 1.83</span>
+        <span class="badge b-green">PE近一年分位 43%</span><span>毛利 51.2%</span><span class="badge b-amber">估值合理·待回调</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">ROE稳定高、现金流为正、估值处近一年低位，可逢回调慢慢低吸，长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">圆通速递 <span style="color:var(--t3);font-weight:400;font-size:12px">600233</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">18.86</div>
+        <div style="font-size:11px;color:var(--t3)">评分 44.3</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 13.9%</span>
+        <span>PE 13.3 · PB 1.78</span>
+        <span class="badge b-green">PE近一年分位 32%</span><span>毛利 11.2%</span><span class="badge b-amber">估值合理·待回调</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">ROE稳定高、现金流为正、估值处近一年低位，可逢回调慢慢低吸，长期持有。</div>
+    </div>
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">卫星化学 <span style="color:var(--t3);font-weight:400;font-size:12px">002648</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">25.39</div>
+        <div style="font-size:11px;color:var(--t3)">评分 35.5</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span class="badge b-green">3年ROE均 18.4%</span>
+        <span>PE 14.6 · PB 2.41</span>
+        <span class="badge b-green">PE近一年分位 56%</span><span>毛利 24.3%</span><span class="badge b-amber">估值合理·待回调</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">ROE稳定高、现金流为正、估值处近一年低位，可逢回调慢慢低吸，长期持有。</div>
+    </div>
+</details>
+<!--BLUECHIP_END--></div>
 </section>
 
 <footer>
@@ -1415,11 +2075,13 @@ document.getElementById('eventsRefreshBtn').onclick=loadMajorEvents;
 })();
 </script>
 
+<!--WOLF_RENDER_JS_START-->
 <script>
 (function(){
   function esc(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function colorOf(v){ return v>=0 ? 'var(--red2)' : 'var(--green2)'; }
-  function chg(v){ return (v>=0?'+':'') + (v!=null? v.toFixed(2):'0.00') + '%'; }
+  function num(v,n){ return (v==null||isNaN(v)) ? '-' : Number(v).toFixed(n==null?2:n); }
+  function chg(v){ return (v>=0?'+':'') + num(v,2) + '%'; }
   function money(v){ var y=(v||0)/1e8; return (y>=0?'+':'') + y.toFixed(2)+'亿'; }
   function greedBadge(g){
     if(g==null) return '<span class="badge b-amber">—</span>';
@@ -1439,23 +2101,23 @@ document.getElementById('eventsRefreshBtn').onclick=loadMajorEvents;
     return '<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">'
       + '<div style="display:flex;justify-content:space-between;align-items:baseline">'
       + '<div style="font-weight:700;color:var(--t1)">'+esc(r.name)+' <span style="color:var(--t3);font-weight:400;font-size:12px">'+esc(r.code)+fund+'</span></div>'
-      + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+(r.price!=null?r.price.toFixed(2):'-')+'</div>'
+      + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(r.price)+'</div>'
       + '<div style="font-size:12px;color:'+cc+'">'+chg(r.change)+'</div></div></div>'
       + '<div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
       + greedBadge(l1.greed) + ' <span>主力 <b style="color:var(--green2)">'+money(r.inflow)+'</b></span></div>'
       + '<div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">'
       + pill('①情绪',l1.status) + pill('②浪型',l2.status) + pill('③技术'+l3t,l3.status) + pill('④资金',l4.status) + '</div>'
-      + '<div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>'+(r.stop!=null?r.stop.toFixed(3):'-')+'</b> · 目标 <b>'+(r.target!=null?r.target.toFixed(3):'-')+'</b></div>'
+      + '<div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>'+num(r.stop,3)+'</b> · 目标 <b>'+num(r.target,3)+'</b></div>'
       + '<div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">'+esc(r.suggestion)+'</div></div>';
   }
   function autoRow(r){
     var col=colorOf(r.change||0);
     return '<tr style="font-size:12px;border-top:1px solid var(--line)">'
       + '<td style="padding:5px 4px;color:var(--t1)">'+esc(r.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(r.code)+'</span></td>'
-      + '<td style="padding:5px 4px;color:var(--t1)">'+(r.price!=null?r.price.toFixed(2):'-')+'</td>'
+      + '<td style="padding:5px 4px;color:var(--t1)">'+num(r.price)+'</td>'
       + '<td style="padding:5px 4px;color:'+col+'">'+chg(r.change)+'</td>'
-      + '<td style="padding:5px 4px">'+(r.l1&&r.l1.greed!=null?r.l1.greed.toFixed(1)+'%':'-')+'</td>'
-      + '<td style="padding:5px 4px;color:var(--t3)">'+(r.template||'')+'</td></tr>';
+      + '<td style="padding:5px 4px">'+((r.l1&&r.l1.greed!=null)?r.l1.greed.toFixed(1)+'%':'-')+'</td>'
+      + '<td style="padding:5px 4px;color:var(--t3)">'+esc(r.template||'')+'</td></tr>';
   }
   function autoTable(items){
     var h='<div style="max-height:52vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse">';
@@ -1464,20 +2126,31 @@ document.getElementById('eventsRefreshBtn').onclick=loadMajorEvents;
     return h+'</table></div>';
   }
   function blueCard(p){
-    var zone = p.below_ma ? '<span class="badge b-green">低吸区·低于年线</span>' : (p.near_low?'<span class="badge b-green">近52周低位</span>':'<span class="badge b-amber">估值合理</span>');
+    var zone = p.below_ma ? '<span class="badge b-green">低吸区·低于年线</span>'
+             : (p.near_low ? '<span class="badge b-green">近52周低位</span>'
+                           : '<span class="badge b-amber">估值合理·待回调</span>');
+    var pct = (p.pe_pct!=null) ? '<span class="badge b-green">PE近一年分位 '+Math.round(p.pe_pct*100)+'%</span>' : '';
+    var gm  = (p.gm!=null) ? '<span>毛利 '+num(p.gm,1)+'%</span>' : '';
     return '<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">'
       + '<div style="display:flex;justify-content:space-between;align-items:baseline">'
       + '<div style="font-weight:700;color:var(--t1)">'+esc(p.name)+' <span style="color:var(--t3);font-weight:400;font-size:12px">'+esc(p.code)+'</span></div>'
-      + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+(p.price!=null?p.price.toFixed(2):'-')+'</div></div></div>'
+      + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(p.price)+'</div>'
+      + '<div style="font-size:11px;color:var(--t3)">评分 '+num(p.score,1)+'</div></div></div>'
       + '<div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
-      + '<span class="badge b-green">ROE均 '+p.roe_avg+'%</span>'
-      + '<span class="badge b-amber">股息 '+p.div_yield+'%</span>'
-      + '<span>PE '+p.pe+' / PB '+p.pb+'</span>'
-      + zone + '</div>'
+      + '<span class="badge b-green">3年ROE均 '+num(p.roe_avg,1)+'%</span>'
+      + '<span>PE '+num(p.pe,1)+' · PB '+num(p.pb,2)+'</span>'
+      + pct + gm + zone + '</div>'
       + '<div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">'+esc(p.why)+'</div></div>';
   }
   function loadJSON(u){ return fetch(u,{cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error(u+' '+r.status); return r.json(); }); }
-  function errBox(id,msg){ var el=document.getElementById(id); if(el) el.innerHTML='<div class="panel" style="font-size:12px;color:var(--t3)">'+msg+'</div>'; }
+  // fetch 失败时：若已有烘焙的离线快照就保留它，只加一条提示；否则显示错误框
+  function fallback(id, msg){
+    var el=document.getElementById(id); if(!el) return;
+    var baked = el.innerHTML.indexOf('正在加载')<0 && el.innerHTML.replace(/<!--[\s\S]*?-->/g,'').trim().length>50;
+    var tip='<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">'+msg+'</div>';
+    if(baked){ el.insertAdjacentHTML('afterbegin', tip); }
+    else { el.innerHTML = tip; }
+  }
   function loadAuto(){
     loadJSON('auto_screen_result.json').then(function(d){
       var s=d.summary||{};
@@ -1489,22 +2162,43 @@ document.getElementById('eventsRefreshBtn').onclick=loadMajorEvents;
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔴 C · 禁止（'+(s.C||0)+'只）</summary>'+ autoTable(d.C) +'</details>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">⚪ D · 观望（'+(s.D||0)+'只）</summary>'+ autoTable(d.D) +'</details>';
       var el=document.getElementById('autoMount'); if(el) el.innerHTML=h;
-    }).catch(function(e){ errBox('autoMount','自动选股数据加载失败（'+esc(e.message)+'）。请通过部署后的网页(https://seonkoo.github.io/wolf-screener/)查看，并确认 auto_screen_result.json 已随仓库部署。'); });
+    }).catch(function(e){
+      fallback('autoMount','📴 未能实时拉取 auto_screen_result.json（'+esc(e.message)+'），以下为本地烘焙快照。要看每日最新，请访问 <a href="https://seonkoo.github.io/wolf-screener/" style="color:var(--blue)">seonkoo.github.io/wolf-screener</a>。');
+    });
   }
   function loadBlue(){
     loadJSON('blue_chip_result.json').then(function(d){
       var s=d.summary||{};
       var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
-        + '<div><h3>💎 蓝筹低吸 · '+esc(s.universe||'沪深300')+'</h3><div class="panel-sub" style="margin-bottom:0">长期价值+低吸区 · 生成于 '+esc(d.generated)+'</div></div>'
-        + '<div style="font-size:12px;color:var(--t2)">蓝筹池 <b>'+(s.cand||0)+'</b> → 估值分红过 <b>'+(s.passed_valuation||0)+'</b> → 质量过 <b>'+(s.passed_quality||0)+'</b> → 推荐 <b>'+(s.selected||0)+'</b></div></div></div>';
-      h+='<div class="panel"><h3 style="margin-bottom:6px">💎 推荐慢慢低吸（'+(s.selected||0)+'只）</h3>'+ (d.picks||[]).map(blueCard).join('') +'</div>';
+        + '<div><h3>💎 蓝筹低吸 · '+esc(s.universe||'沪深300')+'</h3><div class="panel-sub" style="margin-bottom:0">长期价值 + 低吸区 · 生成于 '+esc(d.generated)+'</div></div>'
+        + '<div style="font-size:12px;color:var(--t2)">蓝筹池 <b>'+(s.cand||0)+'</b> → 质量过 <b>'+(s.passed_quality||0)+'</b> → 估值过 <b>'+(s.passed_valuation||0)+'</b> → 推荐 <b>'+(s.selected||0)+'</b></div></div></div>';
+      var picks=d.picks||[];
+      var low=picks.filter(function(p){return p.below_ma||p.near_low;});
+      var wait=picks.filter(function(p){return !(p.below_ma||p.near_low);});
+      h+='<div class="panel"><h3 style="margin-bottom:6px">🟢 现在就可分批低吸（'+low.length+'只）</h3>'
+        + '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">质地过关 + 估值低位 + 价格已在年线下方或近52周低位，建议分3-5批、每批间隔≥2周买入。</div>'
+        + (low.length? low.map(blueCard).join('') : '<div style="font-size:12px;color:var(--t3)">今日无标的落入低吸区。</div>') +'</div>';
+      h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🟡 优质但仍需等回调（'+wait.length+'只）</summary>'
+        + '<div style="font-size:11px;color:var(--t3);margin:6px 0">质地与估值都合格，但价格未进入低吸区，可加自选等回踩年线。</div>'
+        + wait.map(blueCard).join('') +'</details>';
       var el=document.getElementById('blueMount'); if(el) el.innerHTML=h;
-    }).catch(function(e){ errBox('blueMount','蓝筹低吸数据加载失败（'+esc(e.message)+'）。请通过部署后的网页查看，并确认 blue_chip_result.json 已随仓库部署。'); });
+    }).catch(function(e){
+      fallback('blueMount','📴 未能实时拉取 blue_chip_result.json（'+esc(e.message)+'），以下为本地烘焙快照。要看每日最新，请访问 <a href="https://seonkoo.github.io/wolf-screener/" style="color:var(--blue)">seonkoo.github.io/wolf-screener</a>。');
+    });
   }
-  if(document.readyState!=='loading'){ loadAuto(); loadBlue(); }
-  else { document.addEventListener('DOMContentLoaded', function(){ loadAuto(); loadBlue(); }); }
+  // 支持 URL 锚点直达某个 tab，如 xxx.html#bluechip
+  function applyHash(){
+    if(!document.querySelector || typeof location==='undefined') return;
+    var h=(location.hash||'').replace('#','');
+    if(!h) return;
+    var btn=document.querySelector('.tab[data-tab="'+h+'"]');
+    if(btn) btn.click();
+  }
+  function boot(){ loadAuto(); loadBlue(); applyHash(); }
+  if(document.readyState!=='loading'){ boot(); }
+  else { document.addEventListener('DOMContentLoaded', boot); }
 })();
 </script>
-
+<!--WOLF_RENDER_JS_END-->
 </body>
 </html>

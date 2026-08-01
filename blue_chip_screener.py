@@ -22,7 +22,7 @@
 用法：python blue_chip_screener.py
 """
 import akshare as ak
-import json, os, time, datetime, sys
+import json, os, time, datetime, sys, math
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, 'blue_chip_result.json')
@@ -30,6 +30,17 @@ CACHE = os.path.join(HERE, 'bluechip_cache.json')
 
 def log(*a):
     print('[蓝筹]', *a); sys.stdout.flush()
+
+
+def clean_nan(o):
+    """递归把 NaN/Infinity 换成 None —— 浏览器 JSON.parse 不认这两个字面量。"""
+    if isinstance(o, dict):
+        return {k: clean_nan(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [clean_nan(v) for v in o]
+    if isinstance(o, float) and (math.isnan(o) or math.isinf(o)):
+        return None
+    return o
 
 def load_cache():
     if os.path.exists(CACHE):
@@ -220,7 +231,9 @@ def main():
                       'passed_quality': len(quality), 'passed_valuation': len(valued),
                       'selected': len(top)},
            'picks': top}
-    json.dump(out, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    # 浏览器 JSON.parse 不接受 NaN/Infinity（Python 默认会写出来），必须先清洗成 null
+    out = clean_nan(out)
+    json.dump(out, open(OUT, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, allow_nan=False)
     log('完成 → blue_chip_result.json，推荐 %d 只（耗时 %.0fs）' % (len(top), time.time() - t0))
     for p in top[:10]:
         tag = '低吸区' if p['below_ma'] else ('近低位' if p['near_low'] else '估值低位')

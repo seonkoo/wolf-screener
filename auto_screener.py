@@ -388,7 +388,13 @@ def main():
         for r in D[:10]: print(' '+line(r))
     # 保存
     out={'generated':time.strftime('%Y-%m-%d %H:%M'),'summary':{'cand':len(results),'A':len(A),'B':len(B),'C':len(C),'D':len(D)},'A':A,'B':B,'C':C,'D':D}
-    json.dump(out, open('auto_screen_result.json','w',encoding='utf-8'), ensure_ascii=False, indent=1)
+    # 浏览器 JSON.parse 不接受 NaN/Infinity，写盘前先清洗成 null
+    def _clean(o):
+        if isinstance(o,dict): return {k:_clean(v) for k,v in o.items()}
+        if isinstance(o,(list,tuple)): return [_clean(v) for v in o]
+        if isinstance(o,float) and (math.isnan(o) or math.isinf(o)): return None
+        return o
+    json.dump(_clean(out), open('auto_screen_result.json','w',encoding='utf-8'), ensure_ascii=False, indent=1, allow_nan=False)
     print('\n✅ 已保存 auto_screen_result.json')
 
 if __name__=='__main__':

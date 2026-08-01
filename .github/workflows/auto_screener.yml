@@ -33,12 +33,15 @@ jobs:
         run: python gen_auto_pick.py
       - name: 生成首页 index.html(Pages 根路径直达最新选股结果)
         run: cp auto_pick.html index.html
+      - name: 烘焙快照进两个完整页面(离线兜底，联网时仍按 fetch 取最新)
+        run: python sync_auto_tab.py
       - name: 提交更新
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git add -A
           git commit -m "auto: 选股快照 $(date +%F)" || echo "no changes"
+          git push || echo "push skipped"
       - name: 上传 Pages 产物
         uses: actions/upload-pages-artifact@v3
         with:
