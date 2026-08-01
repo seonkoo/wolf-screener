@@ -44,27 +44,53 @@ BLUE_PANE = '''<section class="pane" id="pane-bluechip">
 </section>'''
 
 BLUE_TAB_BTN = '  <button class="tab" data-tab="bluechip">💎 蓝筹低吸</button>'
-TEAM_TAB_BTN = '  <button class="tab" data-tab="team">🏛️ 国家队资金</button>'
-SENT_TAB_BTN = '  <button class="tab" data-tab="sent">🌡️ 情绪指数</button>'
-OVERVIEW_TAB_BTN = '  <button class="tab" data-tab="synthesis">🧭 综合研判</button>'
+MARKET_TAB_BTN = '  <button class="tab" data-tab="market">📊 市场研判</button>'
 WATCH_TAB_BTN = '  <button class="tab" data-tab="watch">📈 观察池</button>'
 
-# ---- 国家队资金 pane ----
-TEAM_PANE = '''<section class="pane" id="pane-team">
+# ---- 市场研判（综合研判 + 全球市场 + 重大事件 + 国家队资金 + 情绪指数 合并为一个 Tab）----
+# 注意：综合研判/国家队/情绪 用 snapshot 标记(sync_auto_tab.py 注入)；全球/重大事件 为前端独立渲染空壳(DOM id 由 renderGlobal/loadMajorEvents 填充)
+MARKET_PANE = '''<section class="pane" id="pane-market">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📊 市场研判（合并）：综合研判 + 全球市场 + 重大事件 + 国家队资金 + 情绪指数 五合一，解决多信号互相打架时不知如何加权。非投资建议。</div>
+
+  <!-- 1. 综合研判（置顶一句话 + 机会分） -->
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🧭 综合研判：把市场状态 / 国家队 / 情绪 / 选股 / 实盘验证 五个维度合成「机会分 + 一句话研判」。非投资建议。</div>
+  <div id="synthesisMount"><!--SYNTHESIS_START-->''' + LOADING_OVERVIEW + '''<!--SYNTHESIS_END--></div>
+
+  <!-- 2. 全球市场 -->
+  <div class="panel" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3 style="margin-bottom:0">🌐 全球市场 · 外围环境扫描</h3><div class="panel-sub" style="margin-bottom:0">数据来源：腾讯（美股七姐妹 / 韩股 / A50·黄金·原油ETF代理）、东方财富（韩国KOSPI指数）。与A股四层筛选联动研判。</div></div>
+    <button class="btn primary" id="globalRefreshBtn">🔄 刷新</button>
+  </div>
+  <div id="globalLoading" class="loading"><div class="spinner"></div><div style="margin-top:8px">正在拉取全球行情...</div></div>
+  <div class="panel" style="border:1px solid var(--blue)">
+    <h3>📊 综合研判 · 外围对A股波段反弹的影响</h3>
+    <div id="globalVerdict" style="margin-bottom:8px;font-size:14px">加载中...</div>
+    <div id="globalLines" style="font-size:13px;color:var(--t2);line-height:1.7">—</div>
+    <div class="suggest suggest-b" style="margin-top:10px"><div id="globalAdvice" style="font-size:13px;color:var(--t1)">—</div></div>
+  </div>
+  <div class="panel"><h3>纳指七姐妹（Magnificent 7）</h3><div class="panel-sub">美国科技龙头，反映全球风险偏好与AI产业景气，是A股成长板块的情绪锚</div><table><thead><tr><th>个股</th><th class="c">最新价(USD)</th><th class="c">涨跌幅</th></tr></thead><tbody id="mag7Body"><tr><td colspan="3" class="c" style="color:var(--t3);padding:16px">加载中...</td></tr></tbody></table></div>
+  <div class="grid g2">
+    <div class="panel"><h3>韩国市场 · 半导体风向标</h3><div class="panel-sub">三星 / 海力士为全球存储芯片景气领先指标，直接影响A股半导体链</div><div class="grid g3" id="krCards"></div></div>
+    <div class="panel"><h3>大宗商品 & A50期货</h3><div class="panel-sub">黄金 = 避险温度，原油 = 通胀/成本压力，A50 = 境外对中国资产预期</div><div class="grid g3" id="comCards"></div><div style="font-size:11px;color:var(--t4);margin-top:8px">注：黄金 / 原油 / A50 采用A股ETF代理（A股交易时段内紧密追踪真实标的），非交易时段显示当日收盘值。</div></div>
+  </div>
+
+  <!-- 3. 重大事件 -->
+  <div class="panel" id="eventsPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div><h3>📅 重大事件 · 财经日历</h3><div class="panel-sub" style="margin-bottom:0">东方财富财经日历 · 经济数据 / 新股 / 会议 / 政策（今日及未来3天）· <span style="color:var(--red2)">🌍 影响全球资金流动性的新闻置顶</span></div></div>
+      <button class="btn" id="eventsRefreshBtn" style="font-size:12px;padding:6px 10px">🔄 刷新</button>
+    </div>
+    <div id="eventsLoading" class="loading"><div class="spinner"></div><div style="margin-top:8px">正在拉取财经日历...</div></div>
+    <div id="eventsBody" style="display:none;max-height:72vh;overflow-y:auto;margin-top:6px"></div>
+  </div>
+
+  <!-- 4. 国家队资金 -->
   <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🏛️ 国家队资金走向：中证1000/科创50/创业板/沪深300 宽基ETF 成交活跃度 + 实时份额 + 市场状态，推断大资金进场/离场。结论为活跃度推断，非精确持仓复刻，不构成投资建议。</div>
   <div id="teamMount"><!--TEAM_START-->''' + LOADING_TEAM + '''<!--TEAM_END--></div>
-</section>'''
 
-# ---- 市场情绪 pane ----
-SENT_PANE = '''<section class="pane" id="pane-sent">
+  <!-- 5. 情绪指数 -->
   <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🌡️ 市场情绪指数（恐惧贪婪 0-100，反向指标）：冰点逆向买入、狂热逆向卖出。数据=微博财经NLP舆情 + 市场代理。非投资建议。</div>
   <div id="sentMount"><!--SENT_START-->''' + LOADING_SENT + '''<!--SENT_END--></div>
-</section>'''
-
-# ---- 综合研判总览 pane（注意：原网页已有内置「总览 overview」Tab，本模块用 synthesis 避免 ID 冲突）----
-OVERVIEW_PANE = '''<section class="pane" id="pane-synthesis">
-  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🧭 综合研判：把市场状态 / 国家队 / 情绪 / 选股 / 实盘验证 五个维度合成「机会分 + 一句话研判」，帮你解决多信号互相打架时不知如何加权。非投资建议。</div>
-  <div id="synthesisMount"><!--SYNTHESIS_START-->''' + LOADING_OVERVIEW + '''<!--SYNTHESIS_END--></div>
 </section>'''
 
 # ---- 观察池 / 实盘验证 pane ----
@@ -358,21 +384,19 @@ def patch(fn):
     orig = s
 
     # 1) tab 按钮
-    # 1a) 综合研判按钮（插到最前，作为默认落地页）
-    # 注意：原网页自带内置 data-tab="overview" 总览 Tab，故此处判定必须用 synthesis 而非 overview，
-    # 否则内置 overview 始终存在会导致综合研判按钮永远不被插入、pane 不可点。
-    if 'data-tab="synthesis"' not in s:
+    # 1a) 市场研判按钮（综合研判+全球市场+重大事件+国家队资金+情绪指数 合并）
+    if 'data-tab="market"' not in s:
         first = s.find('data-tab="')
         if first >= 0:
             end = s.find('</button>', first)
             end = (end + len('</button>')) if end >= 0 else (s.find('>', first) + 1)
-            s = s[:end] + '\n' + OVERVIEW_TAB_BTN + s[end:]
-            print('  + tab按钮: synthesis')
+            s = s[:end] + '\n' + MARKET_TAB_BTN + s[end:]
+            print('  + tab按钮: market')
         else:
             print('  ! 未找到首个 tab 按钮')
-    # 1b) 其余按钮（在 auto tab 按钮之后，按 bluechip/team/sent/watch 顺序插入）
+    # 1b) 其余按钮（在 auto tab 按钮之后，按 bluechip/watch 顺序插入）
     tabs_to_add = []
-    for key, btn in [('bluechip', BLUE_TAB_BTN), ('team', TEAM_TAB_BTN), ('sent', SENT_TAB_BTN), ('watch', WATCH_TAB_BTN)]:
+    for key, btn in [('bluechip', BLUE_TAB_BTN), ('watch', WATCH_TAB_BTN)]:
         if ('data-tab="%s"' % key) not in s:
             tabs_to_add.append(btn)
     if tabs_to_add:
@@ -414,61 +438,36 @@ def patch(fn):
                       '<!--BLUECHIP_START-->' + baked_blue + '<!--BLUECHIP_END-->', 1)
         print('    · 保留原离线快照')
 
-    # 3b) 国家队资金 pane
-    m = re.search(r'<!--TEAM_START-->(.*?)<!--TEAM_END-->', s, re.S)
-    baked_team = m.group(1) if m else None
-    s, ok = replace_section(s, 'pane-team', TEAM_PANE)
-    if not ok:
-        ins = s.find('</section>', s.find('<section class="pane" id="pane-bluechip">'))
-        if ins >= 0:
-            ins += len('</section>')
-            s = s[:ins] + '\n' + TEAM_PANE + s[ins:]
-            print('  + 国家队资金pane（新建）')
-        else:
-            print('  ! 无法定位国家队pane插入点')
-    else:
-        print('  ~ 国家队资金pane已刷新')
-    if baked_team and '正在加载' not in baked_team:
-        s = s.replace('<!--TEAM_START-->' + LOADING_TEAM + '<!--TEAM_END-->',
-                      '<!--TEAM_START-->' + baked_team + '<!--TEAM_END-->', 1)
-        print('    · 保留原离线快照')
-
-    # 3c) 市场情绪 pane
-    m = re.search(r'<!--SENT_START-->(.*?)<!--SENT_END-->', s, re.S)
-    baked_sent = m.group(1) if m else None
-    s, ok = replace_section(s, 'pane-sent', SENT_PANE)
-    if not ok:
-        ins = s.find('</section>', s.find('<section class="pane" id="pane-team">'))
-        if ins >= 0:
-            ins += len('</section>')
-            s = s[:ins] + '\n' + SENT_PANE + s[ins:]
-            print('  + 市场情绪pane（新建）')
-        else:
-            print('  ! 无法定位情绪pane插入点')
-    else:
-        print('  ~ 市场情绪pane已刷新')
-    if baked_sent and '正在加载' not in baked_sent:
-        s = s.replace('<!--SENT_START-->' + LOADING_SENT + '<!--SENT_END-->',
-                      '<!--SENT_START-->' + baked_sent + '<!--SENT_END-->', 1)
-        print('    · 保留原离线快照')
-
-    # 3d) 综合研判总览 pane（用 synthesis 避开内置 overview Tab 的 ID 冲突）
+    # 3b) 市场研判 pane（综合研判+全球市场+重大事件+国家队资金+情绪指数 合并）
     m = re.search(r'<!--SYNTHESIS_START-->(.*?)<!--SYNTHESIS_END-->', s, re.S)
     baked_ov = m.group(1) if m else None
-    s, ok = replace_section(s, 'pane-synthesis', OVERVIEW_PANE)
+    m2 = re.search(r'<!--TEAM_START-->(.*?)<!--TEAM_END-->', s, re.S)
+    baked_team = m2.group(1) if m2 else None
+    m3 = re.search(r'<!--SENT_START-->(.*?)<!--SENT_END-->', s, re.S)
+    baked_sent = m3.group(1) if m3 else None
+    s, ok = replace_section(s, 'pane-market', MARKET_PANE)
     if not ok:
-        ins = s.find('<section class="pane" id="pane-auto">')
+        ins = s.find('</section>', s.find('<section class="pane" id="pane-auto">'))
         if ins >= 0:
-            s = s[:ins] + OVERVIEW_PANE + '\n' + s[ins:]
-            print('  + 综合研判pane（新建）')
+            ins += len('</section>')
+            s = s[:ins] + '\n' + MARKET_PANE + s[ins:]
+            print('  + 市场研判pane（新建）')
         else:
-            print('  ! 无法定位总览pane插入点')
+            print('  ! 无法定位市场研判pane插入点')
     else:
-        print('  ~ 综合研判pane已刷新')
+        print('  ~ 市场研判pane已刷新')
     if baked_ov and '正在加载' not in baked_ov:
         s = s.replace('<!--SYNTHESIS_START-->' + LOADING_OVERVIEW + '<!--SYNTHESIS_END-->',
                       '<!--SYNTHESIS_START-->' + baked_ov + '<!--SYNTHESIS_END-->', 1)
-        print('    · 保留原离线快照')
+        print('    · 保留原离线快照(综合研判)')
+    if baked_team and '正在加载' not in baked_team:
+        s = s.replace('<!--TEAM_START-->' + LOADING_TEAM + '<!--TEAM_END-->',
+                      '<!--TEAM_START-->' + baked_team + '<!--TEAM_END-->', 1)
+        print('    · 保留原离线快照(国家队)')
+    if baked_sent and '正在加载' not in baked_sent:
+        s = s.replace('<!--SENT_START-->' + LOADING_SENT + '<!--SENT_END-->',
+                      '<!--SENT_START-->' + baked_sent + '<!--SENT_END-->', 1)
+        print('    · 保留原离线快照(情绪)')
 
     # 3e) 观察池 pane
     m = re.search(r'<!--WATCH_START-->(.*?)<!--WATCH_END-->', s, re.S)

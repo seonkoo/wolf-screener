@@ -127,18 +127,14 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 
 <nav class="tabs" id="tabNav">
   <button class="tab active" data-tab="overview">📡 今日看板</button>
-  <button class="tab" data-tab="synthesis">🧭 综合研判</button>
+  <button class="tab" data-tab="market">📊 市场研判</button>
   <button class="tab" data-tab="auto">🤖 自动选股</button>
   <button class="tab" data-tab="watch">📈 观察池</button>
-  <button class="tab" data-tab="team">🏛️ 国家队资金</button>
-  <button class="tab" data-tab="sent">🌡️ 情绪指数</button>
   <button class="tab" data-tab="bluechip">💎 蓝筹低吸</button>
   <button class="tab" data-tab="screener">🎯 选股雷达</button>
   <button class="tab" data-tab="flow">💰 板块资金流</button>
   <button class="tab" data-tab="etf">📈 ETF扫描</button>
   <button class="tab" data-tab="risk">🛡️ 风控中心</button>
-  <button class="tab" data-tab="global">🌐 全球市场</button>
-  <button class="tab" data-tab="events">📅 重大事件</button>
 </nav>
 
 <!-- Tab 1: 今日看板 -->
@@ -192,7 +188,102 @@ body{padding-bottom:env(safe-area-inset-bottom)}
       <p style="margin-top:10px;color:var(--t4);font-size:11px">⚠️ 本策略为波段信号参考工具，不构成投资建议。单一指标无效，必须多重条件共振。游资短线炒作、连板个股不适用本策略。</p>
     </div>
   </details>
+</section><section class="pane" id="pane-market">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📊 市场研判（合并）：综合研判 + 全球市场 + 重大事件 + 国家队资金 + 情绪指数 五合一，解决多信号互相打架时不知如何加权。非投资建议。</div>
+
+  <!-- 1. 综合研判（置顶一句话 + 机会分） -->
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🧭 综合研判：把市场状态 / 国家队 / 情绪 / 选股 / 实盘验证 五个维度合成「机会分 + 一句话研判」。非投资建议。</div>
+  <div id="synthesisMount"><!--SYNTHESIS_START-->
+<div class="panel" style="border-left:4px solid var(--green2);background:var(--bg2)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🧭 综合研判总览</h3><div class="panel-sub" style="margin-bottom:0">快照 2026-08-01 14:15</div></div>
+    <div style="text-align:right"><div style="font-size:30px;font-weight:800;color:var(--green2)">71</div><div style="font-size:12px;color:var(--t3)">机会分 0-100</div></div>
+  </div>
+  <div style="margin-top:6px;font-weight:700;color:var(--t1);font-size:15px">积极布局窗口</div>
+  <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">多维度共振偏多，可小仓分批低吸优质标的，严守止损纪律。</div>
+  <div style="margin-top:4px;font-size:11px;color:var(--t3)">🟡 风险等级 AMBER ｜ 国家队进场托市(+15)；情绪中性偏弱(+4)；选股信号有22只A信号</div>
+</div>
+<div class="panel"><h3 style="margin-bottom:6px">各维度贡献</h3><div style="font-size:12px;color:var(--t2);line-height:1.9">· 情绪：中性偏弱 <b style="color:var(--green2)">+4</b><br>· 国家队：进场托市 <b style="color:var(--green2)">+15</b><br>· 市场状态： <b style="color:var(--t3)">+0</b><br>· 实盘验证：样本不足 <b style="color:var(--t3)">+0</b><br>· 选股信号：22只A信号 <b style="color:var(--t3)">+0</b><br></div></div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">综合研判为多维启发式合成（非机器学习/非确定性结论），用于辅助加权，不构成投资建议；各维度独立 Tab 可下钻查证。</div>
+<!--SYNTHESIS_END--></div>
+
+  <!-- 2. 全球市场 -->
+  <div class="panel" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3 style="margin-bottom:0">🌐 全球市场 · 外围环境扫描</h3><div class="panel-sub" style="margin-bottom:0">数据来源：腾讯（美股七姐妹 / 韩股 / A50·黄金·原油ETF代理）、东方财富（韩国KOSPI指数）。与A股四层筛选联动研判。</div></div>
+    <button class="btn primary" id="globalRefreshBtn">🔄 刷新</button>
+  </div>
+  <div id="globalLoading" class="loading"><div class="spinner"></div><div style="margin-top:8px">正在拉取全球行情...</div></div>
+  <div class="panel" style="border:1px solid var(--blue)">
+    <h3>📊 综合研判 · 外围对A股波段反弹的影响</h3>
+    <div id="globalVerdict" style="margin-bottom:8px;font-size:14px">加载中...</div>
+    <div id="globalLines" style="font-size:13px;color:var(--t2);line-height:1.7">—</div>
+    <div class="suggest suggest-b" style="margin-top:10px"><div id="globalAdvice" style="font-size:13px;color:var(--t1)">—</div></div>
+  </div>
+  <div class="panel"><h3>纳指七姐妹（Magnificent 7）</h3><div class="panel-sub">美国科技龙头，反映全球风险偏好与AI产业景气，是A股成长板块的情绪锚</div><table><thead><tr><th>个股</th><th class="c">最新价(USD)</th><th class="c">涨跌幅</th></tr></thead><tbody id="mag7Body"><tr><td colspan="3" class="c" style="color:var(--t3);padding:16px">加载中...</td></tr></tbody></table></div>
+  <div class="grid g2">
+    <div class="panel"><h3>韩国市场 · 半导体风向标</h3><div class="panel-sub">三星 / 海力士为全球存储芯片景气领先指标，直接影响A股半导体链</div><div class="grid g3" id="krCards"></div></div>
+    <div class="panel"><h3>大宗商品 & A50期货</h3><div class="panel-sub">黄金 = 避险温度，原油 = 通胀/成本压力，A50 = 境外对中国资产预期</div><div class="grid g3" id="comCards"></div><div style="font-size:11px;color:var(--t4);margin-top:8px">注：黄金 / 原油 / A50 采用A股ETF代理（A股交易时段内紧密追踪真实标的），非交易时段显示当日收盘值。</div></div>
+  </div>
+
+  <!-- 3. 重大事件 -->
+  <div class="panel" id="eventsPanel">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div><h3>📅 重大事件 · 财经日历</h3><div class="panel-sub" style="margin-bottom:0">东方财富财经日历 · 经济数据 / 新股 / 会议 / 政策（今日及未来3天）· <span style="color:var(--red2)">🌍 影响全球资金流动性的新闻置顶</span></div></div>
+      <button class="btn" id="eventsRefreshBtn" style="font-size:12px;padding:6px 10px">🔄 刷新</button>
+    </div>
+    <div id="eventsLoading" class="loading"><div class="spinner"></div><div style="margin-top:8px">正在拉取财经日历...</div></div>
+    <div id="eventsBody" style="display:none;max-height:72vh;overflow-y:auto;margin-top:6px"></div>
+  </div>
+
+  <!-- 4. 国家队资金 -->
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🏛️ 国家队资金走向：中证1000/科创50/创业板/沪深300 宽基ETF 成交活跃度 + 实时份额 + 市场状态，推断大资金进场/离场。结论为活跃度推断，非精确持仓复刻，不构成投资建议。</div>
+  <div id="teamMount"><!--TEAM_START-->
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🏛️ 国家队资金走向</h3>
+    <div class="panel-sub" style="margin-bottom:0">快照 2026-08-01 13:24 · 沪深300 弱势(熊/探底)</div></div>
+    <div style="font-weight:700;color:var(--green2)">大资金：进场托市</div>
+  </div>
+</div>
+<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">市场处于弱势区间，宽基ETF成交额持续活跃/放量，与历史「国家队借道ETF托底」特征一致，大资金正在进场维稳。</div>
+<div class="panel">
+  <h3 style="margin-bottom:6px">宽基ETF 成交活跃度（估算成交额·亿元）</h3>
+  <div style="max-height:46vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+    <tr style="color:var(--t4);text-align:left"><th style="padding:4px">ETF</th><th style="padding:4px">5日</th><th style="padding:4px">20日</th><th style="padding:4px">60日</th><th style="padding:4px">趋势</th><th style="padding:4px">份额(亿)</th></tr>
+    <tr style="border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">中证1000ETF<br><span style="color:var(--t4);font-size:10px">成长小盘(国家队扩围重点)</span></td><td style="padding:5px 4px">65.1</td><td style="padding:5px 4px">60.5</td><td style="padding:5px 4px">38.6</td><td style="padding:5px 4px;color:var(--red2)">上行<br><span style="font-size:10px;color:var(--t3)">持平</span></td><td style="padding:5px 4px">113.3</td></tr><tr style="border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">科创50ETF<br><span style="color:var(--t4);font-size:10px">硬科技成长(国家队扩围重点)</span></td><td style="padding:5px 4px">124.9</td><td style="padding:5px 4px">115.5</td><td style="padding:5px 4px">84.7</td><td style="padding:5px 4px;color:var(--red2)">上行<br><span style="font-size:10px;color:var(--t3)">持平</span></td><td style="padding:5px 4px">539.0</td></tr><tr style="border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">创业板ETF<br><span style="color:var(--t4);font-size:10px">成长板块(国家队扩围重点)</span></td><td style="padding:5px 4px">128.1</td><td style="padding:5px 4px">99.7</td><td style="padding:5px 4px">72.1</td><td style="padding:5px 4px;color:var(--red2)">上行<br><span style="font-size:10px;color:var(--t3)">放量</span></td><td style="padding:5px 4px">220.0</td></tr><tr style="border-top:1px solid var(--line)"><td style="padding:5px 4px;color:var(--t1)">沪深300ETF<br><span style="color:var(--t4);font-size:10px">蓝筹压舱石(基准对照)</span></td><td style="padding:5px 4px">66.9</td><td style="padding:5px 4px">69.3</td><td style="padding:5px 4px">61.7</td><td style="padding:5px 4px;color:var(--t3)">平稳<br><span style="font-size:10px;color:var(--t3)">持平</span></td><td style="padding:5px 4px">264.8</td></tr>
+  </table></div>
+</div>
+<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：政策底由宽基ETF托市(True)；高位撤离(True,2026开年降温式调仓)。政策底由中证1000/科创50/创业板等宽基ETF托市(2024-02起汇金扩围)已证实；高位撤离真实发生，校准到2026开年市场亢奋期(1月宽基ETF天量成交+份额缩水)，属降温式调仓。2025年内汇金份额未环比净减。</div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ 估算成交额为流动性代理，非真实净申购额；份额仅实时快照，日频历史需基金季报。结论为活跃度推断，非精确持仓复刻，不构成投资建议。</div>
+<!--TEAM_END--></div>
+
+  <!-- 5. 情绪指数 -->
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🌡️ 市场情绪指数（恐惧贪婪 0-100，反向指标）：冰点逆向买入、狂热逆向卖出。数据=微博财经NLP舆情 + 市场代理。非投资建议。</div>
+  <div id="sentMount"><!--SENT_START-->
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🌡️ 市场情绪指数</h3>
+    <div class="panel-sub" style="margin-bottom:0">恐惧贪婪 0-100 · 反向指标 · 快照 2026-08-01 13:23</div></div>
+    <div style="font-weight:700;color:var(--t1)">37 · 中性偏弱</div>
+  </div>
+</div>
+<div class="panel">
+  <div style="height:14px;background:linear-gradient(90deg,var(--green2),#d99e00,var(--red2));border-radius:7px;position:relative;margin:8px 0 4px">
+    <div style="position:absolute;top:-4px;left:calc(36.7% - 3px);width:6px;height:22px;background:#fff;border:2px solid var(--t1);border-radius:3px"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--t4)"><span>冰点(逆向买)</span><span>中性</span><span>狂热(逆向卖)</span></div>
+  <div style="margin-top:8px;font-size:13px;color:#d99e00;font-weight:600">观望为主，按自身策略执行，不追不杀</div>
+</div>
+<div class="panel" style="font-size:12px;color:var(--t2)">数据构成：微博舆情NLP <b>27</b> ｜ 市场代理 <b>47</b> ｜ 合成 <b>37</b><br><span style="color:var(--t3);font-size:11px">来源：微博财经NLP(样本50只, 均值-0.47) + 市场代理</span></div>
+<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">论坛接入状态</summary>
+  <div style="font-size:11px;color:var(--t3);margin-top:6px;line-height:1.6">· 微博财经NLP：已接入(可达)<br>· 东方财富股吧：内置lexicon_score词库打分器，公开API沙箱不稳，待接入<br>· 雪球：需登录态/cookie，待接入<br>· NGA：需登录态，待接入</div>
+</details>
+<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">✔ 验证：散户情绪作反向指标有效——回测极度悲观买入胜率68.1%、极度乐观卖出68.6%。散户情绪作为反向指标有效：回测显示极度悲观(<-0.3)买入胜率68.1%、极度乐观(>+0.5)卖出68.6%，整体反向策略68.4% vs 同向31.6%。本指数定位为环境温度计/逆向参考，不做精确择时。</div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">⚠ 情绪指数为反向参考，非投资建议；论坛文本(NGA/雪球/股吧)需各自登录态方可稳定抓取，当前以微博舆情NLP+市场代理合成。</div>
+<!--SENT_END--></div>
 </section>
+
+
 
 <!-- Tab 2: 选股雷达 -->
 <section class="pane" id="pane-screener">
@@ -316,59 +407,10 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 </section>
 
 <!-- Tab 6: 全球市场 -->
-<section class="pane" id="pane-global">
-  <div class="panel" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <div>
-      <h3 style="margin-bottom:0">🌐 全球市场 · 外围环境扫描</h3>
-      <div class="panel-sub" style="margin-bottom:0">数据来源：腾讯（美股七姐妹 / 韩股 / A50·黄金·原油ETF代理）、东方财富（韩国KOSPI指数）。与A股四层筛选联动研判。</div>
-    </div>
-    <button class="btn primary" id="globalRefreshBtn">🔄 刷新</button>
-  </div>
 
-  <div id="globalLoading" class="loading"><div class="spinner"></div><div style="margin-top:8px">正在拉取全球行情...</div></div>
-
-  <div class="panel" style="border:1px solid var(--blue)">
-    <h3>📊 综合研判 · 外围对A股波段反弹的影响</h3>
-    <div id="globalVerdict" style="margin-bottom:8px;font-size:14px">加载中...</div>
-    <div id="globalLines" style="font-size:13px;color:var(--t2);line-height:1.7">—</div>
-    <div class="suggest suggest-b" style="margin-top:10px"><div id="globalAdvice" style="font-size:13px;color:var(--t1)">—</div></div>
-  </div>
-
-  <div class="panel">
-    <h3>纳指七姐妹（Magnificent 7）</h3>
-    <div class="panel-sub">美国科技龙头，反映全球风险偏好与AI产业景气，是A股成长板块的情绪锚</div>
-    <table><thead><tr><th>个股</th><th class="c">最新价(USD)</th><th class="c">涨跌幅</th></tr></thead><tbody id="mag7Body"><tr><td colspan="3" class="c" style="color:var(--t3);padding:16px">加载中...</td></tr></tbody></table>
-  </div>
-
-  <div class="grid g2">
-    <div class="panel">
-      <h3>韩国市场 · 半导体风向标</h3>
-      <div class="panel-sub">三星 / 海力士为全球存储芯片景气领先指标，直接影响A股半导体链</div>
-      <div class="grid g3" id="krCards"></div>
-    </div>
-    <div class="panel">
-      <h3>大宗商品 &amp; A50期货</h3>
-      <div class="panel-sub">黄金 = 避险温度，原油 = 通胀/成本压力，A50 = 境外对中国资产预期</div>
-      <div class="grid g3" id="comCards"></div>
-      <div style="font-size:11px;color:var(--t4);margin-top:8px">注：黄金 / 原油 / A50 采用A股ETF代理（A股交易时段内紧密追踪真实标的），非交易时段显示当日收盘值。</div>
-    </div>
-  </div>
-</section>
 
 <!-- Tab: 重大事件（独立板块，位于全球市场之后） -->
-<section class="pane" id="pane-events">
-  <div class="panel" id="eventsPanel">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <div>
-        <h3>📅 重大事件 · 财经日历</h3>
-        <div class="panel-sub" style="margin-bottom:0">东方财富财经日历 · 经济数据 / 新股 / 会议 / 政策（今日及未来3天）· <span style="color:var(--red2)">🌍 影响全球资金流动性的新闻置顶</span></div>
-      </div>
-      <button class="btn" id="eventsRefreshBtn" style="font-size:12px;padding:6px 10px">🔄 刷新</button>
-    </div>
-    <div id="eventsLoading" class="loading"><div class="spinner"></div><div style="margin-top:8px">正在拉取财经日历...</div></div>
-    <div id="eventsBody" style="display:none;max-height:72vh;overflow-y:auto;margin-top:6px"></div>
-  </div>
-</section>
+
 
 <!-- 自动选股 Tab：快照由 sync_auto_tab.py 注入 -->
 <section class="pane" id="pane-synthesis">
