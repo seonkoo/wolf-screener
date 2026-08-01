@@ -25,6 +25,7 @@ LOADING_BLUE = ('<div class="panel"><div class="loading"><div class="spinner"></
 # ---- 自动选股 pane（fetch 渲染 + 离线兜底标记）----
 AUTO_PANE = '''<section class="pane" id="pane-auto">
   <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">⚠️ 波段反弹信号，非投资建议；止损8% / 目标15%。第3层技术共振在扫描环境用「日线代理」（沙箱取不到15min K线），切到本Tab后用「🎯 选股雷达」以真实15min MACD复核。</div>
+  <div id="guardMount"><!--GUARD_START--><div class="panel" style="font-size:11px;color:var(--t3)">正在加载策略体检…</div><!--GUARD_END--></div>
   <div id="autoMount"><!--AUTOPICK_START-->''' + LOADING_AUTO + '''<!--AUTOPICK_END--></div>
 </section>'''
 
@@ -131,6 +132,24 @@ SCRIPT = JS_START + r'''
       fallback('autoMount','📴 未能实时拉取 auto_screen_result.json（'+esc(e.message)+'），以下为本地烘焙快照。要看每日最新，请访问 <a href="https://seonkoo.github.io/wolf-screener/" style="color:var(--blue)">seonkoo.github.io/wolf-screener</a>。');
     });
   }
+  function loadGuard(){
+    loadJSON('strategy_guard.json').then(function(g){
+      var lvl=g.risk_level||'GREEN'; var rg=g.regime||{}; var pr=g.position_rule||{};
+      var dot=lvl=='GREEN'?'🟢':(lvl=='AMBER'?'🟡':'🔴');
+      var label=lvl=='GREEN'?'正常':(lvl=='AMBER'?'建议调整':'建议暂停');
+      var border=lvl=='GREEN'?'var(--green2)':(lvl=='AMBER'?'#d99e00':'var(--red2)');
+      var html='<div class="panel" style="border-left:4px solid '+border+';background:var(--bg2)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">'
+        +'<div style="font-weight:700;color:var(--t1)">'+dot+' 策略体检 · '+label+'</div>'
+        +'<div style="font-size:12px;color:var(--t2)">市场 '+(rg.level||'-')+' · 仓位 '+(pr.size_mult!=null?pr.size_mult:1)+'x · 止损 '+Math.round((pr.stop_pct!=null?pr.stop_pct:0.08)*100)+'%</div></div>'
+        +'<div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">'+esc(rg.note||'')+'</div>'
+        +'<div style="margin-top:5px;font-size:11px;color:var(--t3)">'+(g.actions?g.actions.join(' ｜ '):'')+'</div></div>';
+      var el=document.getElementById('guardMount'); if(el) el.innerHTML=html;
+    }).catch(function(e){
+      var el=document.getElementById('guardMount');
+      if(el && el.innerHTML.indexOf('正在加载')>=0){ el.innerHTML='<div class="panel" style="font-size:11px;color:var(--t3)">📴 未能实时拉取策略体检（'+esc(e.message)+'），以下为本地烘焙快照。</div>'; }
+    });
+  }
   function loadBlue(){
     loadJSON('blue_chip_result.json').then(function(d){
       var s=d.summary||{};
@@ -159,7 +178,7 @@ SCRIPT = JS_START + r'''
     var btn=document.querySelector('.tab[data-tab="'+h+'"]');
     if(btn) btn.click();
   }
-  function boot(){ loadAuto(); loadBlue(); applyHash(); }
+  function boot(){ loadAuto(); loadBlue(); loadGuard(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();

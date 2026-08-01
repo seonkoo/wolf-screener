@@ -16,10 +16,12 @@ import json, re, os
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, 'auto_screen_result.json')
 BLUE = os.path.join(HERE, 'blue_chip_result.json')
+GUARD = os.path.join(HERE, 'strategy_guard.json')
 FILES = ['wolf-screener3.0.html', 'wolf-mobile4.2.html']
 
 A_START, A_END = '<!--AUTOPICK_START-->', '<!--AUTOPICK_END-->'
 B_START, B_END = '<!--BLUECHIP_START-->', '<!--BLUECHIP_END-->'
+G_START, G_END = '<!--GUARD_START-->', '<!--GUARD_END-->'
 
 
 def load(path):
@@ -221,14 +223,39 @@ def inject(s, block, start_tag, end_tag, mount_id):
     return s, None
 
 
+def build_guard(g):
+    lvl = g.get('risk_level', 'GREEN')
+    rg = g.get('regime', {}) or {}
+    pr = g.get('position_rule', {}) or {}
+    dot = '🟢' if lvl == 'GREEN' else ('🟡' if lvl == 'AMBER' else '🔴')
+    label = '正常' if lvl == 'GREEN' else ('建议调整' if lvl == 'AMBER' else '建议暂停')
+    border = 'var(--green2)' if lvl == 'GREEN' else ('#d99e00' if lvl == 'AMBER' else 'var(--red2)')
+    size = pr.get('size_mult', 1)
+    stop = round((pr.get('stop_pct', 0.08)) * 100)
+    note = rg.get('note', '')
+    actions = ' ｜ '.join(g.get('actions', []))
+    return f'''
+<div class="panel" style="border-left:4px solid {border};background:var(--bg2)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+    <div style="font-weight:700;color:var(--t1)">{dot} 策略体检 · {label}</div>
+    <div style="font-size:12px;color:var(--t2)">市场 {rg.get('level', '-')} · 仓位 {size}x · 止损 {stop}%</div>
+  </div>
+  <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">{note}</div>
+  <div style="margin-top:5px;font-size:11px;color:var(--t3)">{actions}</div>
+</div>
+'''
+
+
 def main():
     d = load(DATA)
     b = load(BLUE)
-    if not d and not b:
+    gd = load(GUARD)
+    if not d and not b and not gd:
         print('没有可用数据，退出')
         return
     auto_block = build_auto(d) if d else None
     blue_block = build_blue(b) if b else None
+    guard_block = build_guard(gd) if gd else None
     for fn in FILES:
         p = os.path.join(HERE, fn)
         if not os.path.exists(p):
@@ -243,6 +270,9 @@ def main():
         if blue_block:
             s, m = inject(s, blue_block, B_START, B_END, 'blueMount')
             notes.append('blue:' + (m or 'FAIL'))
+        if guard_block:
+            s, m = inject(s, guard_block, G_START, G_END, 'guardMount')
+            notes.append('guard:' + (m or 'FAIL'))
         if s != orig:
             open(p, 'w', encoding='utf-8').write(s)
             print('OK %-22s %s  (%d 字节)' % (fn, ' '.join(notes), len(s)))
