@@ -115,12 +115,34 @@ def logic_check():
 
 
 def live_check(baseline_win=BASE_WIN, baseline_avg=BASE_AVG, window=20):
-    """读 trade_log.json 做滚动实盘回检。无记录则 N/A。"""
+    """L2 实盘回检。优先读 watch_pool.json（自动追踪的真实命中率，无需手填），
+    样本不足时回退 trade_log.json（手动记录）。两者皆无则 N/A。"""
+    # 1) 优先：观察池（自我纠正闭环的数据源）
+    wp = 'watch_pool.json'
+    if os.path.exists(wp):
+        try:
+            d = json.load(open(wp, encoding='utf-8'))
+            s = d.get('stats', {})
+            wr = s.get('win_rate'); av = s.get('avg_return'); closed = s.get('closed', 0)
+            if closed and wr is not None:
+                if wr < 0.45 or (av or 0) < 0:
+                    status, action = 'RED', '观察池真实命中率严重低于回测基线，疑似策略失效或市场状态切换，建议暂停新开仓、收缩存量仓位并复盘。'
+                elif wr < baseline_win - 0.10 or (av or 0) < baseline_avg * 0.5:
+                    status, action = 'AMBER', '观察池真实命中率偏弱于回测基线，建议减半新开仓、收紧止损至6%，观察下一周期。'
+                else:
+                    status, action = 'GREEN', '观察池真实命中率与回测基线基本吻合，维持既定参数。'
+                return {'has_data': True, 'source': '观察池(自动追踪%d笔)' % closed, 'status': status,
+                        'window': closed, 'rolling_win': wr, 'rolling_avg': av,
+                        'baseline_win': baseline_win, 'baseline_avg': baseline_avg, 'note': action}
+            # 样本不足：继续往下走 trade_log
+        except Exception:
+            pass
+    # 2) 回退：手动实盘记录
     path = 'trade_log.json'
     if not os.path.exists(path):
         return {'has_data': False, 'status': 'N/A',
-                'note': '暂无实盘记录。建议按 trade_log.json 格式记录真实买卖，'
-                        '闭环验证「预期盈利率」并触发自动纠错。'}
+                'note': '暂无实盘记录（观察池样本也不足）。观察池会随每日扫描自动累积，'
+                        '建议先看观察池的「实盘验证」Tab，或按 trade_log.json 格式补记真实买卖。'}
     try:
         recs = json.load(open(path, encoding='utf-8'))
         if not isinstance(recs, list) or not recs:

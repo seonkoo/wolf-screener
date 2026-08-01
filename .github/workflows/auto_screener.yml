@@ -33,6 +33,16 @@ jobs:
         run: python gen_auto_pick.py
       - name: 生成首页 index.html(Pages 根路径直达最新选股结果)
         run: cp auto_pick.html index.html
+      - name: 运行策略体检/纠错机制(沪深300状态→仓位系数+动态止损)
+        run: python strategy_guard.py
+      - name: 监测国家队资金走向(宽基ETF成交活跃度+份额+市场状态)
+        run: python national_team.py
+      - name: 计算市场情绪指数(微博舆情NLP+市场代理→恐惧贪婪)
+        run: python sentiment.py
+      - name: 更新观察池(追踪自动选股输出的买入标的后续走向·自我纠正账本)
+        run: python watch_pool.py
+      - name: 生成综合研判总览(五维合成机会分+一句话研判)
+        run: python overview.py
       - name: 烘焙快照进两个完整页面(离线兜底，联网时仍按 fetch 取最新)
         run: python sync_auto_tab.py
       - name: 提交更新

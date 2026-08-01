@@ -21,6 +21,8 @@ BLUE = os.path.join(HERE, 'blue_chip_result.json')
 GUARD = os.path.join(HERE, 'strategy_guard.json')
 TEAM = os.path.join(HERE, 'national_team.json')
 SENT = os.path.join(HERE, 'sentiment.json')
+OVERVIEW = os.path.join(HERE, 'overview.json')
+WATCH = os.path.join(HERE, 'watch_pool.json')
 FILES = ['wolf-screener3.0.html', 'wolf-mobile4.2.html']
 
 A_START, A_END = '<!--AUTOPICK_START-->', '<!--AUTOPICK_END-->'
@@ -28,6 +30,8 @@ B_START, B_END = '<!--BLUECHIP_START-->', '<!--BLUECHIP_END-->'
 G_START, G_END = '<!--GUARD_START-->', '<!--GUARD_END-->'
 T_START, T_END = '<!--TEAM_START-->', '<!--TEAM_END-->'
 S_START, S_END = '<!--SENT_START-->', '<!--SENT_END-->'
+O_START, O_END = '<!--SYNTHESIS_START-->', '<!--SYNTHESIS_END-->'
+W_START, W_END = '<!--WATCH_START-->', '<!--WATCH_END-->'
 
 
 def load(path):
@@ -324,13 +328,85 @@ def build_sent(d):
 '''
 
 
+def build_overview(d):
+    sc = d.get('score', 50)
+    vcol = 'var(--green2)' if sc >= 70 else ('#3a9b3a' if sc >= 50 else ('#d99e00' if sc >= 30 else 'var(--red2)'))
+    dot = '🟢' if d.get('risk_level') == 'GREEN' else ('🟡' if d.get('risk_level') == 'AMBER' else '🔴')
+    comp = d.get('components', {}) or {}
+    rows = ''
+    for k, label in [('sentiment', '情绪'), ('national_team', '国家队'), ('regime', '市场状态'), ('watch_pool', '实盘验证'), ('auto_A', '选股信号')]:
+        v = comp.get(k)
+        if not v:
+            continue
+        val = v.get('count', '') and f'{v["count"]}只A信号' or v.get('zone') or v.get('attitude') or v.get('vs_backtest') or ''
+        cont = v.get('贡献', 0) or 0
+        ccol = 'var(--green2)' if cont > 0 else ('var(--red2)' if cont < 0 else 'var(--t3)')
+        rows += f'· {label}：{val} <b style="color:{ccol}">{"+" if cont >= 0 else ""}{cont}</b><br>'
+    return f'''
+<div class="panel" style="border-left:4px solid {vcol};background:var(--bg2)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>🧭 综合研判总览</h3><div class="panel-sub" style="margin-bottom:0">快照 {d.get('generated','')}</div></div>
+    <div style="text-align:right"><div style="font-size:30px;font-weight:800;color:{vcol}">{num(sc,0)}</div><div style="font-size:12px;color:var(--t3)">机会分 0-100</div></div>
+  </div>
+  <div style="margin-top:6px;font-weight:700;color:var(--t1);font-size:15px">{d.get('verdict','')}</div>
+  <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">{d.get('action','')}</div>
+  <div style="margin-top:4px;font-size:11px;color:var(--t3)">{dot} 风险等级 {d.get('risk_level','')} ｜ {d.get('sentence','')}</div>
+</div>
+<div class="panel"><h3 style="margin-bottom:6px">各维度贡献</h3><div style="font-size:12px;color:var(--t2);line-height:1.9">{rows}</div></div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">{d.get('caveat','')}</div>
+'''
+
+
+def build_watch(d):
+    s = d.get('stats', {}) or {}
+    base = d.get('baseline', {}) or {}
+    wr = s.get('win_rate')
+    vs = s.get('vs_backtest', '样本不足')
+    wrcol = 'var(--t3)' if wr is None else ('var(--green2)' if vs == '高于回测' else ('var(--red2)' if vs == '低于回测' else 'var(--t3)'))
+    wr_txt = f'{wr*100:.1f}%' if wr is not None else '—'
+    base_txt = f' {(base.get("win") or 0)*100:.1f}%' if base.get('win') is not None else ''
+    rows = ''
+    for it in (d.get('items', []) or [])[::-1]:
+        col = color_of(it.get('return'))
+        stcol = 'var(--t3)' if it.get('status') == '持有中' else ('var(--green2)' if it.get('expectation') == '符合预期' else 'var(--red2)')
+        ret = it.get('return') or 0
+        rows += (f'<tr style="font-size:12px;border-top:1px solid var(--line)">'
+                 f'<td style="padding:5px 4px;color:var(--t1)">{it.get("name","")}<br><span style="color:var(--t4);font-size:10px">{it.get("code","")}</span></td>'
+                 f'<td style="padding:5px 4px">{num(it.get("entry_price"))}</td>'
+                 f'<td style="padding:5px 4px">{num(it.get("last_price"))}</td>'
+                 f'<td style="padding:5px 4px;color:{col}">{( "+" if ret>=0 else "" )}{ret*100:.2f}%</td>'
+                 f'<td style="padding:5px 4px;color:{stcol}">{it.get("status","")}<br><span style="font-size:10px">{it.get("expectation","")}</span></td></tr>')
+    avg_txt = f'{("+" if (s.get("avg_return") or 0) >= 0 else "")}{(s.get("avg_return") or 0)*100:.2f}%' if s.get('avg_return') is not None else '—'
+    return f'''
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>📈 观察池 · 实盘验证</h3><div class="panel-sub" style="margin-bottom:0">快照 {d.get('updated','')}</div></div>
+    <div style="text-align:right"><div style="font-size:20px;font-weight:800;color:{wrcol}">{wr_txt}</div>
+    <div style="font-size:11px;color:var(--t3)">真实命中率 vs 回测{base_txt}</div></div>
+  </div>
+</div>
+<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">
+  总追踪 <b>{s.get('total',0)}</b> 只 ｜ 已平仓 <b>{s.get('closed',0)}</b> ｜ 持仓 <b>{s.get('open',0)}</b>
+  ｜ 止盈 <b style="color:var(--green2)">{s.get('tp',0)}</b> ｜ 止损 <b style="color:var(--red2)">{s.get('stop',0)}</b> ｜ 到期 <b>{s.get('expired',0)}</b>
+  ｜ 均值 <b>{avg_txt}</b> ｜ <b style="color:{wrcol}">{vs}</b>
+</div>
+<div class="panel"><h3 style="margin-bottom:6px">追踪明细</h3><div style="max-height:48vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+  <tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入场价</th><th style="padding:4px">现价</th><th style="padding:4px">收益</th><th style="padding:4px">状态</th></tr>
+  {rows}
+</table></div></div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">自我纠正：观察池自动追踪「自动选股」输出的买入标的，自输出以来的真实走向即本表。命中率低于回测基线时策略体检将亮红灯。不构成投资建议。</div>
+'''
+
+
 def main():
     d = load(DATA)
     b = load(BLUE)
     gd = load(GUARD)
     t = load(TEAM)
     sd = load(SENT)
-    if not d and not b and not gd and not t and not sd:
+    ov = load(OVERVIEW)
+    wd = load(WATCH)
+    if not (d or b or gd or t or sd or ov or wd):
         print('没有可用数据，退出')
         return
     auto_block = build_auto(d) if d else None
@@ -338,6 +414,8 @@ def main():
     guard_block = build_guard(gd) if gd else None
     team_block = build_team(t) if t else None
     sent_block = build_sent(sd) if sd else None
+    ov_block = build_overview(ov) if ov else None
+    wd_block = build_watch(wd) if wd else None
     for fn in FILES:
         p = os.path.join(HERE, fn)
         if not os.path.exists(p):
@@ -361,6 +439,12 @@ def main():
         if sent_block:
             s, m = inject(s, sent_block, S_START, S_END, 'sentMount')
             notes.append('sent:' + (m or 'FAIL'))
+        if ov_block:
+            s, m = inject(s, ov_block, O_START, O_END, 'synthesisMount')
+            notes.append('synthesis:' + (m or 'FAIL'))
+        if wd_block:
+            s, m = inject(s, wd_block, W_START, W_END, 'watchMount')
+            notes.append('watch:' + (m or 'FAIL'))
         if s != orig:
             open(p, 'w', encoding='utf-8').write(s)
             print('OK %-22s %s  (%d 字节)' % (fn, ' '.join(notes), len(s)))

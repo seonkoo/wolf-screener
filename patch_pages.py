@@ -25,6 +25,10 @@ LOADING_TEAM = ('<div class="panel"><div class="loading"><div class="spinner"></
                 '<div style="margin-top:8px">正在加载国家队资金数据…</div></div></div>')
 LOADING_SENT = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
                 '<div style="margin-top:8px">正在加载市场情绪数据…</div></div></div>')
+LOADING_OVERVIEW = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
+                '<div style="margin-top:8px">正在加载综合研判…</div></div></div>')
+LOADING_WATCH = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
+                '<div style="margin-top:8px">正在加载观察池…</div></div></div>')
 
 # ---- 自动选股 pane（fetch 渲染 + 离线兜底标记）----
 AUTO_PANE = '''<section class="pane" id="pane-auto">
@@ -42,6 +46,8 @@ BLUE_PANE = '''<section class="pane" id="pane-bluechip">
 BLUE_TAB_BTN = '  <button class="tab" data-tab="bluechip">💎 蓝筹低吸</button>'
 TEAM_TAB_BTN = '  <button class="tab" data-tab="team">🏛️ 国家队资金</button>'
 SENT_TAB_BTN = '  <button class="tab" data-tab="sent">🌡️ 情绪指数</button>'
+OVERVIEW_TAB_BTN = '  <button class="tab" data-tab="synthesis">🧭 综合研判</button>'
+WATCH_TAB_BTN = '  <button class="tab" data-tab="watch">📈 观察池</button>'
 
 # ---- 国家队资金 pane ----
 TEAM_PANE = '''<section class="pane" id="pane-team">
@@ -53,6 +59,18 @@ TEAM_PANE = '''<section class="pane" id="pane-team">
 SENT_PANE = '''<section class="pane" id="pane-sent">
   <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🌡️ 市场情绪指数（恐惧贪婪 0-100，反向指标）：冰点逆向买入、狂热逆向卖出。数据=微博财经NLP舆情 + 市场代理。非投资建议。</div>
   <div id="sentMount"><!--SENT_START-->''' + LOADING_SENT + '''<!--SENT_END--></div>
+</section>'''
+
+# ---- 综合研判总览 pane（注意：原网页已有内置「总览 overview」Tab，本模块用 synthesis 避免 ID 冲突）----
+OVERVIEW_PANE = '''<section class="pane" id="pane-synthesis">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🧭 综合研判：把市场状态 / 国家队 / 情绪 / 选股 / 实盘验证 五个维度合成「机会分 + 一句话研判」，帮你解决多信号互相打架时不知如何加权。非投资建议。</div>
+  <div id="synthesisMount"><!--SYNTHESIS_START-->''' + LOADING_OVERVIEW + '''<!--SYNTHESIS_END--></div>
+</section>'''
+
+# ---- 观察池 / 实盘验证 pane ----
+WATCH_PANE = '''<section class="pane" id="pane-watch">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📈 观察池 · 实盘验证：自动追踪「自动选股」输出的买入标的，自输出以来的真实走向与是否符合预期。命中率低于回测基线时策略体检将亮红灯。非投资建议。</div>
+  <div id="watchMount"><!--WATCH_START-->''' + LOADING_WATCH + '''<!--WATCH_END--></div>
 </section>'''
 
 JS_START = '<!--WOLF_RENDER_JS_START-->'
@@ -251,7 +269,69 @@ SCRIPT = JS_START + r'''
       fallback('sentMount','📴 未能实时拉取 sentiment.json（'+esc(e.message)+'），以下为本地烘焙快照。');
     });
   }
-  function boot(){ loadAuto(); loadBlue(); loadGuard(); loadTeam(); loadSent(); applyHash(); }
+  function loadSynthesis(){
+    loadJSON('overview.json').then(function(d){
+      var sc=d.score==null?50:d.score;
+      var vcol = sc>=70?'var(--green2)':(sc>=50?'#3a9b3a':(sc>=30?'#d99e00':'var(--red2)'));
+      var dot = d.risk_level=='GREEN'?'🟢':(d.risk_level=='AMBER'?'🟡':'🔴');
+      var h='<div class="panel" style="border-left:4px solid '+vcol+';background:var(--bg2)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+        +'<div><h3>🧭 综合研判</h3><div class="panel-sub" style="margin-bottom:0">生成于 '+esc(d.generated)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:30px;font-weight:800;color:'+vcol+'">'+num(sc,0)+'</div>'
+        +'<div style="font-size:12px;color:var(--t3)">机会分 0-100</div></div></div>'
+        +'<div style="margin-top:6px;font-weight:700;color:var(--t1);font-size:15px">'+esc(d.verdict)+'</div>'
+        +'<div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">'+esc(d.action)+'</div>'
+        +'<div style="margin-top:4px;font-size:11px;color:var(--t3)">'+dot+' 风险等级 '+esc(d.risk_level)+' ｜ '+esc(d.sentence)+'</div></div>';
+      var c=d.components||{};
+      h+='<div class="panel"><h3 style="margin-bottom:6px">各维度贡献</h3><div style="font-size:12px;color:var(--t2);line-height:1.9">';
+      [['sentiment','情绪'],['national_team','国家队'],['regime','市场状态'],['watch_pool','实盘验证'],['auto_A','选股信号']].forEach(function(pair){
+        var k=pair[0],label=pair[1],v=c[k]; if(!v) return;
+        var val = k=='auto_A' ? (v.count+'只A信号') : (v.zone||v.attitude||v.vs_backtest||'');
+        var cont = v['贡献']==null?0:v['贡献'];
+        var ccol = cont>0?'var(--green2)':(cont<0?'var(--red2)':'var(--t3)');
+        h+='· '+label+'：'+esc(val)+' <b style="color:'+ccol+'">'+(cont>=0?'+':'')+cont+'</b><br>';
+      });
+      h+='</div></div>';
+      h+='<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">'+esc(d.caveat||'')+'</div>';
+      var el=document.getElementById('synthesisMount'); if(el) el.innerHTML=h;
+    }).catch(function(e){
+      fallback('synthesisMount','📴 未能实时拉取 overview.json（'+esc(e.message)+'），以下为本地烘焙快照。');
+    });
+  }
+  function watchItem(it){
+    var col=colorOf((it.return||0));
+    var stcol = it.status=='持有中'?'var(--t3)':(it.expectation=='符合预期'?'var(--green2)':'var(--red2)');
+    return '<tr style="font-size:12px;border-top:1px solid var(--line)">'
+      +'<td style="padding:5px 4px;color:var(--t1)">'+esc(it.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(it.code)+'</span></td>'
+      +'<td style="padding:5px 4px">'+num(it.entry_price)+'</td>'
+      +'<td style="padding:5px 4px">'+num(it.last_price)+'</td>'
+      +'<td style="padding:5px 4px;color:'+col+'">'+chg((it.return||0)*100)+'</td>'
+      +'<td style="padding:5px 4px;color:'+stcol+'">'+esc(it.status)+'<br><span style="font-size:10px">'+esc(it.expectation)+'</span></td></tr>';
+  }
+  function loadWatch(){
+    loadJSON('watch_pool.json').then(function(d){
+      var s=d.stats||{}, base=d.baseline||{};
+      var wr=s.win_rate, vs=s.vs_backtest||'样本不足';
+      var wrcol = wr==null?'var(--t3)':(vs=='高于回测'?'var(--green2)':(vs=='低于回测'?'var(--red2)':'var(--t3)'));
+      var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+        +'<div><h3>📈 观察池 · 实盘验证</h3><div class="panel-sub" style="margin-bottom:0">生成于 '+esc(d.updated)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:20px;font-weight:800;color:'+wrcol+'">'+(wr==null?'—':(wr*100).toFixed(1)+'%')+'</div>'
+        +'<div style="font-size:11px;color:var(--t3)">真实命中率 vs 回测'+(base.win?(' '+(base.win*100).toFixed(1)+'%'):'')+'</div></div></div>';
+      h+='<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">'
+        + '总追踪 <b>'+(s.total||0)+'</b> 只 ｜ 已平仓 <b>'+(s.closed||0)+'</b> ｜ 持仓 <b>'+(s.open||0)+'</b>'
+        + ' ｜ 止盈 <b style="color:var(--green2)">'+(s.tp||0)+'</b> ｜ 止损 <b style="color:var(--red2)">'+(s.stop||0)+'</b> ｜ 到期 <b>'+(s.expired||0)+'</b>'
+        + ' ｜ 均值 <b>'+((s.avg_return==null)?'—':chg(s.avg_return*100))+'</b> ｜ <b style="color:'+wrcol+'">'+esc(vs)+'</b></div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">追踪明细</h3><div style="max-height:48vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
+      h+='<tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入场价</th><th style="padding:4px">现价</th><th style="padding:4px">收益</th><th style="padding:4px">状态</th></tr>';
+      (d.items||[]).slice().reverse().forEach(function(it){ h+=watchItem(it); });
+      h+='</table></div></div>';
+      h+='<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">自我纠正：观察池自动追踪「自动选股」输出的买入标的，自输出以来的真实走向即本表。命中率低于回测基线时策略体检将亮红灯。不构成投资建议。</div>';
+      var el=document.getElementById('watchMount'); if(el) el.innerHTML=h;
+    }).catch(function(e){
+      fallback('watchMount','📴 未能实时拉取 watch_pool.json（'+esc(e.message)+'），以下为本地烘焙快照。');
+    });
+  }
+  function boot(){ loadSynthesis(); loadAuto(); loadBlue(); loadGuard(); loadTeam(); loadSent(); loadWatch(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();
@@ -277,9 +357,22 @@ def patch(fn):
     s = open(p, encoding='utf-8').read()
     orig = s
 
-    # 1) tab 按钮（在 auto tab 按钮之后，按 bluechip/team/sent 顺序一次性插入）
+    # 1) tab 按钮
+    # 1a) 综合研判按钮（插到最前，作为默认落地页）
+    # 注意：原网页自带内置 data-tab="overview" 总览 Tab，故此处判定必须用 synthesis 而非 overview，
+    # 否则内置 overview 始终存在会导致综合研判按钮永远不被插入、pane 不可点。
+    if 'data-tab="synthesis"' not in s:
+        first = s.find('data-tab="')
+        if first >= 0:
+            end = s.find('</button>', first)
+            end = (end + len('</button>')) if end >= 0 else (s.find('>', first) + 1)
+            s = s[:end] + '\n' + OVERVIEW_TAB_BTN + s[end:]
+            print('  + tab按钮: synthesis')
+        else:
+            print('  ! 未找到首个 tab 按钮')
+    # 1b) 其余按钮（在 auto tab 按钮之后，按 bluechip/team/sent/watch 顺序插入）
     tabs_to_add = []
-    for key, btn in [('bluechip', BLUE_TAB_BTN), ('team', TEAM_TAB_BTN), ('sent', SENT_TAB_BTN)]:
+    for key, btn in [('bluechip', BLUE_TAB_BTN), ('team', TEAM_TAB_BTN), ('sent', SENT_TAB_BTN), ('watch', WATCH_TAB_BTN)]:
         if ('data-tab="%s"' % key) not in s:
             tabs_to_add.append(btn)
     if tabs_to_add:
@@ -357,6 +450,43 @@ def patch(fn):
     if baked_sent and '正在加载' not in baked_sent:
         s = s.replace('<!--SENT_START-->' + LOADING_SENT + '<!--SENT_END-->',
                       '<!--SENT_START-->' + baked_sent + '<!--SENT_END-->', 1)
+        print('    · 保留原离线快照')
+
+    # 3d) 综合研判总览 pane（用 synthesis 避开内置 overview Tab 的 ID 冲突）
+    m = re.search(r'<!--SYNTHESIS_START-->(.*?)<!--SYNTHESIS_END-->', s, re.S)
+    baked_ov = m.group(1) if m else None
+    s, ok = replace_section(s, 'pane-synthesis', OVERVIEW_PANE)
+    if not ok:
+        ins = s.find('<section class="pane" id="pane-auto">')
+        if ins >= 0:
+            s = s[:ins] + OVERVIEW_PANE + '\n' + s[ins:]
+            print('  + 综合研判pane（新建）')
+        else:
+            print('  ! 无法定位总览pane插入点')
+    else:
+        print('  ~ 综合研判pane已刷新')
+    if baked_ov and '正在加载' not in baked_ov:
+        s = s.replace('<!--SYNTHESIS_START-->' + LOADING_OVERVIEW + '<!--SYNTHESIS_END-->',
+                      '<!--SYNTHESIS_START-->' + baked_ov + '<!--SYNTHESIS_END-->', 1)
+        print('    · 保留原离线快照')
+
+    # 3e) 观察池 pane
+    m = re.search(r'<!--WATCH_START-->(.*?)<!--WATCH_END-->', s, re.S)
+    baked_w = m.group(1) if m else None
+    s, ok = replace_section(s, 'pane-watch', WATCH_PANE)
+    if not ok:
+        ins = s.find('</section>', s.find('<section class="pane" id="pane-sent">'))
+        if ins >= 0:
+            ins += len('</section>')
+            s = s[:ins] + '\n' + WATCH_PANE + s[ins:]
+            print('  + 观察池pane（新建）')
+        else:
+            print('  ! 无法定位观察池pane插入点')
+    else:
+        print('  ~ 观察池pane已刷新')
+    if baked_w and '正在加载' not in baked_w:
+        s = s.replace('<!--WATCH_START-->' + LOADING_WATCH + '<!--WATCH_END-->',
+                      '<!--WATCH_START-->' + baked_w + '<!--WATCH_END-->', 1)
         print('    · 保留原离线快照')
 
     # 4) 渲染脚本（带标记，可覆盖）
