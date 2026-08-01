@@ -145,12 +145,47 @@ def get_kline(code, cache):
     cache.setdefault('kline', {})[code] = res
     return res
 
+def get_names_map(codes):
+    """从腾讯 qt 批量行情接口取 代码->名称 映射（一次请求拿全部，沙箱/云端均可达）。
+    这是名字的唯一可靠来源，不再依赖 akshare 成分表那套脆弱的列名猜测
+    （旧逻辑在列名不匹配时会把 name 退化成代码列，导致线上只显示代码）。"""
+    m = {}
+    if not codes:
+        return m
+    try:
+        import urllib.request, ssl
+        tcs = [('sh' if c[0] in '69' else 'sz') + c for c in codes]
+        url = 'https://qt.gtimg.cn/q=' + ','.join(tcs)
+        ctx = ssl.create_default_context(); ctx.check_hostname = False; ctx.verify_mode = ssl.CERT_NONE
+        raw = urllib.request.urlopen(url, timeout=15, context=ctx).read().decode('gbk', 'ignore')
+        for line in raw.replace('\n', ';').split(';'):
+            line = line.strip()
+            if not line.startswith('v_'):
+                continue
+            eq = line.find('=')
+            if eq < 0:
+                continue
+            inner = line[2:eq]                       # sh600803
+            code6 = inner[2:] if inner[2:].isdigit() else None
+            val = line[eq+1:].strip().strip('"')
+            parts = val.split('~')
+            if code6 and len(parts) > 1 and parts[1]:
+                m[code6] = parts[1]
+    except Exception as e:
+        log('  批量取股票名称失败(退回成分表名称):', e)
+    return m
+
 def main():
     t0 = time.time()
     cache = load_cache()
     hs300 = get_hs300()
     if not hs300:
         log('蓝筹池为空，退出'); return
+    # 用腾讯 qt 接口的真名覆盖成分表名称（成分表列名不可靠，且 7 天缓存可能已污染）
+    nmap = get_names_map([c for c, _ in hs300])
+    def _good(nm, code):
+        return nm and not nm.isdigit() and nm != code
+    hs300 = [(c, (nmap.get(c) if _good(nmap.get(c), c) else n)) for c, n in hs300]
 
     # 取近 3 个年报期 + 最新一期
     annual = ['20251231', '20241231', '20231231', '20221231']
