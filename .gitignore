@@ -1,4 +1,9 @@
 # 本地缓存(大文件，不入库/不部署)
 klines_cache.json
+bluechip_cache.json
+hs300_cons.json
+indicator_lg.json
 __pycache__/
 *.log
+deployed_page.html
+auto_screen_result.json.bak

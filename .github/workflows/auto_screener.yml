@@ -25,12 +25,12 @@ jobs:
         run: pip install akshare
       - name: 运行自动选股扫描(宽扫描，不按净流入预筛)
         run: python auto_screener.py 1000 0
+      - name: 运行蓝筹长期价值选股(沪深300·可慢慢低吸)
+        run: python blue_chip_screener.py
       - name: 策略回测验证(参数化 opt_backtest，防未来函数)
         run: python opt_backtest.py 600 > opt_run.log 2>&1 || true
-      - name: 生成结果页
+      - name: 生成结果页(首页快照)
         run: python gen_auto_pick.py
-      - name: 注入网页 Tab
-        run: python sync_auto_tab.py
       - name: 生成首页 index.html(Pages 根路径直达最新选股结果)
         run: cp auto_pick.html index.html
       - name: 提交更新

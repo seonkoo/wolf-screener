@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-01 03:28",
+ "generated": "2026-08-01 10:36",
  "summary": {
   "cand": 100,
   "A": 22,
@@ -9,19 +9,19 @@
  },
  "A": [
   {
-   "code": "000526",
-   "name": "学大教育",
-   "price": 35.55,
-   "change": -2.15,
-   "inflow": 45330742.0,
+   "code": "002130",
+   "name": "沃尔核材",
+   "price": 16.7,
+   "change": -2.28,
+   "inflow": -88660660.0,
    "template": "A",
    "suggestion": "好公司+低位共振：小仓位分批低吸，持有约40日做均值回归，止损8%目标15%，反弹属急跌修复，不长期持有。",
-   "stop": 32.706,
-   "target": 40.882,
+   "stop": 15.364,
+   "target": 19.205,
    "l1": {
     "status": "pass",
-    "greed": 31.7,
-    "detail": "自建贪婪指数 31.7% → 31.7"
+    "greed": 4.4,
+    "detail": "自建贪婪指数 4.4% → 4.4"
    },
    "l2": {
     "status": "pass",
@@ -29,44 +29,44 @@
    },
    "l3": {
     "status": "pass",
-    "detail": "日线代理共振(15min不可用): 站上MA20 / 放量×2.1",
+    "detail": "日线代理共振(15min不可用): 站上MA20 / 放量×1.7",
     "tech": 2,
     "proxy": true
    },
    "l4": {
-    "status": "pass",
-    "flow": "主力回流",
-    "detail": "最近一日主力净流入 0.45亿 (部分为价量估算)"
+    "status": "neutral",
+    "flow": "资金mixed",
+    "detail": "资金流向不明朗 (部分为价量估算)"
    },
    "flows": [
     {
      "date": "2026-07-27",
-     "main": 1211005.5319148824,
+     "main": 10605416.11523565,
      "estimated": true
     },
     {
      "date": "2026-07-28",
-     "main": 1319461.678887899,
+     "main": -3900168.743949048,
      "estimated": true
     },
     {
      "date": "2026-07-29",
-     "main": -1941552.637263708,
+     "main": 65346413.743855074,
      "estimated": true
     },
     {
      "date": "2026-07-30",
-     "main": 18311654.09489705,
+     "main": 54730416.28024695,
      "estimated": true
     },
     {
      "date": "2026-07-31",
-     "main": 45330742.0
+     "main": -88660660.0
     }
    ],
    "fund": {
     "good": true,
-    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY):True"
+    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY&QoQ):True"
    }
   },
   {
@@ -127,7 +127,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY&QoQ):False"
    }
   },
   {
@@ -188,68 +188,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
-   }
-  },
-  {
-   "code": "002130",
-   "name": "沃尔核材",
-   "price": 16.7,
-   "change": -2.28,
-   "inflow": -88660660.0,
-   "template": "A",
-   "suggestion": "低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。",
-   "stop": 15.364,
-   "target": 19.205,
-   "l1": {
-    "status": "pass",
-    "greed": 4.4,
-    "detail": "自建贪婪指数 4.4% → 4.4"
-   },
-   "l2": {
-    "status": "pass",
-    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
-   },
-   "l3": {
-    "status": "pass",
-    "detail": "日线代理共振(15min不可用): 站上MA20 / 放量×1.7",
-    "tech": 2,
-    "proxy": true
-   },
-   "l4": {
-    "status": "neutral",
-    "flow": "资金mixed",
-    "detail": "资金流向不明朗 (部分为价量估算)"
-   },
-   "flows": [
-    {
-     "date": "2026-07-27",
-     "main": 10605416.11523565,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-28",
-     "main": -3900168.743949048,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-29",
-     "main": 65346413.743855074,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-30",
-     "main": 54730416.28024695,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-31",
-     "main": -88660660.0
-    }
-   ],
-   "fund": {
-    "good": false,
-    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -310,7 +249,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -371,7 +310,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:True 现金流3年>0:False 增长(YoY):True"
+    "detail": "ROE3年>8%:True 现金流3年>0:False 增长(YoY&QoQ):True"
    }
   },
   {
@@ -432,7 +371,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -493,7 +432,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -554,7 +493,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -615,7 +554,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -676,7 +615,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -737,7 +676,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY&QoQ):False"
    }
   },
   {
@@ -798,7 +737,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:True 现金流3年>0:False 增长(YoY):False"
+    "detail": "ROE3年>8%:True 现金流3年>0:False 增长(YoY&QoQ):False"
    }
   },
   {
@@ -859,7 +798,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -920,7 +859,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY&QoQ):False"
    }
   },
   {
@@ -981,7 +920,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -1042,7 +981,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -1103,7 +1042,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY&QoQ):True"
    }
   },
   {
@@ -1164,7 +1103,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -1225,7 +1164,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY):True"
+    "detail": "ROE3年>8%:False 现金流3年>0:False 增长(YoY&QoQ):False"
    }
   },
   {
@@ -1286,7 +1225,68 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
+   }
+  },
+  {
+   "code": "000526",
+   "name": "学大教育",
+   "price": 35.55,
+   "change": -2.15,
+   "inflow": 45330742.0,
+   "template": "A",
+   "suggestion": "低位+技术共振(非好公司)：仅轻仓或观察，若参与同样止损8%目标15%；好公司优先级更低。",
+   "stop": 32.706,
+   "target": 40.882,
+   "l1": {
+    "status": "pass",
+    "greed": 31.7,
+    "detail": "自建贪婪指数 31.7% → 31.7"
+   },
+   "l2": {
+    "status": "pass",
+    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
+   },
+   "l3": {
+    "status": "pass",
+    "detail": "日线代理共振(15min不可用): 站上MA20 / 放量×2.1",
+    "tech": 2,
+    "proxy": true
+   },
+   "l4": {
+    "status": "pass",
+    "flow": "主力回流",
+    "detail": "最近一日主力净流入 0.45亿 (部分为价量估算)"
+   },
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 1211005.5319148824,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": 1319461.678887899,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": -1941552.637263708,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": 18311654.09489705,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": 45330742.0
+    }
+   ],
+   "fund": {
+    "good": false,
+    "detail": "ROE3年>8%:True 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
@@ -1347,7 +1347,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   }
  ],
@@ -5320,67 +5320,6 @@
    }
   },
   {
-   "code": "002493",
-   "name": "荣盛石化",
-   "price": 12.36,
-   "change": -1.2,
-   "inflow": 12417731.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 11.371,
-   "target": 14.214,
-   "l1": {
-    "status": "fail",
-    "greed": 83.1,
-    "detail": "自建贪婪指数 83.1% → 83.1"
-   },
-   "l2": {
-    "status": "pass",
-    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 站上MA20",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "pass",
-    "flow": "主力回流",
-    "detail": "最近一日主力净流入 0.12亿 (部分为价量估算)"
-   },
-   "flows": [
-    {
-     "date": "2026-07-27",
-     "main": 14365305.043269236,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-28",
-     "main": 3016513.6892703893,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-29",
-     "main": 24744545.65187711,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-30",
-     "main": 24588293.606435683,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-31",
-     "main": 12417731.0
-    }
-   ],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "002216",
    "name": "三全食品",
    "price": 13.25,
@@ -5442,59 +5381,59 @@
    }
   },
   {
-   "code": "000423",
-   "name": "东阿阿胶",
-   "price": 54.62,
-   "change": -1.12,
-   "inflow": 13037884.0,
+   "code": "002493",
+   "name": "荣盛石化",
+   "price": 12.36,
+   "change": -1.2,
+   "inflow": 12417731.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 50.25,
-   "target": 62.813,
+   "stop": 11.371,
+   "target": 14.214,
    "l1": {
     "status": "fail",
-    "greed": 78.4,
-    "detail": "自建贪婪指数 78.4% → 78.4"
+    "greed": 83.1,
+    "detail": "自建贪婪指数 83.1% → 83.1"
    },
    "l2": {
     "status": "pass",
     "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
    },
    "l3": {
-    "status": "pass",
-    "detail": "日线代理共振(15min不可用): 站上MA20 / 放量×1.5",
-    "tech": 2,
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 站上MA20",
+    "tech": 1,
     "proxy": true
    },
    "l4": {
     "status": "pass",
     "flow": "主力回流",
-    "detail": "最近一日主力净流入 0.13亿 (部分为价量估算)"
+    "detail": "最近一日主力净流入 0.12亿 (部分为价量估算)"
    },
    "flows": [
     {
      "date": "2026-07-27",
-     "main": 6684776.535044413,
+     "main": 14365305.043269236,
      "estimated": true
     },
     {
      "date": "2026-07-28",
-     "main": 1488496.160541572,
+     "main": 3016513.6892703893,
      "estimated": true
     },
     {
      "date": "2026-07-29",
-     "main": 18026427.80769228,
+     "main": 24744545.65187711,
      "estimated": true
     },
     {
      "date": "2026-07-30",
-     "main": 16504505.183643179,
+     "main": 24588293.606435683,
      "estimated": true
     },
     {
      "date": "2026-07-31",
-     "main": 13037884.0
+     "main": 12417731.0
     }
    ],
    "fund": {
@@ -5564,6 +5503,67 @@
    }
   },
   {
+   "code": "000423",
+   "name": "东阿阿胶",
+   "price": 54.62,
+   "change": -1.12,
+   "inflow": 13037884.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 50.25,
+   "target": 62.813,
+   "l1": {
+    "status": "fail",
+    "greed": 78.4,
+    "detail": "自建贪婪指数 78.4% → 78.4"
+   },
+   "l2": {
+    "status": "pass",
+    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
+   },
+   "l3": {
+    "status": "pass",
+    "detail": "日线代理共振(15min不可用): 站上MA20 / 放量×1.5",
+    "tech": 2,
+    "proxy": true
+   },
+   "l4": {
+    "status": "pass",
+    "flow": "主力回流",
+    "detail": "最近一日主力净流入 0.13亿 (部分为价量估算)"
+   },
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 6684776.535044413,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": 1488496.160541572,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": 18026427.80769228,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": 16504505.183643179,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": 13037884.0
+    }
+   ],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
    "code": "000301",
    "name": "东方盛虹",
    "price": 11.77,
@@ -5625,67 +5625,6 @@
    }
   },
   {
-   "code": "001309",
-   "name": "德明利",
-   "price": 385.9,
-   "change": -1.06,
-   "inflow": 503845360.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 355.028,
-   "target": 443.785,
-   "l1": {
-    "status": "fail",
-    "greed": 75.9,
-    "detail": "自建贪婪指数 75.9% → 75.9"
-   },
-   "l2": {
-    "status": "wait",
-    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
-   },
-   "l3": {
-    "status": "pass",
-    "detail": "日线代理共振(15min不可用): 布林中轨附近 / 放量×2.2",
-    "tech": 2,
-    "proxy": true
-   },
-   "l4": {
-    "status": "pass",
-    "flow": "主力回流",
-    "detail": "最近一日主力净流入 5.04亿 (部分为价量估算)"
-   },
-   "flows": [
-    {
-     "date": "2026-07-27",
-     "main": 36847205.4822459,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-28",
-     "main": -377409258.32761467,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-29",
-     "main": -157186871.75202256,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-30",
-     "main": 981121923.621032,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-31",
-     "main": 503845360.0
-    }
-   ],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "002966",
    "name": "苏州银行",
    "price": 8.49,
@@ -5739,6 +5678,67 @@
     {
      "date": "2026-07-31",
      "main": -23514974.0
+    }
+   ],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
+   "code": "001309",
+   "name": "德明利",
+   "price": 385.9,
+   "change": -1.06,
+   "inflow": 503845360.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 355.028,
+   "target": 443.785,
+   "l1": {
+    "status": "fail",
+    "greed": 75.9,
+    "detail": "自建贪婪指数 75.9% → 75.9"
+   },
+   "l2": {
+    "status": "wait",
+    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
+   },
+   "l3": {
+    "status": "pass",
+    "detail": "日线代理共振(15min不可用): 布林中轨附近 / 放量×2.2",
+    "tech": 2,
+    "proxy": true
+   },
+   "l4": {
+    "status": "pass",
+    "flow": "主力回流",
+    "detail": "最近一日主力净流入 5.04亿 (部分为价量估算)"
+   },
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 36847205.4822459,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": -377409258.32761467,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": -157186871.75202256,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": 981121923.621032,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": 503845360.0
     }
    ],
    "fund": {
@@ -5989,7 +5989,7 @@
    ],
    "fund": {
     "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY):False"
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
