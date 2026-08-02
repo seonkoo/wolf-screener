@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-01 14:53",
+ "generated": "2026-08-02 04:18",
  "summary": {
   "cand": 1000,
   "A": 46,
@@ -53998,67 +53998,6 @@
    }
   },
   {
-   "code": "000893",
-   "name": "亚钾国际",
-   "price": 51.86,
-   "change": -0.84,
-   "inflow": -15393451.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 47.711,
-   "target": 59.639,
-   "l1": {
-    "status": "fail",
-    "greed": 75.5,
-    "detail": "自建贪婪指数 75.5% → 75.5"
-   },
-   "l2": {
-    "status": "pass",
-    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 站上MA20",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "neutral",
-    "flow": "资金mixed",
-    "detail": "资金流向不明朗 (部分为价量估算)"
-   },
-   "flows": [
-    {
-     "date": "2026-07-27",
-     "main": 26248812.561023105,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-28",
-     "main": 71077636.17901635,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-29",
-     "main": 17141970.862253956,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-30",
-     "main": 15108741.327519286,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-31",
-     "main": -15393451.0
-    }
-   ],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "000883",
    "name": "湖北能源",
    "price": 4.72,
@@ -54112,6 +54051,67 @@
     {
      "date": "2026-07-31",
      "main": 14064869.0
+    }
+   ],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
+   "code": "000893",
+   "name": "亚钾国际",
+   "price": 51.86,
+   "change": -0.84,
+   "inflow": -15393451.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 47.711,
+   "target": 59.639,
+   "l1": {
+    "status": "fail",
+    "greed": 75.5,
+    "detail": "自建贪婪指数 75.5% → 75.5"
+   },
+   "l2": {
+    "status": "pass",
+    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
+   },
+   "l3": {
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 站上MA20",
+    "tech": 1,
+    "proxy": true
+   },
+   "l4": {
+    "status": "neutral",
+    "flow": "资金mixed",
+    "detail": "资金流向不明朗 (部分为价量估算)"
+   },
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 26248812.561023105,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": 71077636.17901635,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": 17141970.862253956,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": 15108741.327519286,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": -15393451.0
     }
    ],
    "fund": {
@@ -58819,67 +58819,6 @@
    }
   },
   {
-   "code": "002965",
-   "name": "祥鑫科技",
-   "price": 29.04,
-   "change": -1.69,
-   "inflow": 30756322.0,
-   "template": "D",
-   "suggestion": "主跌阶段，观望，规避下跌风险。",
-   "stop": 26.717,
-   "target": 33.396,
-   "l1": {
-    "status": "pass",
-    "greed": 2.5,
-    "detail": "自建贪婪指数 2.5% → 2.5"
-   },
-   "l2": {
-    "status": "fail",
-    "detail": "日线MACD死叉且绿柱未缩短，持续下行风险高"
-   },
-   "l3": {
-    "status": "pass",
-    "detail": "日线代理共振(15min不可用): 布林下轨支撑 / 放量×1.7",
-    "tech": 2,
-    "proxy": true
-   },
-   "l4": {
-    "status": "pass",
-    "flow": "主力回流",
-    "detail": "最近一日主力净流入 0.31亿 (部分为价量估算)"
-   },
-   "flows": [
-    {
-     "date": "2026-07-27",
-     "main": 6567054.135158804,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-28",
-     "main": -44719572.79556344,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-29",
-     "main": -42432347.50143596,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-30",
-     "main": -32478792.8900063,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-31",
-     "main": 30756322.0
-    }
-   ],
-   "fund": {
-    "good": false,
-    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
-   }
-  },
-  {
    "code": "002714",
    "name": "牧原股份",
    "price": 39.26,
@@ -58938,6 +58877,67 @@
    "fund": {
     "good": false,
     "detail": ""
+   }
+  },
+  {
+   "code": "002965",
+   "name": "祥鑫科技",
+   "price": 29.04,
+   "change": -1.69,
+   "inflow": 30756322.0,
+   "template": "D",
+   "suggestion": "主跌阶段，观望，规避下跌风险。",
+   "stop": 26.717,
+   "target": 33.396,
+   "l1": {
+    "status": "pass",
+    "greed": 2.5,
+    "detail": "自建贪婪指数 2.5% → 2.5"
+   },
+   "l2": {
+    "status": "fail",
+    "detail": "日线MACD死叉且绿柱未缩短，持续下行风险高"
+   },
+   "l3": {
+    "status": "pass",
+    "detail": "日线代理共振(15min不可用): 布林下轨支撑 / 放量×1.7",
+    "tech": 2,
+    "proxy": true
+   },
+   "l4": {
+    "status": "pass",
+    "flow": "主力回流",
+    "detail": "最近一日主力净流入 0.31亿 (部分为价量估算)"
+   },
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 6567054.135158804,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": -44719572.79556344,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": -42432347.50143596,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": -32478792.8900063,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": 30756322.0
+    }
+   ],
+   "fund": {
+    "good": false,
+    "detail": "ROE3年>8%:False 现金流3年>0:True 增长(YoY&QoQ):False"
    }
   },
   {
