@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-02 04:18",
+ "generated": "2026-08-02 05:58",
  "summary": {
   "cand": 1000,
   "A": 46,
@@ -53998,67 +53998,6 @@
    }
   },
   {
-   "code": "000883",
-   "name": "湖北能源",
-   "price": 4.72,
-   "change": -0.84,
-   "inflow": 14064869.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 4.342,
-   "target": 5.428,
-   "l1": {
-    "status": "fail",
-    "greed": 68.3,
-    "detail": "自建贪婪指数 68.3% → 68.3"
-   },
-   "l2": {
-    "status": "pass",
-    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 站上MA20",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "pass",
-    "flow": "主力回流",
-    "detail": "最近一日主力净流入 0.14亿 (部分为价量估算)"
-   },
-   "flows": [
-    {
-     "date": "2026-07-27",
-     "main": 633999.6008583555,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-28",
-     "main": -1434065.0214592223,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-29",
-     "main": 3857552.2516268776,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-30",
-     "main": 1384640.668789804,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-31",
-     "main": 14064869.0
-    }
-   ],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "000893",
    "name": "亚钾国际",
    "price": 51.86,
@@ -54112,6 +54051,67 @@
     {
      "date": "2026-07-31",
      "main": -15393451.0
+    }
+   ],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
+   "code": "000883",
+   "name": "湖北能源",
+   "price": 4.72,
+   "change": -0.84,
+   "inflow": 14064869.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 4.342,
+   "target": 5.428,
+   "l1": {
+    "status": "fail",
+    "greed": 68.3,
+    "detail": "自建贪婪指数 68.3% → 68.3"
+   },
+   "l2": {
+    "status": "pass",
+    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
+   },
+   "l3": {
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 站上MA20",
+    "tech": 1,
+    "proxy": true
+   },
+   "l4": {
+    "status": "pass",
+    "flow": "主力回流",
+    "detail": "最近一日主力净流入 0.14亿 (部分为价量估算)"
+   },
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 633999.6008583555,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": -1434065.0214592223,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": 3857552.2516268776,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": 1384640.668789804,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": 14064869.0
     }
    ],
    "fund": {
@@ -56133,67 +56133,6 @@
    }
   },
   {
-   "code": "002479",
-   "name": "富春环保",
-   "price": 5.36,
-   "change": 0.75,
-   "inflow": -8505093.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 4.931,
-   "target": 6.164,
-   "l1": {
-    "status": "fail",
-    "greed": 67.1,
-    "detail": "自建贪婪指数 67.1% → 67.1"
-   },
-   "l2": {
-    "status": "pass",
-    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 站上MA20",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "neutral",
-    "flow": "资金mixed",
-    "detail": "资金流向不明朗 (部分为价量估算)"
-   },
-   "flows": [
-    {
-     "date": "2026-07-27",
-     "main": 7680161.122309186,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-28",
-     "main": 175629.98691589973,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-29",
-     "main": 1149401.427631569,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-30",
-     "main": -753876.4925373141,
-     "estimated": true
-    },
-    {
-     "date": "2026-07-31",
-     "main": -8505093.0
-    }
-   ],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "000776",
    "name": "广发证券",
    "price": 21.36,
@@ -56247,6 +56186,67 @@
     {
      "date": "2026-07-31",
      "main": 13166056.0
+    }
+   ],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
+   "code": "002479",
+   "name": "富春环保",
+   "price": 5.36,
+   "change": 0.75,
+   "inflow": -8505093.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 4.931,
+   "target": 6.164,
+   "l1": {
+    "status": "fail",
+    "greed": 67.1,
+    "detail": "自建贪婪指数 67.1% → 67.1"
+   },
+   "l2": {
+    "status": "pass",
+    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
+   },
+   "l3": {
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 站上MA20",
+    "tech": 1,
+    "proxy": true
+   },
+   "l4": {
+    "status": "neutral",
+    "flow": "资金mixed",
+    "detail": "资金流向不明朗 (部分为价量估算)"
+   },
+   "flows": [
+    {
+     "date": "2026-07-27",
+     "main": 7680161.122309186,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-28",
+     "main": 175629.98691589973,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-29",
+     "main": 1149401.427631569,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-30",
+     "main": -753876.4925373141,
+     "estimated": true
+    },
+    {
+     "date": "2026-07-31",
+     "main": -8505093.0
     }
    ],
    "fund": {
