@@ -29,6 +29,8 @@ LOADING_OVERVIEW = ('<div class="panel"><div class="loading"><div class="spinner
                 '<div style="margin-top:8px">正在加载综合研判…</div></div></div>')
 LOADING_WATCH = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
                 '<div style="margin-top:8px">正在加载观察池…</div></div></div>')
+LOADING_LIDAXIAO = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
+                '<div style="margin-top:8px">正在加载李大霄底部研判…</div></div></div>')
 
 # ---- 自动选股 pane（fetch 渲染 + 离线兜底标记）----
 AUTO_PANE = '''<section class="pane" id="pane-auto">
@@ -55,6 +57,26 @@ MARKET_PANE = '''<section class="pane" id="pane-market">
   <!-- 1. 综合研判（置顶一句话 + 机会分） -->
   <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🧭 综合研判：把市场状态 / 国家队 / 情绪 / 选股 / 实盘验证 五个维度合成「机会分 + 一句话研判」。非投资建议。</div>
   <div id="synthesisMount"><!--SYNTHESIS_START-->''' + LOADING_OVERVIEW + '''<!--SYNTHESIS_END--></div>
+
+  <!-- 1.5 李大霄历史底部研判 -->
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📉 李大霄历史底部研判体系：融合 2015婴儿底 / 2019年2440大底 / 2022年3000点 三套经典标准，适配2026全面注册制做量化修订。⚠️ 估值底部≠立刻上涨，仅代表下行空间收敛；只适用于优质龙头，垃圾股无安全垫。</div>
+  <div id="ldMount"><!--LIDAXIAO_START-->''' + LOADING_LIDAXIAO + '''<!--LIDAXIAO_END--></div>
+  <details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">📜 研判框架（三套历史底部 + 2026修订规则 + 核心原则 + 融合小狼）</summary>
+    <div style="font-size:12px;color:var(--t2);line-height:1.7;margin-top:6px">
+      <b>三套历史底部原始基准</b><br>
+      · 2015 婴儿底(沪指2850)：上证50 PE≈8.5、股息率3.66%；高杠杆出清、做空受限、暂停IPO/减持、救市政策密集。<br>
+      · 2019 历史大底(沪指2440)：上证50 PE≈8.3、股息率3.44%；货币宽松、长线资金(外资/养老金/险资)入场、财政发力 → 政策底+市场底。<br>
+      · 2022 3000点：上证50 PE≈8.7、股息率≈3.3%；长期逻辑(经济+龙头权重提升)、制度改善(长期资金+回购)。3000下方是稀缺布局窗口，仅限优质好股。<br><br>
+      <b>2026 量化修订 · 三档估值锚（上证50 静态PE）</b><br>
+      · ✅ 极致底部：PE ≤ 8.5（对标2440/2850）<br>
+      · ✅ 温和底部：PE 8.5 ~ 10（对标2022年3000点）<br>
+      · ⚠️ 接近底部：PE &gt; 10（当前现状）<br><br>
+      <b>五维量化判定</b>：①估值(PE/股息率历史低位) ②杠杆(两融平稳) ③资金(外资/险资/产业资本增持回购) ④供给(IP节奏平稳、无解禁冲击) ⑤政策(货币宽松+活跃资本市场)。<br>
+      判定：≥4项达标+极致底部→中长期底部分批布局；3项+温和底部→临近底部轻仓试错；≤2项/估值未达标→谨慎新开仓控仓。<br><br>
+      <b>核心原则</b>：①指数低位≠所有股涨，只拥抱低估值稳定盈利龙头；②底部可反复磨，禁一次性满仓；③注册制下筹码持续供给，难复刻快速普涨，行情以结构性为主。<br><br>
+      <b>与小狼策略融合</b>：李大霄体系判「大盘环境大时机」→ 达标后再用小狼策略(个股资金/波浪/技术)筛「个股买点」。先大后小，顺序不可颠倒。
+    </div>
+  </details>
 
   <!-- 2. 全球市场 -->
   <div class="panel" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
@@ -357,7 +379,67 @@ SCRIPT = JS_START + r'''
       fallback('watchMount','📴 未能实时拉取 watch_pool.json（'+esc(e.message)+'），以下为本地烘焙快照。');
     });
   }
-  function boot(){ loadSynthesis(); loadAuto(); loadBlue(); loadGuard(); loadTeam(); loadSent(); loadWatch(); applyHash(); }
+  function dimPill(label, st){
+    if(st=='pass') return '<span class="badge b-green">'+esc(label)+' ✓达标</span>';
+    if(st=='fail') return '<span class="badge b-red">'+esc(label)+' ✗未达标</span>';
+    if(st=='watch') return '<span class="badge b-amber">'+esc(label)+' ⏳观望</span>';
+    return '<span class="badge" style="background:var(--bg3);color:var(--t3)">'+esc(label)+' —待确认</span>';
+  }
+  function sz50Row(name, cur, pctAll, sub){
+    var p = (pctAll==null)?50:pctAll;
+    var col = p<25?'var(--green2)':(p<50?'#7cb342':(p<75?'#d99e00':'var(--red2)'));
+    var unit = name.indexOf('PE')>=0?'倍':'';
+    return '<div style="margin:8px 0">'
+      + '<div style="display:flex;justify-content:space-between;font-size:12px">'
+      + '<span style="color:var(--t1);font-weight:600">'+esc(name)+'</span>'
+      + '<span style="color:var(--t1)">'+num(cur)+unit+' <span style="color:var(--t3);font-size:11px">'+esc(sub||'')+'</span></span></div>'
+      + '<div style="height:10px;background:linear-gradient(90deg,var(--green2),#d99e00,var(--red2));border-radius:5px;position:relative;margin-top:4px">'
+      + '<div style="position:absolute;top:-3px;left:calc('+p+'% - 3px);width:6px;height:16px;background:#fff;border:2px solid var(--t1);border-radius:3px"></div></div>'
+      + '</div>';
+  }
+  function ldCard(b){
+    var low = b.low;
+    var pct = b.pe_pct_hist!=null? b.pe_pct_hist : (b.pe_pct_1y!=null? b.pe_pct_1y : (b.cheap_score!=null?b.cheap_score:null));
+    var pctTxt = pct==null?'—':(Math.round(pct)+'%');
+    var pctLabel = b.pe_pct_hist!=null?'历史分位':(b.pe_pct_1y!=null?'近1年分位':'横截面');
+    return '<div style="padding:8px 10px;margin-bottom:6px;background:var(--bg2);border-radius:8px;border-left:3px solid '+(low?'var(--green2)':'var(--line)')+'">'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline">'
+      + '<div style="font-weight:600;color:var(--t1)">'+esc(b.name)+' <span style="color:var(--t3);font-weight:400;font-size:11px">'+esc(b.code)+'</span>'+(low?' <span class="badge b-green">🟢低值</span>':'')+'</div>'
+      + '<div style="font-size:12px;color:var(--t2)">PE '+num(b.pe)+' · PB '+num(b.pb)+'</div></div>'
+      + '<div style="margin-top:3px;font-size:11px;color:var(--t3)">'+pctLabel+' <b style="color:'+(low?'var(--green2)':'var(--t2)')+'">'+pctTxt+'</b>'+(b.src=='fallback'?' · 降级数据':'')+'</div>'
+      + '</div>';
+  }
+  function loadLiDaxiao(){
+    loadJSON('li_daxiao.json').then(function(d){
+      var s=d.sz50||{}, v=d.verdict||{}, blues=d.bluechips||[], dims=d.dims||{};
+      var tier = s.tier||'未知';
+      var tierColor = tier=='极致底部'?'var(--green2)':(tier=='温和底部'?'#d99e00':'var(--t3)');
+      var h='';
+      h+='<div class="panel" style="border-left:4px solid '+tierColor+';background:var(--bg2)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+        +'<div><h3>📉 李大霄底部研判 · 综合结论</h3><div class="panel-sub" style="margin-bottom:0">上证50估值温度计 · 数据截至 '+esc(s.asof||'-')+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:22px;font-weight:800;color:'+tierColor+'">'+esc(tier)+'</div>'
+        +'<div style="font-size:12px;color:var(--t3)">上证50 静态PE '+num(s.pe)+'</div></div></div>';
+      h+='<div style="margin-top:6px;font-size:13px;color:var(--t1);font-weight:600">'+esc(v.level||'')+'</div>';
+      h+='<div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">'+esc(v.action||'')+'</div>';
+      h+='<div style="margin-top:4px;font-size:11px;color:var(--t3)">蓝筹低值 '+ (v.blue_low_count||0) +'/'+ (v.blue_total||0) +' 只处历史/近期低位</div></div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">📊 上证50 估值温度计（对比历年 PE/PB）</h3>';
+      h+= sz50Row('静态PE', s.pe, s.pe_pct_all, '全历史'+num(s.pe_pct_all)+'% / 近5年'+num(s.pe_pct_5y)+'%');
+      h+= sz50Row('市净率PB', s.pb, s.pb_pct_all, '全历史'+num(s.pb_pct_all)+'% / 近5年'+num(s.pb_pct_5y)+'%');
+      h+='<div style="font-size:11px;color:var(--t4);margin-top:6px">分位越低=越便宜。参考区间：PE '+num(s.pe_min)+'~'+num(s.pe_max)+'（中位'+num(s.pe_med)+'）；李大霄三档：≤8.5极致 / 8.5~10温和 / &gt;10接近底部。</div></div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">💎 蓝筹低值发现（'+blues.length+'只，按便宜度排序）</h3>';
+      h+='<div style="font-size:11px;color:var(--t3);margin-bottom:6px">标注🟢低值的蓝筹处历史/近期估值低位，可重点纳入观察池。'+(blues.length&&blues[0].src=='fallback'?'（个股历史接口限流，暂以1年分位+横截面替代）':'')+'</div>';
+      h+= blues.map(ldCard).join('');
+      h+='</div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">五维研判（量化修订版）</h3><div style="font-size:12px;color:var(--t2);line-height:1.9">';
+      for(var k in dims){ var dm=dims[k]; h+= dimPill(k, dm.status)+' <span style="color:var(--t3)">'+esc(dm.text)+'</span><br>'; }
+      h+='</div></div>';
+      var el=document.getElementById('ldMount'); if(el) el.innerHTML=h;
+    }).catch(function(e){
+      fallback('ldMount','📴 未能实时拉取 li_daxiao.json（'+esc(e.message)+'），以下为本地烘焙快照。要看每日最新，请访问 <a href="https://seonkoo.github.io/wolf-screener/" style="color:var(--blue)">seonkoo.github.io/wolf-screener</a>。');
+    });
+  }
+  function boot(){ loadLiDaxiao(); loadSynthesis(); loadAuto(); loadBlue(); loadGuard(); loadTeam(); loadSent(); loadWatch(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();
@@ -445,6 +527,8 @@ def patch(fn):
     baked_team = m2.group(1) if m2 else None
     m3 = re.search(r'<!--SENT_START-->(.*?)<!--SENT_END-->', s, re.S)
     baked_sent = m3.group(1) if m3 else None
+    m4 = re.search(r'<!--LIDAXIAO_START-->(.*?)<!--LIDAXIAO_END-->', s, re.S)
+    baked_ld = m4.group(1) if m4 else None
     s, ok = replace_section(s, 'pane-market', MARKET_PANE)
     if not ok:
         ins = s.find('</section>', s.find('<section class="pane" id="pane-auto">'))
@@ -468,6 +552,10 @@ def patch(fn):
         s = s.replace('<!--SENT_START-->' + LOADING_SENT + '<!--SENT_END-->',
                       '<!--SENT_START-->' + baked_sent + '<!--SENT_END-->', 1)
         print('    · 保留原离线快照(情绪)')
+    if baked_ld and '正在加载' not in baked_ld:
+        s = s.replace('<!--LIDAXIAO_START-->' + LOADING_LIDAXIAO + '<!--LIDAXIAO_END-->',
+                      '<!--LIDAXIAO_START-->' + baked_ld + '<!--LIDAXIAO_END-->', 1)
+        print('    · 保留原离线快照(李大霄)')
 
     # 3e) 观察池 pane
     m = re.search(r'<!--WATCH_START-->(.*?)<!--WATCH_END-->', s, re.S)

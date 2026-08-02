@@ -3,6 +3,9 @@ klines_cache.json
 bluechip_cache.json
 hs300_cons.json
 indicator_lg.json
+sz50_pe_history.json
+sz50_pb_history.json
+bluechip_hist_cache.json
 __pycache__/
 *.log
 deployed_page.html

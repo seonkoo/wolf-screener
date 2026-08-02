@@ -43,6 +43,8 @@ jobs:
         run: python watch_pool.py
       - name: 生成综合研判总览(五维合成机会分+一句话研判)
         run: python overview.py
+      - name: 生成李大霄历史底部研判(上证50历年PE/PB温度计+蓝筹低值发现)
+        run: python li_daxiao.py
       - name: 烘焙快照进两个完整页面(离线兜底，联网时仍按 fetch 取最新)
         run: python sync_auto_tab.py
       - name: 提交更新

@@ -16,6 +16,7 @@ if (OFFLINE && htmlFile) {
   const grab = (a, b) => { const m = html.match(new RegExp('<!--' + a + '-->([\\s\\S]*?)<!--' + b + '-->')); return m ? m[1] : ''; };
   el('autoMount').innerHTML = grab('AUTOPICK_START', 'AUTOPICK_END');
   el('blueMount').innerHTML = grab('BLUECHIP_START', 'BLUECHIP_END');
+  el('ldMount').innerHTML = grab('LIDAXIAO_START', 'LIDAXIAO_END');
 }
 global.document = {
   readyState: 'complete',
@@ -33,7 +34,7 @@ eval(src);
 
 setTimeout(() => {
   let bad = 0;
-  ['autoMount', 'blueMount'].forEach((id) => {
+  ['autoMount', 'blueMount', 'ldMount'].forEach((id) => {
     const h = el(id).innerHTML;
     const issues = [];
     if (/undefined/.test(h)) issues.push('undefined');

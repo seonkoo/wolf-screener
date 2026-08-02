@@ -23,6 +23,7 @@ TEAM = os.path.join(HERE, 'national_team.json')
 SENT = os.path.join(HERE, 'sentiment.json')
 OVERVIEW = os.path.join(HERE, 'overview.json')
 WATCH = os.path.join(HERE, 'watch_pool.json')
+LIDAXIAO = os.path.join(HERE, 'li_daxiao.json')
 FILES = ['wolf-screener3.0.html', 'wolf-mobile4.2.html']
 
 A_START, A_END = '<!--AUTOPICK_START-->', '<!--AUTOPICK_END-->'
@@ -32,6 +33,53 @@ T_START, T_END = '<!--TEAM_START-->', '<!--TEAM_END-->'
 S_START, S_END = '<!--SENT_START-->', '<!--SENT_END-->'
 O_START, O_END = '<!--SYNTHESIS_START-->', '<!--SYNTHESIS_END-->'
 W_START, W_END = '<!--WATCH_START-->', '<!--WATCH_END-->'
+LD_START, LD_END = '<!--LIDAXIAO_START-->', '<!--LIDAXIAO_END-->'
+
+
+def esc(x):
+    if x is None:
+        return ''
+    return str(x).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+
+def dim_badge_py(label, st):
+    if st == 'pass':
+        return f'<span class="badge b-green">{esc(label)} ✓达标</span>'
+    if st == 'fail':
+        return f'<span class="badge b-red">{esc(label)} ✗未达标</span>'
+    if st == 'watch':
+        return f'<span class="badge b-amber">{esc(label)} ⏳观望</span>'
+    return f'<span class="badge" style="background:var(--bg3);color:var(--t3)">{esc(label)} —待确认</span>'
+
+
+def ld_bar(name, cur, pct_all, sub, unit=''):
+    p = pct_all if (pct_all is not None) else 50
+    p = max(0, min(100, p))
+    col = 'var(--green2)' if p < 25 else ('#7cb342' if p < 50 else ('#d99e00' if p < 75 else 'var(--red2)'))
+    return f'''<div style="margin:8px 0">
+  <div style="display:flex;justify-content:space-between;font-size:12px">
+    <span style="color:var(--t1);font-weight:600">{esc(name)}</span>
+    <span style="color:var(--t1)">{num(cur)}{unit} <span style="color:var(--t3);font-size:11px">{esc(sub)}</span></span></div>
+  <div style="height:10px;background:linear-gradient(90deg,var(--green2),#d99e00,var(--red2));border-radius:5px;position:relative;margin-top:4px">
+    <div style="position:absolute;top:-3px;left:calc({p}% - 3px);width:6px;height:16px;background:#fff;border:2px solid var(--t1);border-radius:3px"></div></div>
+</div>'''
+
+
+def ld_card_py(b):
+    low = b.get('low')
+    pct = b.get('pe_pct_hist') if b.get('pe_pct_hist') is not None else (
+        b.get('pe_pct_1y') if b.get('pe_pct_1y') is not None else (b.get('cheap_score') if b.get('cheap_score') is not None else None))
+    pct_txt = '—' if pct is None else f'{round(pct)}%'
+    pct_label = '历史分位' if b.get('pe_pct_hist') is not None else ('近1年分位' if b.get('pe_pct_1y') is not None else '横截面')
+    border = 'var(--green2)' if low else 'var(--line)'
+    low_badge = ' <span class="badge b-green">🟢低值</span>' if low else ''
+    pcol = 'var(--green2)' if low else 'var(--t2)'
+    return f'''<div style="padding:8px 10px;margin-bottom:6px;background:var(--bg2);border-radius:8px;border-left:3px solid {border}">
+  <div style="display:flex;justify-content:space-between;align-items:baseline">
+    <div style="font-weight:600;color:var(--t1)">{esc(b.get('name', ''))} <span style="color:var(--t3);font-weight:400;font-size:11px">{esc(b.get('code', ''))}</span>{low_badge}</div>
+    <div style="font-size:12px;color:var(--t2)">PE {num(b.get('pe'))} · PB {num(b.get('pb'))}</div></div>
+  <div style="margin-top:3px;font-size:11px;color:var(--t3)">{pct_label} <b style="color:{pcol}">{pct_txt}</b>{' · 降级数据' if b.get('src') == 'fallback' else ''}</div>
+</div>'''
 
 
 def load(path):
@@ -398,6 +446,39 @@ def build_watch(d):
 '''
 
 
+# ---------------- 李大霄底部研判 ----------------
+def build_lidaxiao(d):
+    s = d.get('sz50', {}) or {}
+    v = d.get('verdict', {}) or {}
+    blues = d.get('bluechips', []) or []
+    dims = d.get('dims', {}) or {}
+    tier = s.get('tier') or '未知'
+    tier_color = 'var(--green2)' if tier == '极致底部' else ('#d99e00' if tier == '温和底部' else 'var(--t3)')
+    h = ''
+    h += f'''<div class="panel" style="border-left:4px solid {tier_color};background:var(--bg2)">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+    <div><h3>📉 李大霄底部研判 · 综合结论</h3><div class="panel-sub" style="margin-bottom:0">上证50估值温度计 · 数据截至 {esc(s.get('asof', '-'))}</div></div>
+    <div style="text-align:right"><div style="font-size:22px;font-weight:800;color:{tier_color}">{esc(tier)}</div>
+    <div style="font-size:12px;color:var(--t3)">上证50 静态PE {num(s.get('pe'))}</div></div></div>
+  <div style="margin-top:6px;font-size:13px;color:var(--t1);font-weight:600">{esc(v.get('level', ''))}</div>
+  <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">{esc(v.get('action', ''))}</div>
+  <div style="margin-top:4px;font-size:11px;color:var(--t3)">蓝筹低值 {v.get('blue_low_count', 0)}/{v.get('blue_total', 0)} 只处历史/近期低位</div></div>'''
+    h += '<div class="panel"><h3 style="margin-bottom:6px">📊 上证50 估值温度计（对比历年 PE/PB）</h3>'
+    h += ld_bar('静态PE', s.get('pe'), s.get('pe_pct_all'), f"全历史{num(s.get('pe_pct_all'))}% / 近5年{num(s.get('pe_pct_5y'))}%", '倍')
+    h += ld_bar('市净率PB', s.get('pb'), s.get('pb_pct_all'), f"全历史{num(s.get('pb_pct_all'))}% / 近5年{num(s.get('pb_pct_5y'))}%")
+    h += f'<div style="font-size:11px;color:var(--t4);margin-top:6px">分位越低=越便宜。参考区间：PE {num(s.get("pe_min"))}~{num(s.get("pe_max"))}（中位{num(s.get("pe_med"))}）；李大霄三档：≤8.5极致 / 8.5~10温和 / &gt;10接近底部。</div></div>'
+    h += f'<div class="panel"><h3 style="margin-bottom:6px">💎 蓝筹低值发现（{len(blues)}只，按便宜度排序）</h3>'
+    h += '<div style="font-size:11px;color:var(--t3);margin-bottom:6px">标注🟢低值的蓝筹处历史/近期估值低位，可重点纳入观察池。' + (
+        '（个股历史接口限流，暂以1年分位+横截面替代）' if (blues and blues[0].get('src') == 'fallback') else '') + '</div>'
+    h += ''.join(ld_card_py(b) for b in blues)
+    h += '</div>'
+    h += '<div class="panel"><h3 style="margin-bottom:6px">五维研判（量化修订版）</h3><div style="font-size:12px;color:var(--t2);line-height:1.9">'
+    for k, dm in dims.items():
+        h += dim_badge_py(k, dm.get('status')) + f' <span style="color:var(--t3)">{esc(dm.get("text", ""))}</span><br>'
+    h += '</div></div>'
+    return h
+
+
 def main():
     d = load(DATA)
     b = load(BLUE)
@@ -406,7 +487,8 @@ def main():
     sd = load(SENT)
     ov = load(OVERVIEW)
     wd = load(WATCH)
-    if not (d or b or gd or t or sd or ov or wd):
+    ld = load(LIDAXIAO)
+    if not (d or b or gd or t or sd or ov or wd or ld):
         print('没有可用数据，退出')
         return
     auto_block = build_auto(d) if d else None
@@ -416,6 +498,7 @@ def main():
     sent_block = build_sent(sd) if sd else None
     ov_block = build_overview(ov) if ov else None
     wd_block = build_watch(wd) if wd else None
+    ld_block = build_lidaxiao(ld) if ld else None
     for fn in FILES:
         p = os.path.join(HERE, fn)
         if not os.path.exists(p):
@@ -445,6 +528,9 @@ def main():
         if wd_block:
             s, m = inject(s, wd_block, W_START, W_END, 'watchMount')
             notes.append('watch:' + (m or 'FAIL'))
+        if ld_block:
+            s, m = inject(s, ld_block, LD_START, LD_END, 'ldMount')
+            notes.append('lidaxiao:' + (m or 'FAIL'))
         if s != orig:
             open(p, 'w', encoding='utf-8').write(s)
             print('OK %-22s %s  (%d 字节)' % (fn, ' '.join(notes), len(s)))
