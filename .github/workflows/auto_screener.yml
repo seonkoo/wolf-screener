@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
@@ -45,15 +45,12 @@ jobs:
         run: python overview.py
       - name: 生成李大霄历史底部研判(上证50历年PE/PB温度计+蓝筹低值发现)
         run: python li_daxiao.py
+      - name: 李大霄温度历史回测验证(低估值后中期收益是否更优)
+        run: python backtest_lidaxiao.py
       - name: 烘焙快照进两个完整页面(离线兜底，联网时仍按 fetch 取最新)
         run: python sync_auto_tab.py
-      - name: 提交更新
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add -A
-          git commit -m "auto: 选股快照 $(date +%F)" || echo "no changes"
-          git push || echo "push skipped"
+      - name: 部署前渲染冒烟校验(失败则终止部署)
+        run: node _smoke_render.js wolf-screener3.0.html
       - name: 上传 Pages 产物
         uses: actions/upload-pages-artifact@v3
         with:

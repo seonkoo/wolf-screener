@@ -59,13 +59,14 @@ def pct_of(vals, cur):
 
 
 def fetch_index(symbol, kind):
-    """取上证50 指数级 PE 或 PB 全历史；带 6h 缓存。返回 (rows, ts)。"""
+    """取上证50 指数级 PE 或 PB 全历史；带 6h 缓存。返回 (rows, ts, src)。
+    src ∈ {'realtime' 实时拉取, 'cache_fallback' 拉取失败回退过期缓存, 'empty' 无数据}。"""
     cache = SZ50_PE_CACHE if kind == 'pe' else SZ50_PB_CACHE
     if os.path.exists(cache):
         try:
             d = json.load(open(cache, encoding='utf-8'))
             if time.time() - d.get('ts', 0) < CACHE_SEC:
-                return d['rows'], d['ts']
+                return d['rows'], d['ts'], 'cache_hit'
         except Exception:
             pass
     try:
@@ -78,24 +79,26 @@ def fetch_index(symbol, kind):
         rows = [{'date': str(r[0]), 'v': (float(r[1]) if r[1] is not None else None)}
                 for r in df[['日期', col]].itertuples(index=False, name=None)]
         json.dump({'ts': time.time(), 'rows': rows}, open(cache, 'w', encoding='utf-8'))
-        return rows, time.time()
+        return rows, time.time(), 'realtime'
     except Exception as e:
         # 拉取失败：尽量用过期缓存兜底，避免整体崩溃导致 li_daxiao.json 缺失
         if os.path.exists(cache):
             try:
                 d = json.load(open(cache, encoding='utf-8'))
                 log('fetch_index 失败(%s)，用本地缓存兜底: %s' % (e, cache))
-                return d['rows'], d.get('ts', 0)
+                return d['rows'], d.get('ts', 0), 'cache_fallback'
             except Exception:
                 pass
         log('fetch_index 失败(%s)，无缓存可兜底，返回空' % e)
-        return [], 0
+        return [], 0, 'empty'
 
 
 
 def get_sz50():
-    pe_rows, _ = fetch_index('上证50', 'pe')
-    pb_rows, _ = fetch_index('上证50', 'pb')
+    pe_rows, _, pe_src = fetch_index('上证50', 'pe')
+    pb_rows, _, pb_src = fetch_index('上证50', 'pb')
+    src = 'cache_fallback' if ('cache_fallback' in (pe_src, pb_src)) else (
+        'empty' if ('empty' in (pe_src, pb_src)) else 'realtime')
     pe_vals = [r['v'] for r in pe_rows if r['v'] is not None]
     pb_vals = [r['v'] for r in pb_rows if r['v'] is not None]
     cur_pe = pe_vals[-1] if pe_vals else None
@@ -130,6 +133,7 @@ def get_sz50():
         'tier': tier,
         'tier_pe': round(cur_pe, 2) if cur_pe is not None else None,
         'asof': pe_rows[-1]['date'] if pe_rows else None,
+        'source': src,
     }
 
 
@@ -262,6 +266,7 @@ def main():
         dims, verdict = judge(sz50, blues)
         out = clean_nan({
             'generated': time.strftime('%Y-%m-%d %H:%M'),
+            'source': sz50.get('source', 'realtime'),
             'sz50': sz50,
             'bluechips': blues,
             'dims': dims,

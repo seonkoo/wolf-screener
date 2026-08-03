@@ -54,12 +54,18 @@ WATCH_TAB_BTN = '  <button class="tab" data-tab="watch">📈 观察池</button>'
 MARKET_PANE = '''<section class="pane" id="pane-market">
   <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📊 市场研判（合并）：综合研判 + 全球市场 + 重大事件 + 国家队资金 + 情绪指数 五合一，解决多信号互相打架时不知如何加权。非投资建议。</div>
 
+  <div class="panel" style="background:var(--bg2);font-size:11px;color:var(--t2);line-height:1.6">
+    🏷️ <b>本页模块可信度分级</b>：
+    <span style="color:var(--green2);border:1px solid var(--green2);border-radius:6px;padding:1px 6px;margin:0 4px">🟩 回测验证信号</span> 自动选股（胜率经历史回测，见「🐺 自动选股」Tab）
+    <span style="color:#d99e00;border:1px solid #d99e00;border-radius:6px;padding:1px 6px;margin:0 4px">🟡 主观框架/辅助参考</span> 估值温度·波浪·情绪·国家队——供研判参考，<b>非买卖指令</b>，须与「回测信号」结合使用。
+  </div>
+
   <!-- 1. 综合研判（置顶一句话 + 机会分） -->
   <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🧭 综合研判：把市场状态 / 国家队 / 情绪 / 选股 / 实盘验证 五个维度合成「机会分 + 一句话研判」。非投资建议。</div>
   <div id="synthesisMount"><!--SYNTHESIS_START-->''' + LOADING_OVERVIEW + '''<!--SYNTHESIS_END--></div>
 
   <!-- 1.5 李大霄历史底部研判 -->
-  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📉 李大霄历史底部研判体系：融合 2015婴儿底 / 2019年2440大底 / 2022年3000点 三套经典标准，适配2026全面注册制做量化修订。⚠️ 估值底部≠立刻上涨，仅代表下行空间收敛；只适用于优质龙头，垃圾股无安全垫。</div>
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📉 李大霄历史底部研判体系：融合 2015婴儿底 / 2019年2440大底 / 2022年3000点 三套经典标准，适配2026全面注册制做量化修订。⚠️ 估值底部≠立刻上涨，仅代表下行空间收敛；只适用于优质龙头，垃圾股无安全垫。<span style="color:#d99e00;border:1px solid #d99e00;border-radius:6px;padding:1px 5px;margin-left:6px">🟡 主观框架·辅助参考</span></div>
   <div id="ldMount"><!--LIDAXIAO_START-->''' + LOADING_LIDAXIAO + '''<!--LIDAXIAO_END--></div>
   <details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">📜 研判框架（三套历史底部 + 2026修订规则 + 核心原则 + 融合小狼）</summary>
     <div style="font-size:12px;color:var(--t2);line-height:1.7;margin-top:6px">
@@ -79,7 +85,7 @@ MARKET_PANE = '''<section class="pane" id="pane-market">
   </details>
 
   <!-- 1.6 艾略特波浪理论 -->
-  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🌊 艾略特波浪理论：用日K线拐点(ZigZag)识别「5浪推动 + 3浪调整」八浪循环，推测当前所处浪与细浪，给出操作参考。波浪划分具概率性、非精确预测；须结合大趋势/估值/资金，非投资建议。</div>
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🌊 艾略特波浪理论：用日K线拐点(ZigZag)识别「5浪推动 + 3浪调整」八浪循环，推测当前所处浪与细浪，给出操作参考。波浪划分具概率性、非精确预测；须结合大趋势/估值/资金，非投资建议。<span style="color:#d99e00;border:1px solid #d99e00;border-radius:6px;padding:1px 5px;margin-left:6px">🟡 技术分析框架·非买卖信号</span></div>
   <div class="panel" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <div><h3 style="margin-bottom:0">🌊 艾略特波浪 · 大盘与个股</h3><div class="panel-sub" style="margin-bottom:0">默认上证指数日K；可切深证/创业板，或输入个股代码实时分析。</div></div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -436,10 +442,12 @@ SCRIPT = JS_START + r'''
       var s=d.sz50||{}, v=d.verdict||{}, blues=d.bluechips||[], dims=d.dims||{};
       var tier = s.tier||'未知';
       var tierColor = tier=='极致底部'?'var(--green2)':(tier=='温和底部'?'#d99e00':'var(--t3)');
+      var srcMap={'realtime':['实时 · akshare','var(--green2)'],'cache_hit':['缓存(6h内)','var(--green2)'],'cache_fallback':['缓存降级 · 数据源不可达','#d99e00'],'empty':['无数据','var(--red2)']};
+      var sm=srcMap[(d.source||'realtime')]||srcMap['realtime'];
       var h='';
       h+='<div class="panel" style="border-left:4px solid '+tierColor+';background:var(--bg2)">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
-        +'<div><h3>📉 李大霄底部研判 · 综合结论</h3><div class="panel-sub" style="margin-bottom:0">上证50估值温度计 · 数据截至 '+esc(s.asof||'-')+'</div></div>'
+        +'<div><h3>📉 李大霄底部研判 · 综合结论</h3><div class="panel-sub" style="margin-bottom:0">上证50估值温度计 · 数据截至 '+esc(s.asof||'-')+' · 生成于 '+esc(d.generated||'-')+' <span style="color:'+sm[1]+';border:1px solid '+sm[1]+';border-radius:6px;padding:1px 6px">来源：'+sm[0]+'</span></div></div>'
         +'<div style="text-align:right"><div style="font-size:22px;font-weight:800;color:'+tierColor+'">'+esc(tier)+'</div>'
         +'<div style="font-size:12px;color:var(--t3)">上证50 静态PE '+num(s.pe)+'</div></div></div>';
       h+='<div style="margin-top:6px;font-size:13px;color:var(--t1);font-weight:600">'+esc(v.level||'')+'</div>';
@@ -456,6 +464,17 @@ SCRIPT = JS_START + r'''
       h+='<div class="panel"><h3 style="margin-bottom:6px">五维研判（量化修订版）</h3><div style="font-size:12px;color:var(--t2);line-height:1.9">';
       for(var k in dims){ var dm=dims[k]; h+= dimPill(k, dm.status)+' <span style="color:var(--t3)">'+esc(dm.text)+'</span><br>'; }
       h+='</div></div>';
+      var bt=d.backtest||{};
+      if(bt && bt.available){
+        var bcol=bt.verified?'var(--green2)':'#d99e00';
+        h+='<div class="panel"><h3 style="margin-bottom:6px">🔬 估值温度历史回测验证</h3><div style="font-size:12px;color:var(--t2);line-height:1.7">'
+          +'样本 '+num(bt.sample_n)+' 个交易日；其中 PE分位&lt;'+num(bt.cheap_pct_threshold)+'% 的「便宜区」'+num(bt.cheap_n)+' 个观测。<br>'
+          +'之后60日中位收益：便宜区 <b>'+num(bt.cheap_med60)+'%</b> vs 全样本 <b>'+num(bt.all_med60)+'%</b>；'
+          +'之后120日：便宜区 <b>'+num(bt.cheap_med120)+'%</b> vs 全样本 <b>'+num(bt.all_med120)+'%</b>。<br>'
+          +'<span style="color:'+bcol+';font-weight:600">结论：'+esc(bt.verdict)+'</span></div></div>';
+      } else if(bt && bt.note){
+        h+='<div class="panel"><h3 style="margin-bottom:6px">🔬 估值温度历史回测验证</h3><div style="font-size:12px;color:var(--t3)">'+esc(bt.note)+'</div></div>';
+      }
       var el=document.getElementById('ldMount'); if(el) el.innerHTML=h;
     }).catch(function(e){
       fallback('ldMount','📴 未能实时拉取 li_daxiao.json（'+esc(e.message)+'），以下为本地烘焙快照。要看每日最新，请访问 <a href="https://seonkoo.github.io/wolf-screener/" style="color:var(--blue)">seonkoo.github.io/wolf-screener</a>。');

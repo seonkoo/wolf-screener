@@ -454,10 +454,19 @@ def build_lidaxiao(d):
     dims = d.get('dims', {}) or {}
     tier = s.get('tier') or '未知'
     tier_color = 'var(--green2)' if tier == '极致底部' else ('#d99e00' if tier == '温和底部' else 'var(--t3)')
+    # 数据来源角标（防止静默降级被误当实时）
+    src = d.get('source') or s.get('source') or 'realtime'
+    src_map = {'realtime': ('实时 · akshare', 'var(--green2)'),
+               'cache_hit': ('缓存(6h内)', 'var(--green2)'),
+               'cache_fallback': ('缓存降级 · 数据源不可达', '#d99e00'),
+               'empty': ('无数据', 'var(--red2)')}
+    src_label, src_color = src_map.get(src, ('实时', 'var(--green2)'))
+    src_badge = f'<span style="font-size:11px;color:{src_color};border:1px solid {src_color};border-radius:6px;padding:1px 6px">来源：{src_label}</span>'
+    gen = d.get('generated', '-')
     h = ''
     h += f'''<div class="panel" style="border-left:4px solid {tier_color};background:var(--bg2)">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <div><h3>📉 李大霄底部研判 · 综合结论</h3><div class="panel-sub" style="margin-bottom:0">上证50估值温度计 · 数据截至 {esc(s.get('asof', '-'))}</div></div>
+    <div><h3>📉 李大霄底部研判 · 综合结论</h3><div class="panel-sub" style="margin-bottom:0">上证50估值温度计 · 数据截至 {esc(s.get('asof', '-'))} · 生成于 {esc(gen)} {src_badge}</div></div>
     <div style="text-align:right"><div style="font-size:22px;font-weight:800;color:{tier_color}">{esc(tier)}</div>
     <div style="font-size:12px;color:var(--t3)">上证50 静态PE {num(s.get('pe'))}</div></div></div>
   <div style="margin-top:6px;font-size:13px;color:var(--t1);font-weight:600">{esc(v.get('level', ''))}</div>
@@ -472,6 +481,18 @@ def build_lidaxiao(d):
         '（个股历史接口限流，暂以1年分位+横截面替代）' if (blues and blues[0].get('src') == 'fallback') else '') + '</div>'
     h += ''.join(ld_card_py(b) for b in blues)
     h += '</div>'
+    # 估值温度历史回测验证（诚实标注温度是否真含中期赔率信息）
+    bt = d.get('backtest') or {}
+    if bt.get('available'):
+        bcol = 'var(--green2)' if bt.get('verified') else '#d99e00'
+        h += '<div class="panel"><h3 style="margin-bottom:6px">🔬 估值温度历史回测验证</h3>'
+        h += '<div style="font-size:12px;color:var(--t2);line-height:1.7">'
+        h += f'样本 {num(bt.get("sample_n"))} 个交易日；其中 PE分位&lt;{num(bt.get("cheap_pct_threshold"))}% 的「便宜区」{num(bt.get("cheap_n"))} 个观测。<br>'
+        h += f'之后60日中位收益：便宜区 <b>{num(bt.get("cheap_med60"))}%</b> vs 全样本 <b>{num(bt.get("all_med60"))}%</b>；'
+        h += f'之后120日：便宜区 <b>{num(bt.get("cheap_med120"))}%</b> vs 全样本 <b>{num(bt.get("all_med120"))}%</b>。<br>'
+        h += f'<span style="color:{bcol};font-weight:600">结论：{esc(bt.get("verdict"))}</span></div></div>'
+    else:
+        h += f'<div class="panel"><h3 style="margin-bottom:6px">🔬 估值温度历史回测验证</h3><div style="font-size:12px;color:var(--t3)">{esc(bt.get("note", "暂不可用"))}</div></div>'
     h += '<div class="panel"><h3 style="margin-bottom:6px">五维研判（量化修订版）</h3><div style="font-size:12px;color:var(--t2);line-height:1.9">'
     for k, dm in dims.items():
         h += dim_badge_py(k, dm.get('status')) + f' <span style="color:var(--t3)">{esc(dm.get("text", ""))}</span><br>'

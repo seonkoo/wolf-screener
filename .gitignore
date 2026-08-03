@@ -6,7 +6,21 @@ indicator_lg.json
 sz50_pe_history.json
 sz50_pb_history.json
 bluechip_hist_cache.json
+sz50_close_history.json
 __pycache__/
 *.log
 deployed_page.html
 auto_screen_result.json.bak
+
+# 自动生成的结果数据（由 Actions 工作流运行时生成并随 artifact 部署，不入库以免与代码冲突）
+auto_screen_result.json
+blue_chip_result.json
+li_daxiao.json
+overview.json
+national_team.json
+sentiment.json
+strategy_guard.json
+watch_pool.json
+opt_run.log
+auto_pick.html
+index.html

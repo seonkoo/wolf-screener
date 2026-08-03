@@ -1,9 +1,20 @@
 // 渲染冒烟测试：模拟 DOM + fetch，用真实 JSON 跑一遍页面注入脚本
 const fs = require('fs');
-const src = fs.readFileSync(process.argv[2], 'utf8');
+const arg2 = process.argv[2];
+const isHtml = arg2 && arg2.endsWith('.html');
+let src;
+if (isHtml) {
+  // CI 模式：直接从 HTML 抽取渲染脚本，无需先 extract
+  const html = fs.readFileSync(arg2, 'utf8');
+  const m = html.match(/<!--WOLF_RENDER_JS_START-->\s*<script>([\s\S]*?)<\/script>\s*<!--WOLF_RENDER_JS_END-->/);
+  if (!m) { console.error('❌ 找不到 WOLF_RENDER_JS 标记'); process.exit(2); }
+  src = m[1];
+} else {
+  src = fs.readFileSync(arg2, 'utf8');
+}
 
 const OFFLINE = process.argv[3] === 'offline';
-const htmlFile = process.argv[4];
+const htmlFile = isHtml ? arg2 : process.argv[4];
 
 const els = {};
 function el(id) {
