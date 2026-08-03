@@ -24,3 +24,7 @@ watch_pool.json
 opt_run.log
 auto_pick.html
 index.html
+
+# 策略实验室大缓存(由 strategy_lab.py 生成，可重建，不入库)
+lab_feat.npz
+lab_klines.pkl

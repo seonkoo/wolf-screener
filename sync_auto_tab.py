@@ -24,6 +24,7 @@ SENT = os.path.join(HERE, 'sentiment.json')
 OVERVIEW = os.path.join(HERE, 'overview.json')
 WATCH = os.path.join(HERE, 'watch_pool.json')
 LIDAXIAO = os.path.join(HERE, 'li_daxiao.json')
+SECTOR = os.path.join(HERE, 'sector_flow.json')
 FILES = ['wolf-screener3.0.html', 'wolf-mobile4.2.html']
 
 A_START, A_END = '<!--AUTOPICK_START-->', '<!--AUTOPICK_END-->'
@@ -34,6 +35,7 @@ S_START, S_END = '<!--SENT_START-->', '<!--SENT_END-->'
 O_START, O_END = '<!--SYNTHESIS_START-->', '<!--SYNTHESIS_END-->'
 W_START, W_END = '<!--WATCH_START-->', '<!--WATCH_END-->'
 LD_START, LD_END = '<!--LIDAXIAO_START-->', '<!--LIDAXIAO_END-->'
+SE_START, SE_END = '<!--SECTORFLOW_START-->', '<!--SECTORFLOW_END-->'
 
 
 def esc(x):
@@ -237,6 +239,7 @@ def build_blue(d):
     low = [p for p in picks if p.get('below_ma') or p.get('near_low')]
     wait = [p for p in picks if not (p.get('below_ma') or p.get('near_low'))]
     low_html = ''.join(blue_card(p) for p in low) or '<div style="font-size:12px;color:var(--t3)">今日无标的落入低吸区。</div>'
+    bt = build_blue_backtest_note()
     return f'''
 <div class="panel">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
@@ -254,7 +257,75 @@ def build_blue(d):
   <div style="font-size:11px;color:var(--t3);margin:6px 0">质地与估值都合格，但价格未进入低吸区，可加自选等回踩年线。</div>
   {''.join(blue_card(p) for p in wait)}
 </details>
+{bt}
 '''
+
+
+def build_blue_backtest_note():
+    """把蓝筹低吸的历史回测结论诚实展示：低吸(跌破年线)并无超额，≥70%胜率只来自小狼2.0。"""
+    p = os.path.join(HERE, 'bluechip_backtest.json')
+    if not os.path.exists(p):
+        return ''
+    try:
+        b = json.load(open(p, encoding='utf-8'))
+    except Exception:
+        return ''
+    r = b.get('result', {})
+    dip120 = r.get('现价<250日均线 [现行低吸]|120|0.15') or {}
+    dip250 = r.get('现价<250日均线 [现行低吸]|250|0.2') or {}
+    up250 = r.get('现价>250日均线（追高对照）|250|0.2') or {}
+    span = b.get('span', ['', ''])
+    def fmt(x):
+        return ('%.1f' % x) if isinstance(x, (int, float)) else '-'
+    return f'''<div class="panel" style="border-left:4px solid var(--t3);background:var(--bg2)">
+  <h3 style="margin-bottom:6px">🔬 蓝筹低吸 · 历史回测验证（诚实结论）</h3>
+  <div style="font-size:12px;color:var(--t2);line-height:1.7">
+    样本：沪深300成分（含幸存者偏差）{b.get('stocks',0)} 只 · {span[0]} ~ {span[1]} · 共 {b.get('samples',0)} 个买入样本。<br>
+    方法：把「价格&lt;250日线=低吸」规则在历史上<b>每一天重放</b>（名单每天变不影响回测），持有 N 日后结算，基准=同日随机买一只沪深300。<br><br>
+    <b>结论：蓝筹「低吸（跌破年线买）」历史上没有超额收益，反而略跑输随机买（超额为负）；真正有微弱正超额的是「顺势（站上年线买）」。</b><br>
+    · 低吸 持有120日/止盈15%：胜率 {fmt(dip120.get('win'))}% vs 随机 {fmt(dip120.get('base'))}%（超额 {fmt(dip120.get('exexp'))}%）&nbsp;<br>
+    · 低吸 持有250日/止盈20%：胜率 {fmt(dip250.get('win'))}% vs 随机 {fmt(dip250.get('base'))}%（超额 {fmt(dip250.get('exexp'))}%）&nbsp;<br>
+    · 顺势 持有250日/止盈20%：胜率 {fmt(up250.get('win'))}% vs 随机 {fmt(up250.get('base'))}%（超额 {fmt(up250.get('exexp'))}%）&nbsp;<br><br>
+    <span style="color:var(--t3)">📌 所以：蓝筹模块应定位为「<b>长期质地 + 低估值的仓位配置</b>」，而非高胜率择时工具；<b>≥70% 胜率只能来自小狼2.0（恐慌小盘急跌）</b>。蓝筹低吸适合「慢慢买、长期拿、吃质地与分红」，别指望短期高胜率。</span>
+  </div>
+</div>'''
+
+
+# ---------------- 板块资金 · 买卖策略导向 ----------------
+def _sector_group(title, arr, col):
+    if not arr:
+        return ''
+    chips = ''.join(
+        '<span style="font-size:11px;padding:2px 8px;border-radius:14px;border:1px solid %s;color:%s">%s <span style="opacity:.7">%s亿</span></span>'
+        % (col, col, esc(s.get('name', '')), num(s.get('net5'), 1)) for s in arr)
+    return ('<div style="margin-top:8px"><div style="font-size:12px;font-weight:700;color:%s">%s（%d）</div>'
+            '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">%s</div></div>' % (col, title, len(arr), chips))
+
+
+def build_sector_flow(d):
+    if not d:
+        return ''
+    secs = d.get('sectors', [])
+    def by_state(st):
+        return sorted([s for s in secs if s.get('state') == st], key=lambda s: -(s.get('net5') or 0))
+    inflow = by_state('持续流入')[:8]
+    backflow = by_state('短线回流')[:6]
+    pullback = by_state('短期回调')[:6]
+    outflow = by_state('持续流出')[:8]
+    m = d.get('market', {})
+    h = ('<div class="panel" style="border-left:4px solid var(--blue);background:var(--bg2)">'
+         '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+         '<div><h3>🧭 板块资金 · 买卖策略导向</h3><div class="panel-sub" style="margin-bottom:0">生成于 %s</div></div>'
+         '<div style="font-size:12px;color:var(--t2)">↑流入板块 <b>%s</b> · ↓流出 <b>%s</b> · 广度 <b>%s%%</b></div></div>'
+         % (esc(d.get('generated', '')), m.get('up_sectors', 0), m.get('down_sectors', 0), m.get('breadth', 0)))
+    h += ('<div style="margin-top:6px;font-size:12px;color:var(--t2)">📌 策略：优先「持续流入」板块做多/持有；「短线回流」做波段；'
+          '「短期回调」等企稳；「持续流出」回避。市场整体：%s</div>' % esc(m.get('verdict', '')))
+    h += _sector_group('🟢 持续流入（可买/持有）', inflow, 'var(--green2)')
+    h += _sector_group('🔵 短线回流（波段做T）', backflow, '#1e88e5')
+    h += _sector_group('⚪ 短期回调（等企稳）', pullback, 'var(--t3)')
+    h += _sector_group('🔴 持续流出（回避）', outflow, 'var(--red2)')
+    h += '</div>'
+    return h
 
 
 # ---------------- 注入 ----------------
@@ -509,7 +580,8 @@ def main():
     ov = load(OVERVIEW)
     wd = load(WATCH)
     ld = load(LIDAXIAO)
-    if not (d or b or gd or t or sd or ov or wd or ld):
+    se = load(SECTOR)
+    if not (d or b or gd or t or sd or ov or wd or ld or se):
         print('没有可用数据，退出')
         return
     auto_block = build_auto(d) if d else None
@@ -520,6 +592,7 @@ def main():
     ov_block = build_overview(ov) if ov else None
     wd_block = build_watch(wd) if wd else None
     ld_block = build_lidaxiao(ld) if ld else None
+    sector_block = build_sector_flow(se) if se else None
     for fn in FILES:
         p = os.path.join(HERE, fn)
         if not os.path.exists(p):
@@ -552,6 +625,9 @@ def main():
         if ld_block:
             s, m = inject(s, ld_block, LD_START, LD_END, 'ldMount')
             notes.append('lidaxiao:' + (m or 'FAIL'))
+        if sector_block:
+            s, m = inject(s, sector_block, SE_START, SE_END, 'sectorMount')
+            notes.append('sector:' + (m or 'FAIL'))
         if s != orig:
             open(p, 'w', encoding='utf-8').write(s)
             print('OK %-22s %s  (%d 字节)' % (fn, ' '.join(notes), len(s)))
