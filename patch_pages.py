@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 改造 wolf-mobile4.2.html 与 wolf-screener3.0.html：
-  1) 增加「💎 蓝筹低吸」tab 按钮
-  2) 自动选股 pane 改为运行时 fetch auto_screen_result.json 渲染
-  3) 新增 pane-bluechip，fetch blue_chip_result.json 渲染
-  4) 在 </body> 前注入共享渲染脚本（带标记，可重复覆盖）
+  1) 自动选股 pane 改为运行时 fetch auto_screen_result.json 渲染
+  2) 在 </body> 前注入共享渲染脚本（带标记，可重复覆盖）
 
-两个挂载点内置 <!--AUTOPICK_START/END--> 与 <!--BLUECHIP_START/END--> 标记，
-sync_auto_tab.py 会把最新快照烘焙进标记之间，作为 file:// 本地打开时的离线兜底；
-联网(GitHub Pages)打开时 fetch 成功会覆盖为最新数据。
+挂载点内置 <!--AUTOPICK_START/END--> 等标记，sync_auto_tab.py 会把最新快照烘焙进标记之间，
+作为 file:// 本地打开时的离线兜底；联网(GitHub Pages)打开时 fetch 成功会覆盖为最新数据。
+
+注：原「💎 蓝筹低吸」独立 Tab 已删除（回测显示「跌破年线低吸」无超额收益）；
+蓝筹「低值发现」仍保留在「📊 市场研判」李大霄模块内（按估值分位，非按破线低吸）。
 
 用法：python patch_pages.py   （幂等，可反复执行）
 """
@@ -19,8 +19,6 @@ FILES = ['wolf-mobile4.2.html', 'wolf-screener3.0.html']
 
 LOADING_AUTO = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
                 '<div style="margin-top:8px">正在加载自动选股数据…</div></div></div>')
-LOADING_BLUE = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
-                '<div style="margin-top:8px">正在加载蓝筹低吸数据…</div></div></div>')
 LOADING_TEAM = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
                 '<div style="margin-top:8px">正在加载国家队资金数据…</div></div></div>')
 LOADING_SENT = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
@@ -41,13 +39,6 @@ AUTO_PANE = '''<section class="pane" id="pane-auto">
   <div id="autoMount"><!--AUTOPICK_START-->''' + LOADING_AUTO + '''<!--AUTOPICK_END--></div>
 </section>'''
 
-# ---- 蓝筹低吸 pane ----
-BLUE_PANE = '''<section class="pane" id="pane-bluechip">
-  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">💎 蓝筹价值 + 低吸区：沪深300里连续3年ROE&gt;12%、经营现金流为正、估值处近一年低位的公司。适合长期持有、分批慢慢低吸，以年为单位，忽略短期波动。非投资建议。</div>
-  <div id="blueMount"><!--BLUECHIP_START-->''' + LOADING_BLUE + '''<!--BLUECHIP_END--></div>
-</section>'''
-
-BLUE_TAB_BTN = '  <button class="tab" data-tab="bluechip">💎 蓝筹低吸</button>'
 MARKET_TAB_BTN = '  <button class="tab" data-tab="market">📊 市场研判</button>'
 WATCH_TAB_BTN = '  <button class="tab" data-tab="watch">📈 观察池</button>'
 
@@ -208,23 +199,8 @@ SCRIPT = JS_START + r'''
     (items||[]).forEach(function(r){ h+=autoRow(r); });
     return h+'</table></div>';
   }
-  function blueCard(p){
-    var zone = p.below_ma ? '<span class="badge b-green">低吸区·低于年线</span>'
-             : (p.near_low ? '<span class="badge b-green">近52周低位</span>'
-                           : '<span class="badge b-amber">估值合理·待回调</span>');
-    var pct = (p.pe_pct!=null) ? '<span class="badge b-green">PE近一年分位 '+Math.round(p.pe_pct*100)+'%</span>' : '';
-    var gm  = (p.gm!=null) ? '<span>毛利 '+num(p.gm,1)+'%</span>' : '';
-    return '<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">'
-      + '<div style="display:flex;justify-content:space-between;align-items:baseline">'
-      + '<div style="font-weight:700;color:var(--t1)">'+esc(p.name)+' <span style="color:var(--t3);font-weight:400;font-size:12px">'+esc(p.code)+'</span></div>'
-      + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(p.price)+'</div>'
-      + '<div style="font-size:11px;color:var(--t3)">评分 '+num(p.score,1)+'</div></div></div>'
-      + '<div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
-      + '<span class="badge b-green">3年ROE均 '+num(p.roe_avg,1)+'%</span>'
-      + '<span>PE '+num(p.pe,1)+' · PB '+num(p.pb,2)+'</span>'
-      + pct + gm + zone + '</div>'
-      + '<div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">'+esc(p.why)+'</div></div>';
-  }
+  // 蓝筹卡片渲染 blueCard 已随「蓝筹低吸」Tab 删除（回测显示跌破年线低吸无超额）
+
   function loadJSON(u){ return fetch(u,{cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error(u+' '+r.status); return r.json(); }); }
   // fetch 失败时：若已有烘焙的离线快照就保留它，只加一条提示；否则显示错误框
   function fallback(id, msg){
@@ -267,27 +243,7 @@ SCRIPT = JS_START + r'''
       if(el && el.innerHTML.indexOf('正在加载')>=0){ el.innerHTML='<div class="panel" style="font-size:11px;color:var(--t3)">📴 未能实时拉取策略体检（'+esc(e.message)+'），以下为本地烘焙快照。</div>'; }
     });
   }
-  function loadBlue(){
-    loadJSON('blue_chip_result.json').then(function(d){
-      var s=d.summary||{};
-      var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
-        + '<div><h3>💎 蓝筹低吸 · '+esc(s.universe||'沪深300')+'</h3><div class="panel-sub" style="margin-bottom:0">长期价值 + 低吸区 · 生成于 '+esc(d.generated)+'</div></div>'
-        + '<div style="font-size:12px;color:var(--t2)">蓝筹池 <b>'+(s.cand||0)+'</b> → 质量过 <b>'+(s.passed_quality||0)+'</b> → 估值过 <b>'+(s.passed_valuation||0)+'</b> → 推荐 <b>'+(s.selected||0)+'</b></div></div></div>';
-      var picks=d.picks||[];
-      var low=picks.filter(function(p){return p.below_ma||p.near_low;});
-      var wait=picks.filter(function(p){return !(p.below_ma||p.near_low);});
-      h+='<div class="panel"><h3 style="margin-bottom:6px">🟢 现在就可分批低吸（'+low.length+'只）</h3>'
-        + '<div style="font-size:11px;color:var(--t3);margin-bottom:8px">质地过关 + 估值低位 + 价格已在年线下方或近52周低位，建议分3-5批、每批间隔≥2周买入。</div>'
-        + (low.length? low.map(blueCard).join('') : '<div style="font-size:12px;color:var(--t3)">今日无标的落入低吸区。</div>') +'</div>';
-      h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🟡 优质但仍需等回调（'+wait.length+'只）</summary>'
-        + '<div style="font-size:11px;color:var(--t3);margin:6px 0">质地与估值都合格，但价格未进入低吸区，可加自选等回踩年线。</div>'
-        + wait.map(blueCard).join('') +'</details>';
-      var el=document.getElementById('blueMount'); if(el) el.innerHTML=h;
-    }).catch(function(e){
-      fallback('blueMount','📴 未能实时拉取 blue_chip_result.json（'+esc(e.message)+'），以下为本地烘焙快照。要看每日最新，请访问 <a href="https://seonkoo.github.io/wolf-screener/" style="color:var(--blue)">seonkoo.github.io/wolf-screener</a>。');
-    });
-  }
-  // 支持 URL 锚点直达某个 tab，如 xxx.html#bluechip
+  // 支持 URL 锚点直达某个 tab，如 xxx.html#market
   function applyHash(){
     if(!document.querySelector || typeof location==='undefined') return;
     var h=(location.hash||'').replace('#','');
@@ -808,7 +764,7 @@ SCRIPT = JS_START + r'''
       cinput.onkeydown=function(e){ if(e&&e.key==='Enter') cbtn.onclick(); };
     }
   }
-  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadSynthesis(); loadAuto(); loadBlue(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); applyHash(); }
+  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadSynthesis(); loadAuto(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();
@@ -847,7 +803,7 @@ def patch(fn):
             print('  ! 未找到首个 tab 按钮')
     # 1b) 其余按钮（在 auto tab 按钮之后，按 bluechip/watch 顺序插入）
     tabs_to_add = []
-    for key, btn in [('bluechip', BLUE_TAB_BTN), ('watch', WATCH_TAB_BTN)]:
+    for key, btn in [('watch', WATCH_TAB_BTN)]:
         if ('data-tab="%s"' % key) not in s:
             tabs_to_add.append(btn)
     if tabs_to_add:
@@ -870,24 +826,9 @@ def patch(fn):
                       '<!--AUTOPICK_START-->' + baked_auto + '<!--AUTOPICK_END-->', 1)
         print('    · 保留原离线快照')
 
-    # 3) 蓝筹 pane
-    m = re.search(r'<!--BLUECHIP_START-->(.*?)<!--BLUECHIP_END-->', s, re.S)
-    baked_blue = m.group(1) if m else None
-    s, ok = replace_section(s, 'pane-bluechip', BLUE_PANE)
-    if not ok:  # 首次：插到 auto pane 之后
-        ins = s.find('</section>', s.find('<section class="pane" id="pane-auto">'))
-        if ins >= 0:
-            ins += len('</section>')
-            s = s[:ins] + '\n' + BLUE_PANE + s[ins:]
-            print('  + 蓝筹pane（新建）')
-        else:
-            print('  ! 无法定位蓝筹pane插入点')
-    else:
-        print('  ~ 蓝筹pane已刷新')
-    if baked_blue and '正在加载' not in baked_blue:
-        s = s.replace('<!--BLUECHIP_START-->' + LOADING_BLUE + '<!--BLUECHIP_END-->',
-                      '<!--BLUECHIP_START-->' + baked_blue + '<!--BLUECHIP_END-->', 1)
-        print('    · 保留原离线快照')
+    # 3) 清理可能残留的「蓝筹低吸」独立 pane/tab（已废弃：回测显示跌破年线低吸无超额）
+    s = re.sub(r'<section class="pane" id="pane-bluechip">.*?</section>\s*', '', s, flags=re.S)
+    s = re.sub(r'\s*<button class="tab" data-tab="bluechip">.*?</button>', '', s)
 
     # 3b) 市场研判 pane（综合研判+全球市场+重大事件+国家队资金+情绪指数 合并）
     m = re.search(r'<!--SYNTHESIS_START-->(.*?)<!--SYNTHESIS_END-->', s, re.S)

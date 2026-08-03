@@ -111,34 +111,48 @@ def calc_rsi(closes, period=14):
 
 # ---------- 小狼 2.0 强化层 ----------
 def wolf2_layer(kd, greed, tech, small):
-    """叠加在 A 信号之上的 2.0 强化判定（复刻 strategy_lab.wolf2_mask）。
-    返回本层各因子明细 + pass 与否。回测：通过此层的样本胜率 74.2%（同日随机买基准 70.9%）。"""
-    res={'pass':False,'greed':round(greed,1),'tech':int(tech),'small':bool(small),
+    """复刻 strategy_lab.wolf2_mask 的独立判定（不依赖四层法的 L3 tech）。
+    关键：tech2 用实验室定义 = bl+am+vs+div，其中 div 为 MACD 底背离；
+    由于 WOLF2 剔除放量(excl_vol_surge)，tech2>=2 等价于「MACD 底背离存在」。
+    回测：通过此层样本胜率 74.2%（同日随机买基准 70.9%）。"""
+    res={'pass':False,'greed':round(greed,1),'tech2':0,'tech_l3':int(tech),'small':bool(small),
          'ret20':None,'rsi':None,'volratio':None,'vola':None,
          'panic':False,'vol_surge':False,'high_vola':False,'reasons':[]}
-    if not kd or len(kd)<30:
+    if not kd or len(kd)<60:
         res['reasons'].append('K线不足'); return res
+    import statistics
     closes=[k['close'] for k in kd]; vols=[k['volume'] for k in kd]; n=len(closes)
+    g = greed  # calc_greed 已是 750 日分位，与实验室一致
     # 20日跌幅
-    if n>=21:
-        ret20=closes[-1]/closes[-21]-1; res['ret20']=round(ret20,4)
-    else: ret20=0.0
-    rsi=calc_rsi(closes,14); res['rsi']=rsi
+    ret20 = closes[-1]/closes[-21]-1 if n>=21 else 0.0
+    res['ret20']=round(ret20,4)
+    rsi = calc_rsi(closes,14); res['rsi']=rsi
     # 量比（当日量 / 20日均量）
-    v20=sum(vols[-20:])/20 if n>=20 else 0
-    vr=(vols[-1]/v20) if v20>0 else 1.0; res['volratio']=round(vr,2)
+    v20 = sum(vols[-20:])/20 if n>=20 else 0
+    vr = (vols[-1]/v20) if v20>0 else 1.0; res['volratio']=round(vr,2)
     # 20日波动率（日收益率标准差）
+    vola=0.0
     if n>=21:
         rets=[closes[i]/closes[i-1]-1 for i in range(max(1,n-20),n)]
-        import statistics
         vola=statistics.pstdev(rets) if len(rets)>1 else 0.0
         res['vola']=round(vola,4)
-    else: vola=0.0
+    # tech2 = bl + am + vs + div（实验室同款）
+    ma20 = sum(closes[-20:])/20 if n>=20 else closes[-1]
+    bl = 1 if closes[-1] <= ma20 else 0
+    am = 1 if closes[-1] >= ma20 else 0
+    vs = 1 if (v20>0 and vols[-1] > 1.5*v20) else 0
+    div = 0
+    md = calc_macd(closes)
+    if md and n>=20:
+        div = 1 if check_macd_divergence(closes, md['dif']) else 0
+    tech2 = bl + am + vs + div
+    res['tech2']=tech2
+    # 判定（与 wolf2_mask 一致）
     panic = (ret20 < WOLF2_RET20_MAX) or (rsi < WOLF2_RSI_MAX)
     res['panic']=bool(panic)
-    res['vol_surge']=bool(vr>WOLF2_VOLRATIO_MAX)
-    res['high_vola']=bool(vola>WOLF2_VOLA_MAX)
-    ok = (greed < WOLF2_GREED_MAX) and (tech >= WOLF2_TECH_MIN) and panic \
+    res['vol_surge']=bool(vr > WOLF2_VOLRATIO_MAX)
+    res['high_vola']=bool(vola > WOLF2_VOLA_MAX)
+    ok = (g < WOLF2_GREED_MAX) and (tech2 >= WOLF2_TECH_MIN) and panic \
          and bool(small) and (not res['vol_surge']) and (not res['high_vola'])
     res['pass']=bool(ok)
     if ok:
@@ -146,6 +160,7 @@ def wolf2_layer(kd, greed, tech, small):
         if ret20 < WOLF2_RET20_MAX: bits.append('20日跌%.1f%%'%(ret20*100))
         if rsi < WOLF2_RSI_MAX: bits.append('RSI%s超卖'%rsi)
         if small: bits.append('小市值')
+        if div: bits.append('MACD底背离')
         if not res['vol_surge']: bits.append('非放量')
         if not res['high_vola']: bits.append('低波动')
         res['reasons'].append(' + '.join(bits))
@@ -323,22 +338,24 @@ def run_screening(stock):
             except Exception as e:
                 good_company=True; fund_detail='基本面校验异常:%s，技术信号保留'%e
     res['fund']={'good':good_company,'detail':fund_detail}
-    # Template
-    if l1[0]=='fail': res['template']='C'; res['suggestion']='贪婪过热，禁止新开仓，持仓逢高逐步兑现。'
+    # Template —— 小狼 2.0 为最高优先级独立信号（回测 74.2%，不依赖四层 L1/L3 共振）
+    # 恐慌急跌底部常表现为 L2 死叉/L3 无量，四层法会误杀；WOLF2 单独捕获这类均值回归买点。
+    w2 = res['wolf2'].get('pass')
+    if w2:
+        res['template']='A'
+        res['stop']=round(price*(1-WOLF2_STOP),3) if price else 0
+        res['target']=round(price*(1+WOLF2_TP),3) if price else 0
+        w=res['wolf2']
+        res['suggestion']=('【小狼2.0强化·回测胜率74.2%%】低位恐慌+小市值+技术底背离，命中：%s。'
+            '分批低吸，持有约%d日做均值回归，止损%d%%目标%d%%，急跌修复即走，不长期持有。')%(
+            ' / '.join(w.get('reasons',[])) or '多因子共振', WOLF2_HOLD, int(WOLF2_STOP*100), int(WOLF2_TP*100))
+    elif l1[0]=='fail': res['template']='C'; res['suggestion']='贪婪过热，禁止新开仓，持仓逢高逐步兑现。'
     elif res['l2']['status']=='fail': res['template']='D'; res['suggestion']='主跌阶段，观望，规避下跌风险。'
     elif l1[0]=='pass' and l3status=='pass':
-        # 进入 A：低位 + 技术共振。好公司仅作"优先级"(回测显示好公司过滤不增Alpha，
+        # 进入 A：低位 + 技术共振(1.0)。好公司仅作"优先级"(回测显示好公司过滤不增Alpha，
         # 但会丢弃93%信号)，故不再硬降级为B，而是好公司排前、非好公司轻仓/观察。
         res['template']='A'
-        if res['wolf2'].get('pass'):
-            # 小狼 2.0 强化：命中全部正向因子 + 剔除负因子，回测胜率 74.2%（基准70.9%）
-            res['stop']=round(price*(1-WOLF2_STOP),3) if price else 0
-            res['target']=round(price*(1+WOLF2_TP),3) if price else 0
-            w=res['wolf2']
-            res['suggestion']=('【小狼2.0强化·回测胜率74.2%%】低位恐慌+技术共振+小市值，命中：%s。'
-                '分批低吸，持有约%d日做均值回归，止损%d%%目标%d%%，急跌修复即走，不长期持有。')%(
-                ' / '.join(w.get('reasons',[])) or '多因子共振', WOLF2_HOLD, int(WOLF2_STOP*100), int(WOLF2_TP*100))
-        elif good_company:
+        if good_company:
             res['suggestion']='好公司+低位共振(1.0)：小仓位分批低吸，持有约%d日做均值回归，止损%d%%目标%d%%，反弹属急跌修复，不长期持有。'%(
                 HOLD_DAYS, int(STOP_PCT*100), int(TP_PCT*100))
         else:

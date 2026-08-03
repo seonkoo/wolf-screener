@@ -25,9 +25,8 @@ function el(id) {
 if (OFFLINE && htmlFile) {
   const html = fs.readFileSync(htmlFile, 'utf8');
   const grab = (a, b) => { const m = html.match(new RegExp('<!--' + a + '-->([\\s\\S]*?)<!--' + b + '-->')); return m ? m[1] : ''; };
-  el('autoMount').innerHTML = grab('AUTOPICK_START', 'AUTOPICK_END');
-  el('blueMount').innerHTML = grab('BLUECHIP_START', 'BLUECHIP_END');
-  el('ldMount').innerHTML = grab('LIDAXIAO_START', 'LIDAXIAO_END');
+  if (html.includes('id="autoMount"')) el('autoMount').innerHTML = grab('AUTOPICK_START', 'AUTOPICK_END');
+  if (html.includes('id="ldMount"')) el('ldMount').innerHTML = grab('LIDAXIAO_START', 'LIDAXIAO_END');
 }
 global.window = global;
 const SAMPLE_K = (function () {
@@ -88,7 +87,11 @@ eval(src);
 
 setTimeout(() => {
   let bad = 0;
-  ['autoMount', 'blueMount', 'ldMount', 'ewMount'].forEach((id) => {
+  const html = (htmlFile && fs.existsSync(htmlFile)) ? fs.readFileSync(htmlFile, 'utf8') : '';
+  const mountIds = html ? [...html.matchAll(/id="([\w]+Mount)"/g)].map(m => m[1]) : ['autoMount', 'ldMount', 'ewMount'];
+  // 离线模式只校验「已烘焙快照」的挂载点（模拟 file:// 打开的兜底路径）；在线模式校验全部挂载点
+  const checkIds = OFFLINE ? mountIds.filter(id => ['autoMount', 'ldMount'].includes(id)) : mountIds;
+  checkIds.forEach((id) => {
     const h = el(id).innerHTML;
     const issues = [];
     if (/undefined/.test(h)) issues.push('undefined');
@@ -102,13 +105,12 @@ setTimeout(() => {
     const m = h.match(/<h3>([^<]*)<\/h3>/);
     if (m) console.log('   标题:', m[1]);
   });
-  // 艾略特波浪操作建议校验
-  const ea = el('ewAdvise').innerHTML;
-  const eaOk = /操作参考/.test(ea) && ea.length > 50;
-  console.log('ewAdvise:', ea.length, '字符', eaOk ? '✅ 含操作建议' : '❌ 无建议');
-  if (!eaOk) bad++;
-  // 抽样输出蓝筹第一张卡的纯文本
-  const t = el('blueMount').innerHTML.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 320);
-  console.log('   蓝筹片段:', t);
+  // 艾略特波浪操作建议校验（仅在线模式，依赖 K线 mock 渲染）
+  if (!OFFLINE && mountIds.includes('ewMount')) {
+    const ea = el('ewAdvise').innerHTML;
+    const eaOk = /操作参考/.test(ea) && ea.length > 50;
+    console.log('ewAdvise:', ea.length, '字符', eaOk ? '✅ 含操作建议' : '❌ 无建议');
+    if (!eaOk) bad++;
+  }
   process.exit(bad ? 1 : 0);
 }, 600);

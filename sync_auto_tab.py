@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-把 auto_screen_result.json / blue_chip_result.json / national_team.json / sentiment.json 的最新快照「烘焙」进两个 HTML：
+把 auto_screen_result.json / national_team.json / sentiment.json / li_daxiao.json / sector_flow.json 等的最新快照「烘焙」进两个 HTML：
   - 自动选股 Tab：写入 #autoMount 内的 <!--AUTOPICK_START/END--> 之间
-  - 蓝筹低吸 Tab：写入 #blueMount 内的 <!--BLUECHIP_START/END--> 之间
   - 国家队资金 Tab：写入 #teamMount 内的 <!--TEAM_START/END--> 之间
   - 市场情绪 Tab：写入 #sentMount 内的 <!--SENT_START/END--> 之间
+  - 李大霄/板块资金等：写入对应挂载点
+注：原「蓝筹低吸」独立 Tab 已删除（回测显示跌破年线低吸无超额）；蓝筹低值发现仍由 li_daxiao.json 承载。
 
 为什么要烘焙：页面正常走 fetch 拉 JSON（GitHub Pages 上永远最新），
 但本地 file:// 双击打开时 fetch 会被浏览器拦截，此时就显示这份烘焙快照兜底。
@@ -17,7 +18,6 @@ import json, re, os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, 'auto_screen_result.json')
-BLUE = os.path.join(HERE, 'blue_chip_result.json')
 GUARD = os.path.join(HERE, 'strategy_guard.json')
 TEAM = os.path.join(HERE, 'national_team.json')
 SENT = os.path.join(HERE, 'sentiment.json')
@@ -28,7 +28,6 @@ SECTOR = os.path.join(HERE, 'sector_flow.json')
 FILES = ['wolf-screener3.0.html', 'wolf-mobile4.2.html']
 
 A_START, A_END = '<!--AUTOPICK_START-->', '<!--AUTOPICK_END-->'
-B_START, B_END = '<!--BLUECHIP_START-->', '<!--BLUECHIP_END-->'
 G_START, G_END = '<!--GUARD_START-->', '<!--GUARD_END-->'
 T_START, T_END = '<!--TEAM_START-->', '<!--TEAM_END-->'
 S_START, S_END = '<!--SENT_START-->', '<!--SENT_END-->'
@@ -205,90 +204,6 @@ def build_auto(d):
 '''
 
 
-# ---------------- 蓝筹低吸 ----------------
-def blue_card(p):
-    if p.get('below_ma'):
-        zone = '<span class="badge b-green">低吸区·低于年线</span>'
-    elif p.get('near_low'):
-        zone = '<span class="badge b-green">近52周低位</span>'
-    else:
-        zone = '<span class="badge b-amber">估值合理·待回调</span>'
-    pct = ''
-    if p.get('pe_pct') is not None:
-        pct = f'<span class="badge b-green">PE近一年分位 {round(p["pe_pct"] * 100)}%</span>'
-    gm = f'<span>毛利 {num(p.get("gm"), 1)}%</span>' if p.get('gm') is not None else ''
-    return f'''
-    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--blue)">
-      <div style="display:flex;justify-content:space-between;align-items:baseline">
-        <div style="font-weight:700;color:var(--t1)">{p['name']} <span style="color:var(--t3);font-weight:400;font-size:12px">{p['code']}</span></div>
-        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">{num(p.get('price'))}</div>
-        <div style="font-size:11px;color:var(--t3)">评分 {num(p.get('score'), 1)}</div></div>
-      </div>
-      <div style="margin-top:6px;font-size:11px;color:var(--t2);display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-        <span class="badge b-green">3年ROE均 {num(p.get('roe_avg'), 1)}%</span>
-        <span>PE {num(p.get('pe'), 1)} · PB {num(p.get('pb'), 2)}</span>
-        {pct}{gm}{zone}
-      </div>
-      <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">{p.get('why', '')}</div>
-    </div>'''
-
-
-def build_blue(d):
-    s = d.get('summary', {})
-    picks = d.get('picks', [])
-    low = [p for p in picks if p.get('below_ma') or p.get('near_low')]
-    wait = [p for p in picks if not (p.get('below_ma') or p.get('near_low'))]
-    low_html = ''.join(blue_card(p) for p in low) or '<div style="font-size:12px;color:var(--t3)">今日无标的落入低吸区。</div>'
-    bt = build_blue_backtest_note()
-    return f'''
-<div class="panel">
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <div><h3>💎 蓝筹低吸 · {s.get('universe', '沪深300')}</h3>
-    <div class="panel-sub" style="margin-bottom:0">长期价值 + 低吸区 · 快照 {d.get('generated', '')}</div></div>
-    <div style="font-size:12px;color:var(--t2)">蓝筹池 <b>{s.get('cand', 0)}</b> → 质量过 <b>{s.get('passed_quality', 0)}</b> → 估值过 <b>{s.get('passed_valuation', 0)}</b> → 推荐 <b>{s.get('selected', 0)}</b></div>
-  </div>
-</div>
-<div class="panel">
-  <h3 style="margin-bottom:6px">🟢 现在就可分批低吸（{len(low)}只）</h3>
-  <div style="font-size:11px;color:var(--t3);margin-bottom:8px">质地过关 + 估值低位 + 价格已在年线下方或近52周低位，建议分3-5批、每批间隔≥2周买入。</div>
-  {low_html}
-</div>
-<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🟡 优质但仍需等回调（{len(wait)}只）</summary>
-  <div style="font-size:11px;color:var(--t3);margin:6px 0">质地与估值都合格，但价格未进入低吸区，可加自选等回踩年线。</div>
-  {''.join(blue_card(p) for p in wait)}
-</details>
-{bt}
-'''
-
-
-def build_blue_backtest_note():
-    """把蓝筹低吸的历史回测结论诚实展示：低吸(跌破年线)并无超额，≥70%胜率只来自小狼2.0。"""
-    p = os.path.join(HERE, 'bluechip_backtest.json')
-    if not os.path.exists(p):
-        return ''
-    try:
-        b = json.load(open(p, encoding='utf-8'))
-    except Exception:
-        return ''
-    r = b.get('result', {})
-    dip120 = r.get('现价<250日均线 [现行低吸]|120|0.15') or {}
-    dip250 = r.get('现价<250日均线 [现行低吸]|250|0.2') or {}
-    up250 = r.get('现价>250日均线（追高对照）|250|0.2') or {}
-    span = b.get('span', ['', ''])
-    def fmt(x):
-        return ('%.1f' % x) if isinstance(x, (int, float)) else '-'
-    return f'''<div class="panel" style="border-left:4px solid var(--t3);background:var(--bg2)">
-  <h3 style="margin-bottom:6px">🔬 蓝筹低吸 · 历史回测验证（诚实结论）</h3>
-  <div style="font-size:12px;color:var(--t2);line-height:1.7">
-    样本：沪深300成分（含幸存者偏差）{b.get('stocks',0)} 只 · {span[0]} ~ {span[1]} · 共 {b.get('samples',0)} 个买入样本。<br>
-    方法：把「价格&lt;250日线=低吸」规则在历史上<b>每一天重放</b>（名单每天变不影响回测），持有 N 日后结算，基准=同日随机买一只沪深300。<br><br>
-    <b>结论：蓝筹「低吸（跌破年线买）」历史上没有超额收益，反而略跑输随机买（超额为负）；真正有微弱正超额的是「顺势（站上年线买）」。</b><br>
-    · 低吸 持有120日/止盈15%：胜率 {fmt(dip120.get('win'))}% vs 随机 {fmt(dip120.get('base'))}%（超额 {fmt(dip120.get('exexp'))}%）&nbsp;<br>
-    · 低吸 持有250日/止盈20%：胜率 {fmt(dip250.get('win'))}% vs 随机 {fmt(dip250.get('base'))}%（超额 {fmt(dip250.get('exexp'))}%）&nbsp;<br>
-    · 顺势 持有250日/止盈20%：胜率 {fmt(up250.get('win'))}% vs 随机 {fmt(up250.get('base'))}%（超额 {fmt(up250.get('exexp'))}%）&nbsp;<br><br>
-    <span style="color:var(--t3)">📌 所以：蓝筹模块应定位为「<b>长期质地 + 低估值的仓位配置</b>」，而非高胜率择时工具；<b>≥70% 胜率只能来自小狼2.0（恐慌小盘急跌）</b>。蓝筹低吸适合「慢慢买、长期拿、吃质地与分红」，别指望短期高胜率。</span>
-  </div>
-</div>'''
 
 
 # ---------------- 板块资金 · 买卖策略导向 ----------------
@@ -573,7 +488,6 @@ def build_lidaxiao(d):
 
 def main():
     d = load(DATA)
-    b = load(BLUE)
     gd = load(GUARD)
     t = load(TEAM)
     sd = load(SENT)
@@ -581,11 +495,10 @@ def main():
     wd = load(WATCH)
     ld = load(LIDAXIAO)
     se = load(SECTOR)
-    if not (d or b or gd or t or sd or ov or wd or ld or se):
+    if not (d or gd or t or sd or ov or wd or ld or se):
         print('没有可用数据，退出')
         return
     auto_block = build_auto(d) if d else None
-    blue_block = build_blue(b) if b else None
     guard_block = build_guard(gd) if gd else None
     team_block = build_team(t) if t else None
     sent_block = build_sent(sd) if sd else None
@@ -604,9 +517,6 @@ def main():
         if auto_block:
             s, m = inject(s, auto_block, A_START, A_END, 'autoMount')
             notes.append('auto:' + (m or 'FAIL'))
-        if blue_block:
-            s, m = inject(s, blue_block, B_START, B_END, 'blueMount')
-            notes.append('blue:' + (m or 'FAIL'))
         if guard_block:
             s, m = inject(s, guard_block, G_START, G_END, 'guardMount')
             notes.append('guard:' + (m or 'FAIL'))
