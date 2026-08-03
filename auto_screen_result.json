@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-03 03:48",
+ "generated": "2026-08-03 04:23",
  "summary": {
   "cand": 1000,
   "A": 6,
@@ -30145,28 +30145,28 @@
  ],
  "C": [
   {
-   "code": "002585",
-   "name": "双星新材",
-   "price": 8.58,
-   "change": -5.71,
-   "inflow": -158534333.0,
+   "code": "002787",
+   "name": "华源控股",
+   "price": 18.39,
+   "change": -5.55,
+   "inflow": 20411149.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 7.894,
-   "target": 9.867,
+   "stop": 16.919,
+   "target": 21.148,
    "l1": {
     "status": "fail",
-    "greed": 85.6,
-    "detail": "自建贪婪指数 85.6% → 85.6"
+    "greed": 79.1,
+    "detail": "自建贪婪指数 79.1% → 79.1"
    },
    "l2": {
-    "status": "pass",
-    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
+    "status": "wait",
+    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
    },
    "l3": {
-    "status": "pass",
-    "detail": "日线代理共振(15min不可用): 布林中轨附近 / 放量×1.8",
-    "tech": 2,
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 布林中轨附近",
+    "tech": 1,
     "proxy": true
    },
    "l4": {
@@ -30181,19 +30181,19 @@
    }
   },
   {
-   "code": "002774",
-   "name": "快意电梯",
-   "price": 13.98,
-   "change": -5.67,
-   "inflow": 9912899.0,
+   "code": "000021",
+   "name": "深科技",
+   "price": 35.17,
+   "change": -5.53,
+   "inflow": -331634480.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 12.862,
-   "target": 16.077,
+   "stop": 32.356,
+   "target": 40.445,
    "l1": {
     "status": "fail",
-    "greed": 91.9,
-    "detail": "自建贪婪指数 91.9% → 91.9"
+    "greed": 83.4,
+    "detail": "自建贪婪指数 83.4% → 83.4"
    },
    "l2": {
     "status": "fail",
@@ -30253,23 +30253,23 @@
    }
   },
   {
-   "code": "002787",
-   "name": "华源控股",
-   "price": 18.39,
-   "change": -5.55,
-   "inflow": 20411149.0,
+   "code": "002774",
+   "name": "快意电梯",
+   "price": 13.98,
+   "change": -5.67,
+   "inflow": 9912899.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 16.919,
-   "target": 21.148,
+   "stop": 12.862,
+   "target": 16.077,
    "l1": {
     "status": "fail",
-    "greed": 79.1,
-    "detail": "自建贪婪指数 79.1% → 79.1"
+    "greed": 91.9,
+    "detail": "自建贪婪指数 91.9% → 91.9"
    },
    "l2": {
-    "status": "wait",
-    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
+    "status": "fail",
+    "detail": "日线MACD死叉且绿柱未缩短，持续下行风险高"
    },
    "l3": {
     "status": "wait",
@@ -30289,28 +30289,28 @@
    }
   },
   {
-   "code": "000021",
-   "name": "深科技",
-   "price": 35.17,
-   "change": -5.53,
-   "inflow": -331634480.0,
+   "code": "002585",
+   "name": "双星新材",
+   "price": 8.58,
+   "change": -5.71,
+   "inflow": -158534333.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 32.356,
-   "target": 40.445,
+   "stop": 7.894,
+   "target": 9.867,
    "l1": {
     "status": "fail",
-    "greed": 83.4,
-    "detail": "自建贪婪指数 83.4% → 83.4"
+    "greed": 85.6,
+    "detail": "自建贪婪指数 85.6% → 85.6"
    },
    "l2": {
-    "status": "fail",
-    "detail": "日线MACD死叉且绿柱未缩短，持续下行风险高"
+    "status": "pass",
+    "detail": "日线MACD金叉/DIF在DEA上方，存在反弹窗口"
    },
    "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 布林中轨附近",
-    "tech": 1,
+    "status": "pass",
+    "detail": "日线代理共振(15min不可用): 布林中轨附近 / 放量×1.8",
+    "tech": 2,
     "proxy": true
    },
    "l4": {
@@ -30433,19 +30433,19 @@
    }
   },
   {
-   "code": "002371",
-   "name": "北方华创",
-   "price": 652.5,
-   "change": -5.02,
-   "inflow": -545664736.0,
+   "code": "000938",
+   "name": "紫光股份",
+   "price": 33.3,
+   "change": -4.56,
+   "inflow": -505876112.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 600.3,
-   "target": 750.375,
+   "stop": 30.636,
+   "target": 38.295,
    "l1": {
     "status": "fail",
-    "greed": 86.9,
-    "detail": "自建贪婪指数 86.9% → 86.9"
+    "greed": 94.1,
+    "detail": "自建贪婪指数 94.1% → 94.1"
    },
    "l2": {
     "status": "fail",
@@ -30469,19 +30469,19 @@
    }
   },
   {
-   "code": "000938",
-   "name": "紫光股份",
-   "price": 33.3,
-   "change": -4.56,
-   "inflow": -505876112.0,
+   "code": "002371",
+   "name": "北方华创",
+   "price": 652.5,
+   "change": -5.02,
+   "inflow": -545664736.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 30.636,
-   "target": 38.295,
+   "stop": 600.3,
+   "target": 750.375,
    "l1": {
     "status": "fail",
-    "greed": 94.1,
-    "detail": "自建贪婪指数 94.1% → 94.1"
+    "greed": 86.9,
+    "detail": "自建贪婪指数 86.9% → 86.9"
    },
    "l2": {
     "status": "fail",
@@ -30541,19 +30541,19 @@
    }
   },
   {
-   "code": "002653",
-   "name": "海思科",
-   "price": 59.66,
-   "change": -4.36,
-   "inflow": -12004219.0,
+   "code": "002432",
+   "name": "九安医疗",
+   "price": 65.5,
+   "change": -4.32,
+   "inflow": -132863891.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 54.887,
-   "target": 68.609,
+   "stop": 60.26,
+   "target": 75.325,
    "l1": {
     "status": "fail",
-    "greed": 89.4,
-    "detail": "自建贪婪指数 89.4% → 89.4"
+    "greed": 76.2,
+    "detail": "自建贪婪指数 76.2% → 76.2"
    },
    "l2": {
     "status": "fail",
@@ -30577,19 +30577,19 @@
    }
   },
   {
-   "code": "002432",
-   "name": "九安医疗",
-   "price": 65.5,
-   "change": -4.32,
-   "inflow": -132863891.0,
+   "code": "002653",
+   "name": "海思科",
+   "price": 59.66,
+   "change": -4.36,
+   "inflow": -12004219.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 60.26,
-   "target": 75.325,
+   "stop": 54.887,
+   "target": 68.609,
    "l1": {
     "status": "fail",
-    "greed": 76.2,
-    "detail": "自建贪婪指数 76.2% → 76.2"
+    "greed": 89.4,
+    "detail": "自建贪婪指数 89.4% → 89.4"
    },
    "l2": {
     "status": "fail",
@@ -30649,6 +30649,42 @@
    }
   },
   {
+   "code": "003031",
+   "name": "中瓷电子",
+   "price": 91.1,
+   "change": -3.8,
+   "inflow": -18350084.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 83.812,
+   "target": 104.765,
+   "l1": {
+    "status": "fail",
+    "greed": 75.0,
+    "detail": "自建贪婪指数 75.0% → 75.0"
+   },
+   "l2": {
+    "status": "wait",
+    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
+   },
+   "l3": {
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 布林中轨附近",
+    "tech": 1,
+    "proxy": true
+   },
+   "l4": {
+    "status": "wait",
+    "flow": "",
+    "detail": "资金流数据不足"
+   },
+   "flows": [],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
    "code": "002422",
    "name": "科伦药业",
    "price": 41.8,
@@ -30685,23 +30721,23 @@
    }
   },
   {
-   "code": "003031",
-   "name": "中瓷电子",
-   "price": 91.1,
-   "change": -3.8,
-   "inflow": -18350084.0,
+   "code": "002303",
+   "name": "美盈森",
+   "price": 4.41,
+   "change": -3.71,
+   "inflow": -14370225.0,
    "template": "C",
    "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 83.812,
-   "target": 104.765,
+   "stop": 4.057,
+   "target": 5.071,
    "l1": {
     "status": "fail",
-    "greed": 75.0,
-    "detail": "自建贪婪指数 75.0% → 75.0"
+    "greed": 88.1,
+    "detail": "自建贪婪指数 88.1% → 88.1"
    },
    "l2": {
-    "status": "wait",
-    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
+    "status": "fail",
+    "detail": "日线MACD死叉且绿柱未缩短，持续下行风险高"
    },
    "l3": {
     "status": "wait",
@@ -30742,42 +30778,6 @@
    "l3": {
     "status": "wait",
     "detail": "日线代理共振(15min不可用): 站上MA20",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "wait",
-    "flow": "",
-    "detail": "资金流数据不足"
-   },
-   "flows": [],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
-   "code": "002303",
-   "name": "美盈森",
-   "price": 4.41,
-   "change": -3.71,
-   "inflow": -14370225.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 4.057,
-   "target": 5.071,
-   "l1": {
-    "status": "fail",
-    "greed": 88.1,
-    "detail": "自建贪婪指数 88.1% → 88.1"
-   },
-   "l2": {
-    "status": "fail",
-    "detail": "日线MACD死叉且绿柱未缩短，持续下行风险高"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 布林中轨附近",
     "tech": 1,
     "proxy": true
    },
@@ -32125,42 +32125,6 @@
    }
   },
   {
-   "code": "000739",
-   "name": "普洛药业",
-   "price": 19.95,
-   "change": -1.34,
-   "inflow": -34446542.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 18.354,
-   "target": 22.942,
-   "l1": {
-    "status": "fail",
-    "greed": 96.9,
-    "detail": "自建贪婪指数 96.9% → 96.9"
-   },
-   "l2": {
-    "status": "fail",
-    "detail": "日线MACD死叉且绿柱未缩短，持续下行风险高"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 站上MA20",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "wait",
-    "flow": "",
-    "detail": "资金流数据不足"
-   },
-   "flows": [],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "000962",
    "name": "东方钽业",
    "price": 43.3,
@@ -32269,42 +32233,6 @@
    }
   },
   {
-   "code": "000725",
-   "name": "京东方Ａ",
-   "price": 5.44,
-   "change": -1.27,
-   "inflow": -572712304.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 5.005,
-   "target": 6.256,
-   "l1": {
-    "status": "fail",
-    "greed": 85.9,
-    "detail": "自建贪婪指数 85.9% → 85.9"
-   },
-   "l2": {
-    "status": "wait",
-    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 布林中轨附近",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "wait",
-    "flow": "",
-    "detail": "资金流数据不足"
-   },
-   "flows": [],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "000408",
    "name": "藏格矿业",
    "price": 79.64,
@@ -32377,6 +32305,42 @@
    }
   },
   {
+   "code": "000739",
+   "name": "普洛药业",
+   "price": 19.95,
+   "change": -1.34,
+   "inflow": -34446542.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 18.354,
+   "target": 22.942,
+   "l1": {
+    "status": "fail",
+    "greed": 96.9,
+    "detail": "自建贪婪指数 96.9% → 96.9"
+   },
+   "l2": {
+    "status": "fail",
+    "detail": "日线MACD死叉且绿柱未缩短，持续下行风险高"
+   },
+   "l3": {
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 站上MA20",
+    "tech": 1,
+    "proxy": true
+   },
+   "l4": {
+    "status": "wait",
+    "flow": "",
+    "detail": "资金流数据不足"
+   },
+   "flows": [],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
    "code": "002638",
    "name": "勤上股份",
    "price": 3.47,
@@ -32430,6 +32394,42 @@
    "l2": {
     "status": "fail",
     "detail": "日线MACD死叉且绿柱未缩短，持续下行风险高"
+   },
+   "l3": {
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 布林中轨附近",
+    "tech": 1,
+    "proxy": true
+   },
+   "l4": {
+    "status": "wait",
+    "flow": "",
+    "detail": "资金流数据不足"
+   },
+   "flows": [],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
+   "code": "000725",
+   "name": "京东方Ａ",
+   "price": 5.44,
+   "change": -1.27,
+   "inflow": -572712304.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 5.005,
+   "target": 6.256,
+   "l1": {
+    "status": "fail",
+    "greed": 85.9,
+    "detail": "自建贪婪指数 85.9% → 85.9"
+   },
+   "l2": {
+    "status": "wait",
+    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
    },
    "l3": {
     "status": "wait",
@@ -33529,42 +33529,6 @@
    }
   },
   {
-   "code": "002730",
-   "name": "电光科技",
-   "price": 19.99,
-   "change": 0.65,
-   "inflow": -6057243.0,
-   "template": "C",
-   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
-   "stop": 18.391,
-   "target": 22.988,
-   "l1": {
-    "status": "fail",
-    "greed": 70.9,
-    "detail": "自建贪婪指数 70.9% → 70.9"
-   },
-   "l2": {
-    "status": "wait",
-    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
-   },
-   "l3": {
-    "status": "wait",
-    "detail": "日线代理共振(15min不可用): 布林中轨附近",
-    "tech": 1,
-    "proxy": true
-   },
-   "l4": {
-    "status": "wait",
-    "flow": "",
-    "detail": "资金流数据不足"
-   },
-   "flows": [],
-   "fund": {
-    "good": false,
-    "detail": ""
-   }
-  },
-  {
    "code": "002839",
    "name": "张家港行",
    "price": 4.61,
@@ -33586,6 +33550,42 @@
    "l3": {
     "status": "wait",
     "detail": "日线代理共振(15min不可用): 站上MA20",
+    "tech": 1,
+    "proxy": true
+   },
+   "l4": {
+    "status": "wait",
+    "flow": "",
+    "detail": "资金流数据不足"
+   },
+   "flows": [],
+   "fund": {
+    "good": false,
+    "detail": ""
+   }
+  },
+  {
+   "code": "002730",
+   "name": "电光科技",
+   "price": 19.99,
+   "change": 0.65,
+   "inflow": -6057243.0,
+   "template": "C",
+   "suggestion": "贪婪过热，禁止新开仓，持仓逢高逐步兑现。",
+   "stop": 18.391,
+   "target": 22.988,
+   "l1": {
+    "status": "fail",
+    "greed": 70.9,
+    "detail": "自建贪婪指数 70.9% → 70.9"
+   },
+   "l2": {
+    "status": "wait",
+    "detail": "日线MACD零轴下方绿柱缩短，酝酿反弹"
+   },
+   "l3": {
+    "status": "wait",
+    "detail": "日线代理共振(15min不可用): 布林中轨附近",
     "tech": 1,
     "proxy": true
    },

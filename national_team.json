@@ -1,5 +1,5 @@
 {
- "generated": "2026-08-03 03:56",
+ "generated": "2026-08-03 04:34",
  "validation": {
   "policy_bottom_by_etf": true,
   "withdraw_at_high": true,
@@ -53,7 +53,7 @@
    "trend": "上行",
    "short_term": "放量",
    "signal": "资金活跃·关注",
-   "shares_now_亿份": 203.97
+   "shares_now_亿份": 219.96
   },
   {
    "code": "sh510300",
@@ -67,7 +67,7 @@
    "trend": "平稳",
    "short_term": "持平",
    "signal": "中性",
-   "shares_now_亿份": 264.84
+   "shares_now_亿份": 264.67
   }
  ],
  "conclusion": {
