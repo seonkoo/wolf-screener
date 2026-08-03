@@ -1,10 +1,10 @@
 {
- "generated": "2026-08-02 15:34",
- "index": 36.7,
+ "generated": "2026-08-03 03:56",
+ "index": 36.5,
  "zone": "中性偏弱",
  "advice": "观望为主，按自身策略执行，不追不杀",
  "components": {
-  "market_proxy": 46.8,
+  "market_proxy": 46.4,
   "weibo_sentiment": 26.6
  },
  "validation": {
