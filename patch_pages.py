@@ -352,34 +352,62 @@ SCRIPT = JS_START + r'''
       fallback('synthesisMount','📴 未能实时拉取 overview.json（'+esc(e.message)+'），以下为本地烘焙快照。');
     });
   }
-  function watchItem(it){
+  function watchActiveRow(it){
     var col=colorOf((it.return||0));
-    var stcol = it.status=='持有中'?'var(--t3)':(it.expectation=='符合预期'?'var(--green2)':'var(--red2)');
+    var hdd=(it.hold_days||0); var hd=(arguments[1]||10);
+    var day='第'+Math.min(hdd,hd)+'/'+hd+'日';
+    var note=it.expectation||'';
     return '<tr style="font-size:12px;border-top:1px solid var(--line)">'
       +'<td style="padding:5px 4px;color:var(--t1)">'+esc(it.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(it.code)+'</span></td>'
+      +'<td style="padding:5px 4px;color:var(--t3)">'+esc(it.entry_date||'')+'</td>'
+      +'<td style="padding:5px 4px;color:var(--t3)">'+day+'</td>'
       +'<td style="padding:5px 4px">'+num(it.entry_price)+'</td>'
       +'<td style="padding:5px 4px">'+num(it.last_price)+'</td>'
       +'<td style="padding:5px 4px;color:'+col+'">'+chg((it.return||0)*100)+'</td>'
-      +'<td style="padding:5px 4px;color:'+stcol+'">'+esc(it.status)+'<br><span style="font-size:10px">'+esc(it.expectation)+'</span></td></tr>';
+      +'<td style="padding:5px 4px;color:var(--t3)">持有中<br><span style="font-size:10px">'+esc(note)+'</span></td></tr>';
+  }
+  function watchExitRow(it){
+    var col=colorOf((it.return||0));
+    var exr=(it.exit_return||0); var diff=(it.return||0)-exr;
+    var excol=colorOf(exr); var dcol=colorOf(diff);
+    return '<tr style="font-size:12px;border-top:1px solid var(--line)">'
+      +'<td style="padding:5px 4px;color:var(--t1)">'+esc(it.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(it.code)+'</span></td>'
+      +'<td style="padding:5px 4px;color:var(--t3)">'+esc(it.entry_date||'')+'</td>'
+      +'<td style="padding:5px 4px;color:var(--t3)">'+esc(it.exit_date||'')+'</td>'
+      +'<td style="padding:5px 4px;color:'+excol+'">'+chg(exr*100)+'</td>'
+      +'<td style="padding:5px 4px;color:'+col+'">'+chg((it.return||0)*100)+'</td>'
+      +'<td style="padding:5px 4px;color:'+dcol+'">'+((diff>=0?'+':'')+(diff*100).toFixed(2)+'%')+'</td></tr>';
   }
   function loadWatch(){
     loadJSON('watch_pool.json').then(function(d){
       var s=d.stats||{}, base=d.baseline||{};
+      var pm=s.pool_max||10, hd=s.hold_days||10, exd=s.exit_days||11;
       var wr=s.win_rate, vs=s.vs_backtest||'样本不足';
       var wrcol = wr==null?'var(--t3)':(vs=='高于回测'?'var(--green2)':(vs=='低于回测'?'var(--red2)':'var(--t3)'));
+      var wr_txt = wr==null?'—':(wr*100).toFixed(1)+'%';
+      var base_txt = base.win?(' '+(base.win*100).toFixed(1)+'%'):'';
+      var avg_txt = s.avg_return==null?'—':chg(s.avg_return*100);
+      var pickTxt = s.today_picked?('今日已选 '+esc(s.last_pick_name||'')):'今日未选（已满格/无候选）';
+      var items=d.items||[];
+      var act=items.filter(function(it){return it.status=='持有中';}).slice().reverse();
+      var ext=items.filter(function(it){return it.status && it.status!='持有中' && it.status!='已移除';}).slice().reverse();
+      var ra=act.map(function(it){return watchActiveRow(it,hd);}).join('') || '<tr><td colspan="7" style="padding:12px;color:var(--t3);text-align:center">暂无持仓中标的</td></tr>';
+      var re=ext.map(watchExitRow).join('') || '<tr><td colspan="6" style="padding:12px;color:var(--t3);text-align:center">暂无已清出标的</td></tr>';
       var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
-        +'<div><h3>📈 观察池 · 实盘验证</h3><div class="panel-sub" style="margin-bottom:0">生成于 '+esc(d.updated)+'</div></div>'
-        +'<div style="text-align:right"><div style="font-size:20px;font-weight:800;color:'+wrcol+'">'+(wr==null?'—':(wr*100).toFixed(1)+'%')+'</div>'
-        +'<div style="font-size:11px;color:var(--t3)">真实命中率 vs 回测'+(base.win?(' '+(base.win*100).toFixed(1)+'%'):'')+'</div></div></div>';
+        +'<div><h3>🎯 动态观察池 · 滚动'+pm+'格</h3><div class="panel-sub" style="margin-bottom:0">生成于 '+esc(d.updated)+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:20px;font-weight:800;color:'+wrcol+'">'+wr_txt+'</div>'
+        +'<div style="font-size:11px;color:var(--t3)">清出命中率 vs 回测'+base_txt+'</div></div></div></div>';
       h+='<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">'
-        + '总追踪 <b>'+(s.total||0)+'</b> 只 ｜ 已平仓 <b>'+(s.closed||0)+'</b> ｜ 持仓 <b>'+(s.open||0)+'</b>'
-        + ' ｜ 止盈 <b style="color:var(--green2)">'+(s.tp||0)+'</b> ｜ 止损 <b style="color:var(--red2)">'+(s.stop||0)+'</b> ｜ 到期 <b>'+(s.expired||0)+'</b>'
-        + ' ｜ 均值 <b>'+((s.avg_return==null)?'—':chg(s.avg_return*100))+'</b> ｜ <b style="color:'+wrcol+'">'+esc(vs)+'</b></div>';
-      h+='<div class="panel"><h3 style="margin-bottom:6px">追踪明细</h3><div style="max-height:48vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">';
-      h+='<tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入场价</th><th style="padding:4px">现价</th><th style="padding:4px">收益</th><th style="padding:4px">状态</th></tr>';
-      (d.items||[]).slice().reverse().forEach(function(it){ h+=watchItem(it); });
-      h+='</table></div></div>';
-      h+='<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">自我纠正：观察池自动追踪「自动选股」输出的买入标的，自输出以来的真实走向即本表。命中率低于回测基线时策略体检将亮红灯。不构成投资建议。</div>';
+        + '持仓 <b>'+((s.active||0))+'</b>/'+pm+' ｜ 已清出 <b>'+((s.cleared||0))+'</b> ｜ '+pickTxt
+        + ' ｜ 均值 <b>'+avg_txt+'</b> ｜ <b style="color:'+wrcol+'">'+esc(vs)+'</b></div>';
+      h+='<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📌 规则：每天入选「策略盈利率最高」的 <b>1 只</b>，持有 <b>'+hd+'</b> 日、第 <b>'+exd+'</b> 日清出，始终保持 '+pm+' 只·<b>一进一出</b>。清出后<b>仍追踪现价</b>，可对比「按纪律出场」与「一直持有」的差距。</div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">🔵 持仓中（动态池 · 一进一出）</h3><div style="max-height:38vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+        +'<tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入选日</th><th style="padding:4px">持有</th><th style="padding:4px">入场价</th><th style="padding:4px">现价</th><th style="padding:4px">至今收益</th><th style="padding:4px">状态</th></tr>'
+        + ra + '</table></div></div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">⚪ 已清出 · 仍追踪后续</h3><div style="max-height:38vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
+        +'<tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入选日</th><th style="padding:4px">清出日</th><th style="padding:4px">结算收益</th><th style="padding:4px">至今累计</th><th style="padding:4px">若持有差额</th></tr>'
+        + re + '</table></div></div>';
+      h+='<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">自我纠正：动态池用「满持有期清出」做干净的实验——命中率以<b>清出时结算收益</b>为基准。清出标的之后仍每天更新现价，故「至今累计」与「结算收益」的差额可见（绿=一直拿着更赚，红=早出场更对）。不构成投资建议。</div>';
       var el=document.getElementById('watchMount'); if(el) el.innerHTML=h;
     }).catch(function(e){
       fallback('watchMount','📴 未能实时拉取 watch_pool.json（'+esc(e.message)+'），以下为本地烘焙快照。');
@@ -970,11 +998,14 @@ def patch(fn):
         else:
             print('  ! 未找到 auto tab 按钮')
 
-    # 1c) 交易时机（默认第一个主入口）：插到「最前面」，成为首个 tab 按钮
+    # 1c) 交易时机（默认第一个主入口）：插到「最前面」，成为首个 tab 按钮。
+    #     注意：必须插在第一个 <button 标签「之前」（整段之前），否则若用
+    #     s.find('data-tab="') 会在 overview 按钮开标签中间剖开，造成 nav 撕裂。
     if 'data-tab="tradetime"' not in s:
-        first = s.find('data-tab="')
-        if first >= 0:
-            s = s[:first] + TRADETIME_TAB_BTN + '\n' + s[first:]
+        nav_start = s.find('<nav')
+        first_btn = s.find('<button', nav_start) if nav_start >= 0 else s.find('<button')
+        if first_btn >= 0:
+            s = s[:first_btn] + TRADETIME_TAB_BTN + '\n' + s[first_btn:]
             print('  + tab按钮: tradetime (置顶)')
         else:
             print('  ! 未找到首个 tab 按钮')

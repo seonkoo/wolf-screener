@@ -398,41 +398,78 @@ def build_overview(d):
 def build_watch(d):
     s = d.get('stats', {}) or {}
     base = d.get('baseline', {}) or {}
+    items = d.get('items', []) or []
+    pm = s.get('pool_max', 10); hd = s.get('hold_days', 10); exd = s.get('exit_days', 11)
     wr = s.get('win_rate')
     vs = s.get('vs_backtest', '样本不足')
     wrcol = 'var(--t3)' if wr is None else ('var(--green2)' if vs == '高于回测' else ('var(--red2)' if vs == '低于回测' else 'var(--t3)'))
     wr_txt = f'{wr*100:.1f}%' if wr is not None else '—'
     base_txt = f' {(base.get("win") or 0)*100:.1f}%' if base.get('win') is not None else ''
-    rows = ''
-    for it in (d.get('items', []) or [])[::-1]:
-        col = color_of(it.get('return'))
-        stcol = 'var(--t3)' if it.get('status') == '持有中' else ('var(--green2)' if it.get('expectation') == '符合预期' else 'var(--red2)')
-        ret = it.get('return') or 0
-        rows += (f'<tr style="font-size:12px;border-top:1px solid var(--line)">'
-                 f'<td style="padding:5px 4px;color:var(--t1)">{it.get("name","")}<br><span style="color:var(--t4);font-size:10px">{it.get("code","")}</span></td>'
-                 f'<td style="padding:5px 4px">{num(it.get("entry_price"))}</td>'
-                 f'<td style="padding:5px 4px">{num(it.get("last_price"))}</td>'
-                 f'<td style="padding:5px 4px;color:{col}">{( "+" if ret>=0 else "" )}{ret*100:.2f}%</td>'
-                 f'<td style="padding:5px 4px;color:{stcol}">{it.get("status","")}<br><span style="font-size:10px">{it.get("expectation","")}</span></td></tr>')
     avg_txt = f'{("+" if (s.get("avg_return") or 0) >= 0 else "")}{(s.get("avg_return") or 0)*100:.2f}%' if s.get('avg_return') is not None else '—'
+    pick_txt = (f'今日已选 {esc(s.get("last_pick_name",""))}' if s.get('today_picked')
+                else '今日未选（已满格/无候选）')
+
+    def arow(it):
+        col = color_of(it.get('return'))
+        nm = esc(it.get('name', '')); cd = esc(it.get('code', ''))
+        ret = it.get('return') or 0
+        hdd = it.get('hold_days', 0)
+        day = f'第{min(hdd, hd)}/{hd}日'
+        note = esc(it.get('expectation', '') or '')
+        return ('<tr style="font-size:12px;border-top:1px solid var(--line)">'
+                f'<td style="padding:5px 4px;color:var(--t1)">{nm}<br><span style="color:var(--t4);font-size:10px">{cd}</span></td>'
+                f'<td style="padding:5px 4px;color:var(--t3)">{esc(it.get("entry_date",""))}</td>'
+                f'<td style="padding:5px 4px;color:var(--t3)">{day}</td>'
+                f'<td style="padding:5px 4px">{num(it.get("entry_price"))}</td>'
+                f'<td style="padding:5px 4px">{num(it.get("last_price"))}</td>'
+                f'<td style="padding:5px 4px;color:{col}">{chg(ret*100)}</td>'
+                f'<td style="padding:5px 4px;color:var(--t3)">持有中<br><span style="font-size:10px">{note}</span></td></tr>')
+
+    def erow(it):
+        col = color_of(it.get('return'))
+        nm = esc(it.get('name', '')); cd = esc(it.get('code', ''))
+        exr = it.get('exit_return') or 0
+        ret = it.get('return') or 0
+        diff = ret - exr
+        excol = color_of(exr); dcol = color_of(diff)
+        return ('<tr style="font-size:12px;border-top:1px solid var(--line)">'
+                f'<td style="padding:5px 4px;color:var(--t1)">{nm}<br><span style="color:var(--t4);font-size:10px">{cd}</span></td>'
+                f'<td style="padding:5px 4px;color:var(--t3)">{esc(it.get("entry_date",""))}</td>'
+                f'<td style="padding:5px 4px;color:var(--t3)">{esc(it.get("exit_date",""))}</td>'
+                f'<td style="padding:5px 4px;color:{excol}">{chg(exr*100)}</td>'
+                f'<td style="padding:5px 4px;color:{col}">{chg(ret*100)}</td>'
+                f'<td style="padding:5px 4px;color:{dcol}">{("+" if diff>=0 else "")}{diff*100:.2f}%</td></tr>')
+
+    active = [it for it in items if it.get('status') == '持有中']
+    exited = [it for it in items if it.get('status') not in ('持有中', '已移除')]
+    rows_a = ''.join(arow(it) for it in reversed(active)) or '<tr><td colspan="7" style="padding:12px;color:var(--t3);text-align:center">暂无持仓中标的</td></tr>'
+    rows_e = ''.join(erow(it) for it in reversed(exited)) or '<tr><td colspan="6" style="padding:12px;color:var(--t3);text-align:center">暂无已清出标的</td></tr>'
     return f'''
 <div class="panel">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <div><h3>📈 观察池 · 实盘验证</h3><div class="panel-sub" style="margin-bottom:0">快照 {d.get('updated','')}</div></div>
+    <div><h3>🎯 动态观察池 · 滚动{pm}格</h3><div class="panel-sub" style="margin-bottom:0">快照 {esc(d.get('updated',''))}</div></div>
     <div style="text-align:right"><div style="font-size:20px;font-weight:800;color:{wrcol}">{wr_txt}</div>
-    <div style="font-size:11px;color:var(--t3)">真实命中率 vs 回测{base_txt}</div></div>
+    <div style="font-size:11px;color:var(--t3)">清出命中率 vs 回测{base_txt}</div></div>
   </div>
 </div>
 <div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">
-  总追踪 <b>{s.get('total',0)}</b> 只 ｜ 已平仓 <b>{s.get('closed',0)}</b> ｜ 持仓 <b>{s.get('open',0)}</b>
-  ｜ 止盈 <b style="color:var(--green2)">{s.get('tp',0)}</b> ｜ 止损 <b style="color:var(--red2)">{s.get('stop',0)}</b> ｜ 到期 <b>{s.get('expired',0)}</b>
-  ｜ 均值 <b>{avg_txt}</b> ｜ <b style="color:{wrcol}">{vs}</b>
+  持仓 <b>{s.get('active',0)}</b>/{pm} ｜ 已清出 <b>{s.get('cleared',0)}</b> ｜ {pick_txt}
+  ｜ 均值 <b>{avg_txt}</b> ｜ <b style="color:{wrcol}">{esc(vs)}</b>
 </div>
-<div class="panel"><h3 style="margin-bottom:6px">追踪明细</h3><div style="max-height:48vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
-  <tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入场价</th><th style="padding:4px">现价</th><th style="padding:4px">收益</th><th style="padding:4px">状态</th></tr>
-  {rows}
-</table></div></div>
-<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">自我纠正：观察池自动追踪「自动选股」输出的买入标的，自输出以来的真实走向即本表。命中率低于回测基线时策略体检将亮红灯。不构成投资建议。</div>
+<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">
+  📌 规则：每天入选「策略盈利率最高」的 <b>1 只</b>，持有 <b>{hd}</b> 日、第 <b>{exd}</b> 日清出，始终保持 {pm} 只·<b>一进一出</b>。清出后<b>仍追踪现价</b>，可对比「按纪律出场」与「一直持有」的差距。
+</div>
+<div class="panel"><h3 style="margin-bottom:6px">🔵 持仓中（动态池 · 一进一出）</h3>
+  <div style="max-height:38vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+  <tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入选日</th><th style="padding:4px">持有</th><th style="padding:4px">入场价</th><th style="padding:4px">现价</th><th style="padding:4px">至今收益</th><th style="padding:4px">状态</th></tr>
+  {rows_a}
+  </table></div></div>
+<div class="panel"><h3 style="margin-bottom:6px">⚪ 已清出 · 仍追踪后续</h3>
+  <div style="max-height:38vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">
+  <tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入选日</th><th style="padding:4px">清出日</th><th style="padding:4px">结算收益</th><th style="padding:4px">至今累计</th><th style="padding:4px">若持有差额</th></tr>
+  {rows_e}
+  </table></div></div>
+<div class="panel" style="font-size:11px;color:var(--t4);line-height:1.5">自我纠正：动态池用「满持有期清出」做干净的实验——命中率以<b>清出时结算收益</b>为基准。清出标的之后仍每天更新现价，故「至今累计」与「结算收益」的差额可见（绿=一直拿着更赚，红=早出场更对）。不构成投资建议。</div>
 '''
 
 
