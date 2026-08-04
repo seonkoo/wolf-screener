@@ -35,6 +35,8 @@ O_START, O_END = '<!--SYNTHESIS_START-->', '<!--SYNTHESIS_END-->'
 W_START, W_END = '<!--WATCH_START-->', '<!--WATCH_END-->'
 LD_START, LD_END = '<!--LIDAXIAO_START-->', '<!--LIDAXIAO_END-->'
 SE_START, SE_END = '<!--SECTORFLOW_START-->', '<!--SECTORFLOW_END-->'
+TT_START, TT_END = '<!--TRADETIME_START-->', '<!--TRADETIME_END-->'
+TB_START, TB_END = '<!--TTBANNER_START-->', '<!--TTBANNER_END-->'
 
 
 def esc(x):
@@ -486,6 +488,73 @@ def build_lidaxiao(d):
     return h
 
 
+# ---------------- 交易时机（主入口）----------------
+def tt_card_py(r):
+    tp = r.get('trade_plan') or {}
+    oc = 'var(--green2)' if tp.get('open') == 'open' else ('#d99e00' if tp.get('open') == 'watch' else 'var(--red2)')
+    olab = '✅ 可开仓' if tp.get('open') == 'open' else ('⏳ 等/小仓' if tp.get('open') == 'watch' else '⛔ 禁止')
+    conv = tp.get('conviction', 0)
+    ccol = 'var(--green2)' if conv >= 70 else ('#1e88e5' if conv >= 45 else ('#d99e00' if conv >= 20 else 'var(--t3)'))
+    sp = (tp.get('stop_pct') or 0) * 100
+    tp2 = (tp.get('target_pct') or 0) * 100
+    l1 = r.get('l1', {}) or {}; l2 = r.get('l2', {}) or {}; l3 = r.get('l3', {}) or {}; l4 = r.get('l4', {}) or {}
+    wolf2 = (r.get('wolf2') or {}).get('pass')
+    mac = (' ｜ ' + esc(tp['macro_note'])) if tp.get('macro_note') else ''
+    return f'''
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid {oc}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:700;color:var(--t1)">{esc(r.get('name',''))} <span style="color:var(--t3);font-weight:400;font-size:12px">{esc(r.get('code',''))}</span></div>
+        <div style="text-align:right"><div style="color:var(--t1);font-weight:700">{num(r.get('price'))}</div><div style="font-size:12px;color:{color_of(r.get('change'))}">{chg(r.get('change'))}</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span class="badge" style="border:1px solid {oc};color:{oc}">{olab}</span>
+        <span style="color:var(--t2)">📍 {esc(tp.get('buy_trigger',''))}</span>
+        <span style="font-size:11px;color:{ccol}">确定性 {conv}</span>
+      </div>
+      <div style="margin-top:5px;font-size:12px;color:var(--t2)">持股 <b>{tp.get('hold_days','-')}</b> 日 · 止损 <b style="color:var(--red2)">{num(tp.get('stop_price'),3)}</b> ({sp:.0f}%) · 止盈 <b style="color:var(--green2)">{num(tp.get('target_price'),3)}</b> (+{tp2:.0f}%)</div>
+      <div style="margin-top:4px;font-size:11px;color:var(--t3)">{esc(tp.get('open_reason',''))}{mac}</div>
+      <div style="margin-top:4px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
+        {layer_pill('①情绪', l1.get('status'))} {layer_pill('②浪型', l2.get('status'))} {layer_pill('③技术', l3.get('status'))} {layer_pill('④资金', l4.get('status'))}{'<span class="badge b-green">★小狼2.0</span>' if wolf2 else ''}
+      </div>
+      <div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">{esc(r.get('suggestion',''))}</div>
+    </div>'''
+
+
+def build_tradetime(d):
+    if not d:
+        return ''
+    picks = []
+    for r in (d.get('A', []) + d.get('B', [])):
+        if r.get('trade_plan'):
+            picks.append(r)
+    picks.sort(key=lambda r: -(r['trade_plan'].get('conviction', 0)))
+    actionable = [r for r in picks if r['trade_plan'].get('open') != 'no']
+    if not actionable:
+        return '<div class="panel" style="font-size:12px;color:var(--t3)">当前无可操作个股（大市环境或个股信号均未触发开仓）。可切「🤖 自动选股」看全部候选。</div>'
+    h = f'<div class="panel" style="font-size:11px;color:var(--t3)">按确定性排序的可操作个股（开仓+观望共 {len(actionable)} 只）。非投资建议。</div>'
+    h += ''.join(tt_card_py(r) for r in actionable)
+    return h
+
+
+def build_tt_banner(d, ld, sent):
+    m = (d or {}).get('market', {}) or {}
+    tier = ((ld or {}).get('sz50', {}) or {}).get('tier', '-')
+    pe = ((ld or {}).get('sz50', {}) or {}).get('pe')
+    sidx = (sent or {}).get('index')
+    szone = (sent or {}).get('zone', '')
+    mtrend = m.get('trend', 'na')
+    mtrend_txt = '🟢 大盘上行' if mtrend == 'up' else ('🔴 大盘下行(恐慌区)' if mtrend == 'down' else '🟡 大盘震荡')
+    pe_txt = f'（PE {num(pe)}）' if pe is not None else ''
+    sidx_txt = num(sidx, 0) if sidx is not None else '-'
+    dev_txt = f'（年线偏离 {num(m.get("dev_pct"))}%）' if m.get('dev_pct') is not None else ''
+    return f'''<div class="panel" style="border-left:4px solid var(--blue);background:var(--bg2)">
+  <div style="font-weight:700;color:var(--t1)">⏱️ 交易时机 · 大市环境</div>
+  <div style="font-size:12px;color:var(--t2);margin-top:4px;line-height:1.6">李大霄温度 <b>{esc(tier)}</b>{pe_txt} ｜ 情绪 <b>{sidx_txt}</b> {esc(szone)}
+   ｜ {mtrend_txt}{dev_txt}</div>
+  <div style="font-size:11px;color:var(--t3);margin-top:4px">大市环境为开仓「总开关」：温度底部+情绪冰点→可分批低吸；贪婪过热/狂热→控仓。个股买点见下方列表。</div>
+</div>'''
+
+
 def main():
     d = load(DATA)
     gd = load(GUARD)
@@ -506,6 +575,8 @@ def main():
     wd_block = build_watch(wd) if wd else None
     ld_block = build_lidaxiao(ld) if ld else None
     sector_block = build_sector_flow(se) if se else None
+    banner_block = build_tt_banner(d, ld, sd) if d else None
+    tt_block = build_tradetime(d) if d else None
     for fn in FILES:
         p = os.path.join(HERE, fn)
         if not os.path.exists(p):
@@ -538,6 +609,12 @@ def main():
         if sector_block:
             s, m = inject(s, sector_block, SE_START, SE_END, 'sectorMount')
             notes.append('sector:' + (m or 'FAIL'))
+        if banner_block:
+            s, m = inject(s, banner_block, TB_START, TB_END, 'ttBanner')
+            notes.append('ttbanner:' + (m or 'FAIL'))
+        if tt_block:
+            s, m = inject(s, tt_block, TT_START, TT_END, 'ttMount')
+            notes.append('tradetime:' + (m or 'FAIL'))
         if s != orig:
             open(p, 'w', encoding='utf-8').write(s)
             print('OK %-22s %s  (%d 字节)' % (fn, ' '.join(notes), len(s)))

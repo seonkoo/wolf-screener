@@ -27,6 +27,8 @@ if (OFFLINE && htmlFile) {
   const grab = (a, b) => { const m = html.match(new RegExp('<!--' + a + '-->([\\s\\S]*?)<!--' + b + '-->')); return m ? m[1] : ''; };
   if (html.includes('id="autoMount"')) el('autoMount').innerHTML = grab('AUTOPICK_START', 'AUTOPICK_END');
   if (html.includes('id="ldMount"')) el('ldMount').innerHTML = grab('LIDAXIAO_START', 'LIDAXIAO_END');
+  if (html.includes('id="ttBanner"')) el('ttBanner').innerHTML = grab('TTBANNER_START', 'TTBANNER_END');
+  if (html.includes('id="ttMount"')) el('ttMount').innerHTML = grab('TRADETIME_START', 'TRADETIME_END');
 }
 global.window = global;
 const SAMPLE_K = (function () {
@@ -90,14 +92,21 @@ setTimeout(() => {
   const html = (htmlFile && fs.existsSync(htmlFile)) ? fs.readFileSync(htmlFile, 'utf8') : '';
   const mountIds = html ? [...html.matchAll(/id="([\w]+Mount)"/g)].map(m => m[1]) : ['autoMount', 'ldMount', 'ewMount'];
   // 离线模式只校验「已烘焙快照」的挂载点（模拟 file:// 打开的兜底路径）；在线模式校验全部挂载点
-  const checkIds = OFFLINE ? mountIds.filter(id => ['autoMount', 'ldMount'].includes(id)) : mountIds;
+  // ttBanner 不是 *Mount 命名，单独纳入校验（在线渲染 + 离线快照兜底）
+  const ttBannerId = (html.includes('id="ttBanner"')) ? ['ttBanner'] : [];
+  const checkIds = OFFLINE
+    ? mountIds.filter(id => ['autoMount', 'ldMount', 'ttMount'].includes(id)).concat(ttBannerId)
+    : mountIds.concat(ttBannerId);
+  // 各挂载点最小长度：大内容区(列表)要求 ≥500，避免「渲染失败但无报错」漏过；
+  // 小头部(如 ttBanner 仅有几行环境描述，常态 ~400 字)降低阈值，避免误判。
+  const MIN_LEN = { ttBanner: 100 };
   checkIds.forEach((id) => {
     const h = el(id).innerHTML;
     const issues = [];
     if (/undefined/.test(h)) issues.push('undefined');
     if (/NaN/.test(h)) issues.push('NaN');
     if (/\[object Object\]/.test(h)) issues.push('[object Object]');
-    if (h.length < 500) issues.push('内容过短(可能渲染失败)');
+    if (h.length < (MIN_LEN[id] || 500)) issues.push('内容过短(可能渲染失败)');
     const open = (h.match(/<div\b/g) || []).length, close = (h.match(/<\/div>/g) || []).length;
     if (open !== close) issues.push(`div不平衡 ${open}/${close}`);
     if (issues.length) bad++;

@@ -239,6 +239,77 @@ def regime_gate(template, regime):
             return 'A', '大盘上行（沪深300在年线上方），可正常按计划低吸。'
     return template, ''
 
+def base_trade_plan(res):
+    """把分散的底层信号收敛成「买卖时机」结构化决策：开仓信号 / 买入时机 / 持股时间 / 止盈止损。
+    这是小狼系统对外输出的「主产品」；李大霄温度、波浪、板块资金、四层、小狼2.0 都是它的底层判断逻辑。"""
+    l1 = res.get('l1', {}) or {}
+    l2 = res.get('l2', {}) or {}
+    l3 = res.get('l3', {}) or {}
+    l4 = res.get('l4', {}) or {}
+    w2 = res.get('wolf2', {}) or {}
+    template = res.get('template', '')
+    market = res.get('market', {}) or {}
+    # —— 开仓信号（大市环境是否适合开仓，个股层）——
+    if w2.get('pass'):
+        open_sig, open_reason = 'open', '小狼2.0恐慌底部（回测胜率74.2%），买恐慌策略生效'
+    elif l1.get('status') == 'pass' and l3.get('status') == 'pass':
+        open_sig, open_reason = 'open', '低位 + 技术共振，可分批低吸'
+    elif l1.get('status') == 'pass':
+        open_sig, open_reason = 'watch', '低位但技术未共振，等回调/放量确认'
+    elif l1.get('status') == 'fail':
+        open_sig, open_reason = 'no', '贪婪过热，禁止新开仓'
+    elif l2.get('status') == 'fail':
+        if market.get('trend') == 'down':
+            open_sig, open_reason = 'watch', '主跌阶段但处恐慌区，仅小狼2.0恐慌信号可轻仓'
+        else:
+            open_sig, open_reason = 'no', '主跌阶段（MACD死叉绿柱未缩短），规避下跌风险'
+    else:
+        open_sig, open_reason = 'watch', '信号未共振，纳入观察池等待'
+    # —— 买入时机 ——
+    if w2.get('pass'):
+        buy_trigger, buy_detail = '小狼2.0恐慌底部', ' / '.join(w2.get('reasons', [])) or '多因子共振'
+    elif l1.get('status') == 'pass' and l3.get('status') == 'pass':
+        buy_trigger, buy_detail = '低位技术共振', l3.get('detail', '')
+    elif l3.get('status') == 'pass':
+        buy_trigger, buy_detail = '技术反弹信号', l3.get('detail', '')
+    elif l4.get('status') == 'pass':
+        buy_trigger, buy_detail = '主力资金回流', l4.get('detail', '')
+    else:
+        buy_trigger, buy_detail = '等待信号共振', '四层信号尚未共振，暂不宜入场'
+    # —— 持股时间 ——
+    hold_days = WOLF2_HOLD if w2.get('pass') else HOLD_DAYS
+    # —— 止盈止损 ——
+    if w2.get('pass'):
+        stop_pct, target_pct = -WOLF2_STOP, WOLF2_TP
+    else:
+        stop_pct, target_pct = -STOP_PCT, TP_PCT
+    # —— 确定性评分（用于排序，0-100）——
+    conv = {'A': 70, 'B': 45, 'C': 20, 'D': 10}.get(template, 10)
+    if w2.get('pass'):
+        conv += 20
+    conv += min(int(l3.get('tech', 0) or 0), 3) * 4
+    g = l1.get('greed')
+    if isinstance(g, (int, float)):
+        if g < 25:
+            conv += 10
+        elif g < 40:
+            conv += 5
+    if l2.get('status') == 'pass':
+        conv += 5
+    if l4.get('status') == 'pass':
+        conv += 3
+    if market.get('trend') == 'down':
+        conv += 5   # 买恐慌：下行期反而更该低吸
+    conv = max(0, min(100, conv))
+    return {
+        'open': open_sig, 'open_reason': open_reason,
+        'buy_trigger': buy_trigger, 'buy_detail': buy_detail,
+        'hold_days': hold_days,
+        'stop_price': res.get('stop'), 'stop_pct': stop_pct,
+        'target_price': res.get('target'), 'target_pct': target_pct,
+        'conviction': conv,
+    }
+
 # ---------- 四层判定（复刻 runScreening） ----------
 def run_screening(stock):
     code=stock['code']; name=stock['name']; price=stock.get('price',0); chg=stock.get('change',0)
@@ -369,6 +440,8 @@ def run_screening(stock):
         res['suggestion']=gnote
     elif gnote:
         res['suggestion']=res['suggestion'].rstrip('。')+'。'+gnote
+    # 交易时机结构化决策（开仓/买入时机/持股/止盈止损），稍后由 apply_macro 用大市环境调制
+    res['trade_plan'] = base_trade_plan(res)
     return res
 
 # ---------- Layer 0: 好公司基本面过滤 ----------
@@ -440,6 +513,56 @@ def get_fundamentals(code, yj_row=None, asof=None, annual=None):
     good=bool(grow) and roe_ok and ocf_ok
     detail='ROE3年>8%%:%s 现金流3年>0:%s 增长(YoY%s):%s'%(roe_ok,ocf_ok,('&QoQ' if annual else ''),grow)
     return good, detail
+
+# ---------- 大市环境调制（开仓总开关）----------
+def load_macro_best_effort():
+    """best-effort 读 李大霄温度 / 情绪，用于调制开仓信号（缺失不报错、不影响主线）。"""
+    import os as _os
+    HERE = _os.path.dirname(_os.path.abspath(__file__))
+    ld = sd = None
+    try:
+        p = _os.path.join(HERE, 'li_daxiao.json')
+        if _os.path.exists(p):
+            with open(p, encoding='utf-8') as f:
+                ld = json.load(f)
+    except Exception:
+        ld = None
+    try:
+        p = _os.path.join(HERE, 'sentiment.json')
+        if _os.path.exists(p):
+            with open(p, encoding='utf-8') as f:
+                sd = json.load(f)
+    except Exception:
+        sd = None
+    return ld, sd
+
+def apply_macro(res, lidaxiao, sentiment):
+    """用大市环境(李大霄温度 + 情绪指数)调制 per-pick 的 open 信号：底层逻辑是高还是低，大市是总开关。"""
+    tp = res.get('trade_plan')
+    if not tp:
+        return
+    notes = []
+    macro_open = None
+    tier = ((lidaxiao or {}).get('sz50', {}) or {}).get('tier')
+    sidx = (sentiment or {}).get('index')
+    if tier in ('极致底部', '温和底部'):
+        macro_open = 'open'; notes.append('李大霄温度=%s（估值底部，适合分批布局）' % tier)
+    elif tier == '接近底部':
+        notes.append('李大霄温度=接近底部（下行空间收敛，可小仓）')
+    if isinstance(sidx, (int, float)):
+        if sidx < 25:
+            macro_open = 'open' if macro_open != 'no' else macro_open
+            notes.append('情绪=恐慌(%.0f)，逆向买点' % sidx)
+        elif sidx > 75:
+            macro_open = 'no'; notes.append('情绪=狂热(%.0f)，逆向卖、控仓' % sidx)
+    if macro_open == 'open' and tp['open'] == 'watch':
+        tp['open'] = 'open'
+        tp['open_reason'] = '底层信号观望，但大市环境（%s）支持分批低吸' % '；'.join(notes)
+    elif macro_open == 'no' and tp['open'] == 'open':
+        tp['open'] = 'watch'
+        tp['open_reason'] = '个股信号可开仓，但大市环境（%s）提示控仓，降为观察' % '；'.join(notes)
+    if notes:
+        tp['macro_note'] = '；'.join(notes)
 
 # ---------- 全市场预筛 ----------
 def get_universe(top_n, min_inflow):
@@ -517,6 +640,13 @@ def main():
                          0 if r.get('fund',{}).get('good',False) else 1,
                          r['l1']['greed'], -r.get('inflow',0)))
     B.sort(key=lambda r:(r['l1']['greed'], -r.get('inflow',0)))
+    # 大市环境调制开仓信号（best-effort 读 李大霄温度 + 情绪）
+    ld, sd = load_macro_best_effort()
+    if ld or sd:
+        for r in results:
+            apply_macro(r, ld, sd)
+        print('      大市环境调制：李大霄=%s 情绪=%s' % (
+            ((ld or {}).get('sz50', {}) or {}).get('tier'), (sd or {}).get('index')))
     # 输出
     wolf2A=[r for r in A if r.get('wolf2',{}).get('pass')]
     goodA=[r for r in A if r.get('fund',{}).get('good',False)]

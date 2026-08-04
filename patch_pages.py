@@ -41,6 +41,9 @@ AUTO_PANE = '''<section class="pane" id="pane-auto">
 
 MARKET_TAB_BTN = '  <button class="tab" data-tab="market">📊 市场研判</button>'
 WATCH_TAB_BTN = '  <button class="tab" data-tab="watch">📈 观察池</button>'
+TRADETIME_TAB_BTN = '  <button class="tab" data-tab="tradetime">⏱️ 交易时机</button>'
+LOADING_TRADETIME = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
+                '<div style="margin-top:8px">正在加载交易时机数据…</div></div></div>')
 
 # ---- 市场研判（综合研判 + 全球市场 + 重大事件 + 国家队资金 + 情绪指数 合并为一个 Tab）----
 # 注意：综合研判/国家队/情绪 用 snapshot 标记(sync_auto_tab.py 注入)；全球/重大事件 为前端独立渲染空壳(DOM id 由 renderGlobal/loadMajorEvents 填充)
@@ -143,6 +146,13 @@ MARKET_PANE = '''<section class="pane" id="pane-market">
 WATCH_PANE = '''<section class="pane" id="pane-watch">
   <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📈 观察池 · 实盘验证：自动追踪「自动选股」输出的买入标的，自输出以来的真实走向与是否符合预期。命中率低于回测基线时策略体检将亮红灯。非投资建议。</div>
   <div id="watchMount"><!--WATCH_START-->''' + LOADING_WATCH + '''<!--WATCH_END--></div>
+</section>'''
+
+# ---- 交易时机 pane（默认第一个主入口：大市环境横幅 + 按确定性排序的买卖决策列表）----
+TRADETIME_PANE = '''<section class="pane" id="pane-tradetime">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">⏱️ 交易时机：把「大市环境 + 个股信号」收敛成一句话买卖决策（开仓? / 买入时机 / 持股时间 / 止盈止损）。李大霄温度·波浪·板块资金·四层·小狼2.0 是其底层判断逻辑。非投资建议。</div>
+  <div id="ttBanner"><!--TTBANNER_START-->''' + LOADING_TRADETIME + '''<!--TTBANNER_END--></div>
+  <div id="ttMount"><!--TRADETIME_START-->''' + LOADING_TRADETIME + '''<!--TRADETIME_END--></div>
 </section>'''
 
 JS_START = '<!--WOLF_RENDER_JS_START-->'
@@ -764,7 +774,99 @@ SCRIPT = JS_START + r'''
       cinput.onkeydown=function(e){ if(e&&e.key==='Enter') cbtn.onclick(); };
     }
   }
-  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadSynthesis(); loadAuto(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); applyHash(); }
+  // ===== 交易时机（主入口）：大市环境 + 按确定性排序的买卖决策 =====
+  function loadTradeTime(){
+    var autoP = loadJSON('auto_screen_result.json');
+    var ldP = loadJSON('li_daxiao.json').catch(function(){ return null; });
+    var sentP = loadJSON('sentiment.json').catch(function(){ return null; });
+    Promise.all([autoP, ldP, sentP]).then(function(arr){
+      renderTT(arr[0], arr[1], arr[2]);
+    }).catch(function(e){
+      fallback('ttMount', '📴 未能实时拉取 auto_screen_result.json（'+esc(e.message)+'），以下为本地烘焙快照。要看每日最新，请访问 <a href="https://seonkoo.github.io/wolf-screener/" style="color:var(--blue)">seonkoo.github.io/wolf-screener</a>。');
+    });
+  }
+  function renderTT(d, ld, sent){
+    var m=(d&&d.market)||{};
+    var tier=((ld&&ld.sz50)||{}).tier||'-';
+    var pe=((ld&&ld.sz50)||{}).pe;
+    var sidx=(sent&&sent.index!=null)?sent.index:null;
+    var szone=(sent&&sent.zone)||'';
+    var mtrend=m.trend||'na';
+    var mtrendTxt = mtrend==='up'?'🟢 大盘上行':(mtrend==='down'?'🔴 大盘下行(恐慌区)':'🟡 大盘震荡');
+    var bEl=document.getElementById('ttBanner');
+    if(bEl) bEl.innerHTML='<div class="panel" style="border-left:4px solid var(--blue);background:var(--bg2)">'
+      +'<div style="font-weight:700;color:var(--t1)">⏱️ 交易时机 · 大市环境</div>'
+      +'<div style="font-size:12px;color:var(--t2);margin-top:4px;line-height:1.6">李大霄温度 <b>'+esc(tier)+'</b>'+(pe!=null?'（PE '+num(pe)+'）':'')+' ｜ 情绪 <b>'+(sidx!=null?num(sidx,0):'-')+'</b> '+esc(szone)
+      +' ｜ '+mtrendTxt+(m.dev_pct!=null?'（年线偏离 '+m.dev_pct+'%）':'')+'</div>'
+      +'<div style="font-size:11px;color:var(--t3);margin-top:4px">大市环境为开仓「总开关」：温度底部+情绪冰点→可分批低吸；贪婪过热/狂热→控仓。个股买点见下方列表。</div></div>';
+    var picks=[];
+    ((d.A||[]).concat(d.B||[])).forEach(function(r){ if(r.trade_plan) picks.push(r); });
+    picks.sort(function(a,b){ return (b.trade_plan.conviction||0)-(a.trade_plan.conviction||0); });
+    var actionable=picks.filter(function(r){ return r.trade_plan.open!=='no'; });
+    var h='';
+    if(!actionable.length){
+      h='<div class="panel" style="font-size:12px;color:var(--t3)">当前无可操作个股（大市环境或个股信号均未触发开仓）。可切「🤖 自动选股」看全部候选。</div>';
+    } else {
+      h+='<div class="panel" style="font-size:11px;color:var(--t3)">按确定性排序的可操作个股（开仓+观望共 '+actionable.length+' 只）。点击卡片展开四层明细与波浪买点。非投资建议。</div>';
+      actionable.forEach(function(r){ h+=ttCard(r); });
+    }
+    var el=document.getElementById('ttMount'); if(el) el.innerHTML=h;
+  }
+  function ttCard(r){
+    var tp=r.trade_plan||{};
+    var oc = tp.open==='open'?'var(--green2)':(tp.open==='watch'?'#d99e00':'var(--red2)');
+    var olab = tp.open==='open'?'✅ 可开仓':(tp.open==='watch'?'⏳ 等/小仓':'⛔ 禁止');
+    var col=colorOf(r.change||0);
+    var conv=tp.conviction||0;
+    var ccol = conv>=70?'var(--green2)':(conv>=45?'#1e88e5':(conv>=20?'#d99e00':'var(--t3)'));
+    var cid='ttdet_'+r.code, wid='ttwave_'+r.code;
+    var sp=(tp.stop_pct||0)*100, tp2=(tp.target_pct||0)*100;
+    return '<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid '+oc+'">'
+      +'<div style="display:flex;justify-content:space-between;align-items:baseline;cursor:pointer" onclick="ttToggle(\''+r.code+'\')">'
+      +'<div style="font-weight:700;color:var(--t1)">'+esc(r.name)+' <span style="color:var(--t3);font-weight:400;font-size:12px">'+esc(r.code)+'</span></div>'
+      +'<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(r.price)+'</div><div style="font-size:12px;color:'+col+'">'+chg(r.change)+'</div></div></div>'
+      +'<div style="margin-top:6px;font-size:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+      +'<span class="badge" style="border:1px solid '+oc+';color:'+oc+'">'+olab+'</span>'
+      +'<span style="color:var(--t2)">📍 '+esc(tp.buy_trigger||'')+'</span>'
+      +'<span style="font-size:11px;color:'+ccol+'">确定性 '+conv+'</span></div>'
+      +'<div style="margin-top:5px;font-size:12px;color:var(--t2)">持股 <b>'+ (tp.hold_days||'-') +'</b> 日 · 止损 <b style="color:var(--red2)">'+num(tp.stop_price,3)+'</b> ('+sp.toFixed(0)+'%) · 止盈 <b style="color:var(--green2)">'+num(tp.target_price,3)+'</b> (+'+tp2.toFixed(0)+'%)</div>'
+      +'<div id="'+cid+'" data-name="'+esc(r.name)+'" style="display:none;margin-top:6px">'
+      +'<div style="font-size:11px;color:var(--t3)">'+esc(tp.open_reason||'')+(tp.macro_note?' ｜ '+esc(tp.macro_note):'')+'</div>'
+      +'<div style="margin-top:4px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">'
+      + pill('①情绪',(r.l1||{}).status) + pill('②浪型',(r.l2||{}).status) + pill('③技术',(r.l3||{}).status) + pill('④资金',(r.l4||{}).status)
+      + (r.wolf2&&r.wolf2.pass?'<span class="badge b-green">★小狼2.0</span>':'') + '</div>'
+      +'<div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">'+esc(r.suggestion||'')+'</div>'
+      +'<div id="'+wid+'" style="margin-top:4px"></div></div>'
+      +'</div>';
+  }
+  function ttToggle(code){
+    var el=document.getElementById('ttdet_'+code); if(!el) return;
+    var hidden = el.style.display==='none';
+    el.style.display = hidden?'block':'none';
+    if(hidden){
+      var wave=document.getElementById('ttwave_'+code);
+      if(wave && !wave.dataset.loaded){ wave.dataset.loaded='1'; renderWaveMini(code, el.getAttribute('data-name')||code, wave); }
+    }
+  }
+  function renderWaveMini(code, name, el){
+    el.innerHTML='<div style="font-size:11px;color:var(--t3)">🌊 正在计算波浪买点…</div>';
+    Promise.all([ewKline(getTencentCode(code),'day'), ewMarketTrend()]).then(function(arr){
+      var kl=arr[0], market=arr[1];
+      if(!kl||kl.length<60){ el.innerHTML='<div style="font-size:11px;color:var(--t3)">🌊 日K线不足，无法分析波浪</div>'; return; }
+      var res=analyzeElliott(kl, name+' ('+code+')', market, null);
+      if(res.error){ el.innerHTML='<div style="font-size:11px;color:var(--t3)">🌊 '+esc(res.error)+'</div>'; return; }
+      var adv=res.advice;
+      var col=(adv.style==='长线持有')?'var(--red2)':(adv.style==='波段做T')?'#1e88e5':(adv.style==='逢高减仓'||adv.style==='降仓观望')?'#d99e00':'var(--t3)';
+      el.innerHTML='<div style="padding:6px;background:var(--bg3);border-radius:8px">'
+        +'<div style="font-weight:600;color:'+col+'">🌊 波浪买点：'+esc(adv.style)+'</div>'
+        +'<div style="font-size:11px;color:var(--t2);margin-top:3px">当前：'+esc(res.current)+'</div>'
+        +'<div style="font-size:11px;color:var(--t2);margin-top:2px">'+esc(adv.act)+'</div>'
+        +(adv.stop!=null?'<div style="font-size:11px;color:var(--t2)">参考止损 '+num(adv.stop)+'</div>':'')
+        +(adv.target!=null?'<div style="font-size:11px;color:var(--t2)">C浪目标 '+num(adv.target)+'</div>':'')
+        +'</div>';
+    }).catch(function(e){ el.innerHTML='<div style="font-size:11px;color:var(--t3)">🌊 波浪计算失败</div>'; });
+  }
+  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadSynthesis(); loadAuto(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); loadTradeTime(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();
@@ -816,6 +918,15 @@ def patch(fn):
         else:
             print('  ! 未找到 auto tab 按钮')
 
+    # 1c) 交易时机（默认第一个主入口）：插到「最前面」，成为首个 tab 按钮
+    if 'data-tab="tradetime"' not in s:
+        first = s.find('data-tab="')
+        if first >= 0:
+            s = s[:first] + TRADETIME_TAB_BTN + '\n' + s[first:]
+            print('  + tab按钮: tradetime (置顶)')
+        else:
+            print('  ! 未找到首个 tab 按钮')
+
     # 2) 自动选股 pane -> fetch 结构（保留已烘焙快照）
     m = re.search(r'<!--AUTOPICK_START-->(.*?)<!--AUTOPICK_END-->', s, re.S)
     baked_auto = m.group(1) if m else None
@@ -825,6 +936,36 @@ def patch(fn):
         s = s.replace('<!--AUTOPICK_START-->' + LOADING_AUTO + '<!--AUTOPICK_END-->',
                       '<!--AUTOPICK_START-->' + baked_auto + '<!--AUTOPICK_END-->', 1)
         print('    · 保留原离线快照')
+
+    # 2b) 交易时机 pane（默认主入口）
+    m = re.search(r'<!--TRADETIME_START-->(.*?)<!--TRADETIME_END-->', s, re.S)
+    baked_tt = m.group(1) if m else None
+    m2 = re.search(r'<!--TTBANNER_START-->(.*?)<!--TTBANNER_END-->', s, re.S)
+    baked_tb = m2.group(1) if m2 else None
+    s, ok = replace_section(s, 'pane-tradetime', TRADETIME_PANE)
+    if not ok:
+        ins = s.find('</section>', s.find('<section class="pane" id="pane-watch">'))
+        if ins >= 0:
+            ins += len('</section>')
+            s = s[:ins] + '\n' + TRADETIME_PANE + s[ins:]
+            print('  + 交易时机pane（新建）')
+        else:
+            print('  ! 无法定位交易时机pane插入点')
+    else:
+        print('  ~ 交易时机pane已刷新')
+    if baked_tt and '正在加载' not in baked_tt:
+        s = s.replace('<!--TRADETIME_START-->' + LOADING_TRADETIME + '<!--TRADETIME_END-->',
+                      '<!--TRADETIME_START-->' + baked_tt + '<!--TRADETIME_END-->', 1)
+        print('    · 保留原离线快照(交易时机)')
+    if baked_tb and '正在加载' not in baked_tb:
+        s = s.replace('<!--TTBANNER_START-->' + LOADING_TRADETIME + '<!--TTBANNER_END-->',
+                      '<!--TTBANNER_START-->' + baked_tb + '<!--TTBANNER_END-->', 1)
+        print('    · 保留原离线快照(大市环境横幅)')
+    # 设为默认主入口：清除其他 active，激活 tradetime
+    s = re.sub(r'class="tab active"', 'class="tab"', s)
+    s = re.sub(r'class="pane active"', 'class="pane"', s)
+    s = s.replace('<button class="tab" data-tab="tradetime">', '<button class="tab active" data-tab="tradetime">', 1)
+    s = s.replace('<section class="pane" id="pane-tradetime">', '<section class="pane active" id="pane-tradetime">', 1)
 
     # 3) 清理可能残留的「蓝筹低吸」独立 pane/tab（已废弃：回测显示跌破年线低吸无超额）
     s = re.sub(r'<section class="pane" id="pane-bluechip">.*?</section>\s*', '', s, flags=re.S)
