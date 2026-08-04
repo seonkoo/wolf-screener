@@ -805,7 +805,7 @@ SCRIPT = JS_START + r'''
       +'<div style="font-weight:700;color:var(--t1)">⏱️ 交易时机 · 大市环境</div>'
       +'<div style="font-size:12px;color:var(--t2);margin-top:4px;line-height:1.6">李大霄温度 <b>'+esc(tier)+'</b>'+(pe!=null?'（PE '+num(pe)+'）':'')+' ｜ 情绪 <b>'+(sidx!=null?num(sidx,0):'-')+'</b> '+esc(szone)
       +' ｜ '+mtrendTxt+(m.dev_pct!=null?'（年线偏离 '+m.dev_pct+'%）':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--t3);margin-top:4px">大市环境为开仓「总开关」：温度底部+情绪冰点→可分批低吸；贪婪过热/狂热→控仓。个股 / ETF 买点见下方分区。</div></div>';
+      +'<div style="font-size:11px;color:var(--t3);margin-top:4px">开仓「总开关」：底部区域优先配置【优质蓝筹】(李大霄体系)，劣质股抄底=接飞刀；趋势向上的强势股可【右侧顺势】跟随。下方可按「左侧低吸 / 右侧顺势」筛选。</div></div>';
     var picks=[];
     ((d.A||[]).concat(d.B||[])).forEach(function(r){ if(r.trade_plan) picks.push(r); });
     picks.sort(function(a,b){ return (b.trade_plan.conviction||0)-(a.trade_plan.conviction||0); });
@@ -814,6 +814,7 @@ SCRIPT = JS_START + r'''
     if(!actionable.length){
       h='<div class="panel" style="font-size:12px;color:var(--t3)">当前无可操作个股（大市环境或个股信号均未触发开仓）。可切「🤖 自动选股」看全部候选。</div>';
     } else {
+      h+=ttSideCtrl('ttFilter');
       h+='<div class="panel" style="font-size:11px;color:var(--t3)">按确定性排序的可操作个股（开仓+观望共 '+actionable.length+' 只）。点击卡片展开四层明细与波浪买点。非投资建议。</div>';
       actionable.forEach(function(r){ h+=ttCard(r); });
     }
@@ -828,7 +829,8 @@ SCRIPT = JS_START + r'''
     var ccol = conv>=70?'var(--green2)':(conv>=45?'#1e88e5':(conv>=20?'#d99e00':'var(--t3)'));
     var cid='ttdet_'+r.code, wid='ttwave_'+r.code;
     var sp=(tp.stop_pct||0)*100, tp2=(tp.target_pct||0)*100;
-    return '<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid '+oc+'">'
+    var side=tp.side||'left';
+    return '<div data-side="'+side+'" style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid '+oc+'">'
       +'<div style="display:flex;justify-content:space-between;align-items:baseline;cursor:pointer" onclick="ttToggle(\''+r.code+'\')">'
       +'<div style="font-weight:700;color:var(--t1)">'+esc(r.name)+' <span style="color:var(--t3);font-weight:400;font-size:12px">'+esc(r.code)+'</span></div>'
       +'<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(r.price)+'</div><div style="font-size:12px;color:'+col+'">'+chg(r.change)+'</div></div></div>'
@@ -836,9 +838,12 @@ SCRIPT = JS_START + r'''
       +'<span class="badge" style="border:1px solid '+oc+';color:'+oc+'">'+olab+'</span>'
       +'<span style="color:var(--t2)">📍 '+esc(tp.buy_trigger||'')+'</span>'
       +'<span style="font-size:11px;color:'+ccol+'">确定性 '+conv+'</span>'
+      +(side==='right'?'<span class="badge" style="border:1px solid var(--green2);color:var(--green2)">右侧顺势·买强</span>':'<span class="badge" style="border:1px solid #d99e00;color:#d99e00">左侧低吸·买跌</span>')
+      +(tp.lidaxiao_pick?'<span class="badge" style="border:1px solid var(--blue);color:var(--blue)">李大霄·蓝筹</span>':'')
       +(tag?'<span class="badge" style="border:1px solid var(--t3);color:var(--t3)">'+tag+'</span>':'')
       +'</div>'
       +'<div style="margin-top:5px;font-size:12px;color:var(--t2)">持股 <b>'+ (tp.hold_days||'-') +'</b> 日 · 止损 <b style="color:var(--red2)">'+num(tp.stop_price,3)+'</b> ('+sp.toFixed(0)+'%) · 止盈 <b style="color:var(--green2)">'+num(tp.target_price,3)+'</b> (+'+tp2.toFixed(0)+'%)</div>'
+      +'<div style="margin-top:4px;font-size:12px;color:var(--t2)">🌊 '+(tp.wave&&tp.wave.label?esc(tp.wave.label):'—')+'：'+(tp.wave&&tp.wave.op?esc(tp.wave.op):'')+'</div>'
       +'<div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5;background:var(--bg3);padding:6px;border-radius:8px">📝 买入理由：'+esc(tp.rationale||'')+'</div>'
       +'<div id="'+cid+'" data-name="'+esc(r.name)+'" style="display:none;margin-top:6px">'
       +'<div style="font-size:11px;color:var(--t3)">'+esc(tp.open_reason||'')+(tp.macro_note?' ｜ '+esc(tp.macro_note):'')+'</div>'
@@ -850,6 +855,19 @@ SCRIPT = JS_START + r'''
       +'</div>';
   }
   function etfCard(r){ return ttCard(r, 'ETF'); }
+  function ttSideCtrl(fn){
+    return '<div style="display:flex;gap:6px;margin:6px 0;font-size:12px">'
+      +'<span class="badge" style="cursor:pointer;border:1px solid var(--blue);color:var(--blue)" onclick="'+fn+'(\'all\')">全部</span>'
+      +'<span class="badge" style="cursor:pointer;border:1px solid #d99e00;color:#d99e00" onclick="'+fn+'(\'left\')">左侧低吸</span>'
+      +'<span class="badge" style="cursor:pointer;border:1px solid var(--green2);color:var(--green2)" onclick="'+fn+'(\'right\')">右侧顺势</span>'
+      +'</div>';
+  }
+  function ttFilter(side){ ttApplyFilter('ttMount', side); }
+  function etfFilter(side){ ttApplyFilter('etfMount', side); }
+  function ttApplyFilter(mountId, side){
+    var els=document.querySelectorAll('#'+mountId+' [data-side]');
+    for(var i=0;i<els.length;i++){ var s=els[i].getAttribute('data-side'); els[i].style.display=(side==='all'||s===side)?'':'none'; }
+  }
   function loadETFTime(){
     fetch('etf_result.json').then(function(r){ return r.json(); }).then(function(d){ renderETF(d); }).catch(function(e){
       var el=document.getElementById('etfMount');
@@ -867,6 +885,7 @@ SCRIPT = JS_START + r'''
     if(!actionable.length){
       h='<div class="panel" style="font-size:12px;color:var(--t3)">当前无操作信号 ETF。可观察 B 类（观望/小仓）标的，等信号共振。非投资建议。</div>';
     } else {
+      h+=ttSideCtrl('etfFilter');
       h+='<div class="panel" style="font-size:11px;color:var(--t3)">按确定性排序的可操作 ETF（开仓+观望共 '+actionable.length+' 只）。非投资建议。</div>';
       actionable.forEach(function(r){ h+=etfCard(r); });
     }

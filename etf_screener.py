@@ -136,6 +136,9 @@ def scan_etf(code, name):
         else:
             l4status, l4detail = 'neutral', '资金流向不明朗'
     res['l4'] = {'status': l4status, 'detail': l4detail}
+    # —— Layer 5 右侧(趋势跟随) + 波浪阶段 ——（与左侧低吸并列，让顺势买入被识别）
+    res['l5'] = A.right_side(day_closes, kd, md)
+    res['wave'] = A.wave_stage(day_closes)
     # —— 好公司过滤：ETF 不适用 ——
     res['fund'] = {'good': True, 'detail': 'ETF非个股，跳过好公司过滤'}
     # —— Template ——
@@ -197,7 +200,9 @@ def main():
     # 宏观调制（李大霄温度 + 情绪）per-pick 开仓总开关
     ld, sd = A.load_macro_best_effort()
     if ld or sd:
+        qset = A.load_quality_set()
         for r in results:
+            r['lidaxiao_pick'] = r['code'] in qset
             A.apply_macro(r, ld, sd)
     # 排序（确定性降序）
     for k in out:

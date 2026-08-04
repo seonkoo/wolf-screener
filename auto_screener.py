@@ -34,6 +34,12 @@ WOLF2_HOLD = 90    # 持有约 90 日（均值回归需要时间；10日过短�
 WOLF2_TP   = 0.10   # 止盈 10%（不贪，急跌修复即走）
 WOLF2_STOP = 0.20   # 止损 20%：回测证明止损是胜率杀手，越宽越好(5%→45%，不设→77%)
 
+# ---- 右侧(趋势跟随/突破) 分支：买强不买弱，解决"全是买跌"的不踏实感 ----
+# 与左侧低吸(均值回归)并列；右侧单顺势买入，止损更紧、错了快速走，比抄底接飞刀更可控
+RIGHT_STOP = 0.06   # 顺势单止损 6%（比左侧 8% 更紧：趋势单错了立刻走）
+RIGHT_TP   = 0.15   # 顺势单止盈 15%
+RIGHT_HOLD = 30     # 顺势单基础持有 30 日；主升浪(3浪)拉长到 60，末升浪(5)缩到 15
+
 def get(u):
     req = urllib.request.Request(u, headers=HDR)
     return urllib.request.urlopen(req, timeout=20).read().decode('utf-8','ignore')
@@ -239,6 +245,74 @@ def regime_gate(template, regime):
             return 'A', '大盘上行（沪深300在年线上方），可正常按计划低吸。'
     return template, ''
 
+def right_side(day_closes, kd, md):
+    """右侧(趋势跟随)判定：均线多头 + 近新高/突破 + 放量 + MACD 零轴上方。
+    与左侧低吸(买跌)并列，让"顺势买入强势股"也能被系统识别，解决'全是买跌'的不踏实感。"""
+    n = len(day_closes)
+    if n < 60:
+        return {'pass': False, 'score': 0, 'detail': 'K线不足(需≥60日)', 'why': []}
+    c = day_closes[-1]
+    ma20 = sum(day_closes[-20:]) / 20
+    ma60 = sum(day_closes[-60:]) / 60
+    uptrend = c > ma20 > ma60
+    hi20 = max(day_closes[-20:])
+    breakout = c >= hi20 * 0.97
+    lastvol = kd[-1]['volume'] if kd else 0
+    avgvol = sum(k['volume'] for k in kd[-20:]) / 20 if kd else 0
+    vol_up = avgvol > 0 and lastvol > 1.5 * avgvol
+    macd_up = False
+    if md:
+        dif, dea = md['dif'][-1], md['dea'][-1]
+        macd_up = dif > dea > 0
+    why, score = [], 0
+    if uptrend: score += 1; why.append('均线多头(价>MA20>MA60)')
+    if breakout: score += 1; why.append('近20日新高/突破')
+    if vol_up: score += 1; why.append('放量×%.1f' % (lastvol / avgvol if avgvol else 0))
+    if macd_up: score += 1; why.append('MACD零轴上方金叉')
+    return {'pass': bool(uptrend and score >= 3), 'score': score,
+            'detail': '右侧趋势: ' + (' / '.join(why) if why else '无信号'), 'why': why}
+
+
+def wave_stage(day_closes):
+    """艾略特波浪「阶段」研判（不求精确数浪，只给阶段操作建议）。
+    主升浪(3)→长持 / 调整浪(2/4)→短线低吸高卖 / 末升浪(5)→分批止盈 / 下跌浪→回避 / 震荡→轻仓。"""
+    n = len(day_closes)
+    if n < 60:
+        return {'key': 'na', 'label': '波浪数据不足', 'op': '暂无阶段建议', 'hold': HOLD_DAYS}
+    c = day_closes[-1]
+    ma20 = sum(day_closes[-20:]) / 20
+    ma60 = sum(day_closes[-60:]) / 60
+    ret20 = c / day_closes[-21] - 1 if n >= 21 else 0
+    up = c > ma60 and ma20 > ma60
+    down = c < ma60 and ma20 < ma60
+    rsi = calc_rsi(day_closes, 14)
+    hh = max(day_closes[-20:])
+    pullback = c <= hh * 0.97
+    if down:
+        return {'key': 'down', 'label': '下跌浪(C/大A)', 'op': '回避，不抄底；等止跌信号', 'hold': HOLD_DAYS}
+    if up:
+        if ret20 > 0.15 and rsi and rsi > 70:
+            return {'key': 'v', 'label': '末升浪(5)', 'op': '分批止盈，不追高', 'hold': 15}
+        if pullback:
+            return {'key': 'corr', 'label': '调整浪(2/4)', 'op': '短线低吸高卖，快进快出', 'hold': 20}
+        return {'key': 'imp3', 'label': '主升浪(3)', 'op': '长持为主，回踩加仓', 'hold': 60}
+    return {'key': 'side', 'label': '震荡蓄势', 'op': '轻仓高抛低吸', 'hold': HOLD_DAYS}
+
+
+def load_quality_set():
+    """best-effort 读 李大霄/蓝筹 优质集(blue_chip_result.json 的 picks)，标识体系内标的。"""
+    import os as _os
+    HERE = _os.path.dirname(_os.path.abspath(__file__))
+    p = _os.path.join(HERE, 'blue_chip_result.json')
+    try:
+        if _os.path.exists(p):
+            d = json.load(open(p, encoding='utf-8'))
+            return set(str(x['code']) for x in d.get('picks', []) if x.get('code'))
+    except Exception:
+        pass
+    return set()
+
+
 def base_trade_plan(res):
     """把分散的底层信号收敛成「买卖时机」结构化决策：开仓信号 / 买入时机 / 持股时间 / 止盈止损。
     这是小狼系统对外输出的「主产品」；李大霄温度、波浪、板块资金、四层、小狼2.0 都是它的底层判断逻辑。"""
@@ -246,12 +320,20 @@ def base_trade_plan(res):
     l2 = res.get('l2', {}) or {}
     l3 = res.get('l3', {}) or {}
     l4 = res.get('l4', {}) or {}
+    l5 = res.get('l5', {}) or {}
+    wave = res.get('wave', {}) or {}
     w2 = res.get('wolf2', {}) or {}
     template = res.get('template', '')
     market = res.get('market', {}) or {}
+    side = 'right' if l5.get('pass') else 'left'
     # —— 开仓信号（大市环境是否适合开仓，个股层）——
     if w2.get('pass'):
         open_sig, open_reason = 'open', '小狼2.0恐慌底部（回测胜率74.2%），买恐慌策略生效'
+    elif l5.get('pass'):
+        if l2.get('status') == 'fail':
+            open_sig, open_reason = 'watch', '右侧趋势雏形但MACD仍死叉，等短期企稳再顺势跟进'
+        else:
+            open_sig, open_reason = 'open', '右侧趋势确认（均线多头+放量突破），顺势买入比抄底更稳'
     elif l1.get('status') == 'pass' and l3.get('status') == 'pass':
         open_sig, open_reason = 'open', '低位 + 技术共振，可分批低吸'
     elif l1.get('status') == 'pass':
@@ -268,6 +350,8 @@ def base_trade_plan(res):
     # —— 买入时机 ——
     if w2.get('pass'):
         buy_trigger, buy_detail = '小狼2.0恐慌底部', ' / '.join(w2.get('reasons', [])) or '多因子共振'
+    elif l5.get('pass'):
+        buy_trigger, buy_detail = '右侧趋势突破', l5.get('detail', '')
     elif l1.get('status') == 'pass' and l3.get('status') == 'pass':
         buy_trigger, buy_detail = '低位技术共振', l3.get('detail', '')
     elif l3.get('status') == 'pass':
@@ -277,16 +361,26 @@ def base_trade_plan(res):
     else:
         buy_trigger, buy_detail = '等待信号共振', '四层信号尚未共振，暂不宜入场'
     # —— 持股时间 ——
-    hold_days = WOLF2_HOLD if w2.get('pass') else HOLD_DAYS
+    if w2.get('pass'):
+        hold_days = WOLF2_HOLD
+    elif l5.get('pass'):
+        hold_days = wave.get('hold') or RIGHT_HOLD
+    else:
+        hold_days = HOLD_DAYS
     # —— 止盈止损 ——
     if w2.get('pass'):
         stop_pct, target_pct = -WOLF2_STOP, WOLF2_TP
+    elif l5.get('pass'):
+        stop_pct, target_pct = -RIGHT_STOP, RIGHT_TP
     else:
         stop_pct, target_pct = -STOP_PCT, TP_PCT
     # —— 确定性评分（用于排序，0-100）——
     conv = {'A': 70, 'B': 45, 'C': 20, 'D': 10}.get(template, 10)
     if w2.get('pass'):
         conv += 20
+    if l5.get('pass'):
+        conv += 25
+    conv += min(int(l5.get('score', 0) or 0), 4) * 3
     conv += min(int(l3.get('tech', 0) or 0), 3) * 4
     g = l1.get('greed')
     if isinstance(g, (int, float)):
@@ -310,18 +404,23 @@ def base_trade_plan(res):
     if w2.get('pass'): sig.append('④小狼2.0恐慌底部命中：' + (' / '.join(w2.get('reasons', [])) or '多因子共振'))
     if l4.get('detail'): sig.append('⑤' + l4['detail'])
     head = {'open': '✅ 建议开仓', 'watch': '👁 建议观望/小仓', 'no': '⛔ 暂不开仓'}.get(open_sig, '⚠ 信号不明')
-    rationale = (head + '（' + open_reason + '）。'
+    side_txt = '【右侧顺势·买强】' if side == 'right' else '【左侧低吸·买跌】'
+    wave_txt = (' 波浪阶段：' + wave.get('label', '') + '——' + wave.get('op', '') + '。') if wave.get('label') else ''
+    rationale = (side_txt + head + '（' + open_reason + '）。'
                  + (' 技术面：' + '；'.join(sig) + '。' if sig else '')
+                 + wave_txt
                  + ' 操作计划：持股约%d日，止损%.0f%%（≈%.2f），止盈%.0f%%（≈%.2f）。' % (
                      hold_days, abs(stop_pct) * 100, res.get('stop') or 0, target_pct * 100, res.get('target') or 0))
     return {
         'open': open_sig, 'open_reason': open_reason,
         'buy_trigger': buy_trigger, 'buy_detail': buy_detail,
+        'side': side, 'wave': wave,
         'hold_days': hold_days,
         'stop_price': res.get('stop'), 'stop_pct': stop_pct,
         'target_price': res.get('target'), 'target_pct': target_pct,
         'conviction': conv,
         'rationale': rationale,
+        'lidaxiao_pick': bool(res.get('lidaxiao_pick')),
     }
 
 # ---------- 四层判定（复刻 runScreening） ----------
@@ -412,6 +511,9 @@ def run_screening(stock):
         elif allout: l4status,l4flow,l4detail='fail','持续流出','近3日主力持续净流出%s'%note
         else: l4status,l4flow,l4detail='neutral','资金mixed','资金流向不明朗%s'%note
     res['l4']={'status':l4status,'flow':l4flow,'detail':l4detail}
+    # Layer 5 右侧(趋势跟随)：与左侧低吸并列，让顺势买入被识别
+    res['l5']=right_side(day_closes, kd, md)
+    res['wave']=wave_stage(day_closes)
     # Layer 0 好公司过滤：仅当进入 A 候选(恐慌低位+技术共振)时才校验，避免全量拉取
     good_company=False; fund_detail=''
     if l1[0]=='pass' and l3status=='pass':
@@ -552,7 +654,8 @@ def load_macro_best_effort():
     return ld, sd
 
 def apply_macro(res, lidaxiao, sentiment):
-    """用大市环境(李大霄温度 + 情绪指数)调制 per-pick 的 open 信号：底层逻辑是高还是低，大市是总开关。"""
+    """用大市环境(李大霄温度 + 情绪指数)调制 per-pick 的 open 信号。
+    李大霄原旨：底部温度只对【优质/蓝筹】构成"买"信号；其他标的底部仅作参考，不可生搬硬套（抄底劣质股=接飞刀）。"""
     tp = res.get('trade_plan')
     if not tp:
         return
@@ -560,19 +663,25 @@ def apply_macro(res, lidaxiao, sentiment):
     macro_open = None
     tier = ((lidaxiao or {}).get('sz50', {}) or {}).get('tier')
     sidx = (sentiment or {}).get('index')
+    is_ld = bool(res.get('lidaxiao_pick'))
+    qtxt = '（李大霄体系·优质蓝筹）' if is_ld else ''
     if tier in ('极致底部', '温和底部'):
-        macro_open = 'open'; notes.append('李大霄温度=%s（估值底部，适合分批布局）' % tier)
+        if is_ld:
+            macro_open = 'open'; notes.append('李大霄温度=%s%s（估值底部，可重点配置优质蓝筹）' % (tier, qtxt))
+        else:
+            notes.append('李大霄温度=%s（底部区域，但本标的非蓝筹，底部信号仅供参考，以技术面为主）' % tier)
     elif tier == '接近底部':
-        notes.append('李大霄温度=接近底部（下行空间收敛，可小仓）')
+        notes.append('李大霄温度=接近底部（下行空间收敛，可小仓优质蓝筹）')
     if isinstance(sidx, (int, float)):
         if sidx < 25:
-            macro_open = 'open' if macro_open != 'no' else macro_open
-            notes.append('情绪=恐慌(%.0f)，逆向买点' % sidx)
+            if is_ld:
+                macro_open = 'open' if macro_open != 'no' else macro_open
+            notes.append('情绪=恐慌(%.0f)%s，逆向买点' % (sidx, qtxt))
         elif sidx > 75:
             macro_open = 'no'; notes.append('情绪=狂热(%.0f)，逆向卖、控仓' % sidx)
     if macro_open == 'open' and tp['open'] == 'watch':
         tp['open'] = 'open'
-        tp['open_reason'] = '底层信号观望，但大市环境（%s）支持分批低吸' % '；'.join(notes)
+        tp['open_reason'] = ('底层信号观望，但大市环境（%s）支持分批低吸' % '；'.join(notes)) + ('' if is_ld else '（注：非李大霄体系标的，仅技术面参考）')
     elif macro_open == 'no' and tp['open'] == 'open':
         tp['open'] = 'watch'
         tp['open_reason'] = '个股信号可开仓，但大市环境（%s）提示控仓，降为观察' % '；'.join(notes)
@@ -660,7 +769,9 @@ def main():
     # 大市环境调制开仓信号（best-effort 读 李大霄温度 + 情绪）
     ld, sd = load_macro_best_effort()
     if ld or sd:
+        qset = load_quality_set()   # 李大霄体系优质蓝筹集：底部温度只对它们构成"买"信号
         for r in results:
+            r['lidaxiao_pick'] = r['code'] in qset
             apply_macro(r, ld, sd)
         print('      大市环境调制：李大霄=%s 情绪=%s' % (
             ((ld or {}).get('sz50', {}) or {}).get('tier'), (sd or {}).get('index')))

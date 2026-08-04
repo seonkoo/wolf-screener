@@ -499,14 +499,21 @@ def tt_card_py(r, tag=''):
     ccol = 'var(--green2)' if conv >= 70 else ('#1e88e5' if conv >= 45 else ('#d99e00' if conv >= 20 else 'var(--t3)'))
     sp = (tp.get('stop_pct') or 0) * 100
     tp2 = (tp.get('target_pct') or 0) * 100
+    side = tp.get('side', 'left')
+    wave = tp.get('wave') or {}
+    is_ld = bool(tp.get('lidaxiao_pick'))
     l1 = r.get('l1', {}) or {}; l2 = r.get('l2', {}) or {}; l3 = r.get('l3', {}) or {}; l4 = r.get('l4', {}) or {}
     wolf2 = (r.get('wolf2') or {}).get('pass')
     mac = (' ｜ ' + esc(tp['macro_note'])) if tp.get('macro_note') else ''
     tag_badge = f'<span class="badge" style="border:1px solid var(--t3);color:var(--t3)">{tag}</span>' if tag else ''
+    side_badge = ('<span class="badge" style="border:1px solid var(--green2);color:var(--green2)">右侧顺势·买强</span>'
+                 if side == 'right' else '<span class="badge" style="border:1px solid #d99e00;color:#d99e00">左侧低吸·买跌</span>')
+    ld_badge = '<span class="badge" style="border:1px solid var(--blue);color:var(--blue)">李大霄·蓝筹</span>' if is_ld else ''
+    wave_line = f'<div style="margin-top:4px;font-size:12px;color:var(--t2)">🌊 {esc(wave.get("label", "—"))}：{esc(wave.get("op", ""))}</div>' if wave.get('label') else ''
     rationale = tp.get('rationale', '')
     rat_html = f'<div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5;background:var(--bg3);padding:6px;border-radius:8px">📝 买入理由：{esc(rationale)}</div>' if rationale else ''
     return f'''
-    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid {oc}">
+    <div data-side="{side}" style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid {oc}">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <div style="font-weight:700;color:var(--t1)">{esc(r.get('name',''))} <span style="color:var(--t3);font-weight:400;font-size:12px">{esc(r.get('code',''))}</span></div>
         <div style="text-align:right"><div style="color:var(--t1);font-weight:700">{num(r.get('price'))}</div><div style="font-size:12px;color:{color_of(r.get('change'))}">{chg(r.get('change'))}</div></div>
@@ -515,9 +522,10 @@ def tt_card_py(r, tag=''):
         <span class="badge" style="border:1px solid {oc};color:{oc}">{olab}</span>
         <span style="color:var(--t2)">📍 {esc(tp.get('buy_trigger',''))}</span>
         <span style="font-size:11px;color:{ccol}">确定性 {conv}</span>
-        {tag_badge}
+        {side_badge}{ld_badge}{tag_badge}
       </div>
       <div style="margin-top:5px;font-size:12px;color:var(--t2)">持股 <b>{tp.get('hold_days','-')}</b> 日 · 止损 <b style="color:var(--red2)">{num(tp.get('stop_price'),3)}</b> ({sp:.0f}%) · 止盈 <b style="color:var(--green2)">{num(tp.get('target_price'),3)}</b> (+{tp2:.0f}%)</div>
+      {wave_line}
       {rat_html}
       <div style="margin-top:4px;font-size:11px;color:var(--t3)">{esc(tp.get('open_reason',''))}{mac}</div>
       <div style="margin-top:4px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
@@ -575,7 +583,7 @@ def build_tt_banner(d, ld, sent):
   <div style="font-weight:700;color:var(--t1)">⏱️ 交易时机 · 大市环境</div>
   <div style="font-size:12px;color:var(--t2);margin-top:4px;line-height:1.6">李大霄温度 <b>{esc(tier)}</b>{pe_txt} ｜ 情绪 <b>{sidx_txt}</b> {esc(szone)}
    ｜ {mtrend_txt}{dev_txt}</div>
-  <div style="font-size:11px;color:var(--t3);margin-top:4px">大市环境为开仓「总开关」：温度底部+情绪冰点→可分批低吸；贪婪过热/狂热→控仓。个股 / ETF 买点见下方分区。</div>
+  <div style="font-size:11px;color:var(--t3);margin-top:4px">开仓「总开关」：底部区域优先配置【优质蓝筹】(李大霄体系)，劣质股抄底=接飞刀；趋势向上强势股可【右侧顺势】跟随。下方可按「左侧低吸 / 右侧顺势」筛选。</div>
 </div>'''
 
 
