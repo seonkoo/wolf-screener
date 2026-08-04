@@ -301,6 +301,19 @@ def base_trade_plan(res):
     if market.get('trend') == 'down':
         conv += 5   # 买恐慌：下行期反而更该低吸
     conv = max(0, min(100, conv))
+    # —— 买入理由（数据驱动的"信服理由"，个股/ETF/基金通用）——
+    asset = res.get('asset_type', '个股')
+    sig = []
+    if l1.get('detail'): sig.append('①' + l1['detail'])
+    if l2.get('detail'): sig.append('②' + l2['detail'])
+    if l3.get('detail'): sig.append('③' + l3['detail'])
+    if w2.get('pass'): sig.append('④小狼2.0恐慌底部命中：' + (' / '.join(w2.get('reasons', [])) or '多因子共振'))
+    if l4.get('detail'): sig.append('⑤' + l4['detail'])
+    head = {'open': '✅ 建议开仓', 'watch': '👁 建议观望/小仓', 'no': '⛔ 暂不开仓'}.get(open_sig, '⚠ 信号不明')
+    rationale = (head + '（' + open_reason + '）。'
+                 + (' 技术面：' + '；'.join(sig) + '。' if sig else '')
+                 + ' 操作计划：持股约%d日，止损%.0f%%（≈%.2f），止盈%.0f%%（≈%.2f）。' % (
+                     hold_days, abs(stop_pct) * 100, res.get('stop') or 0, target_pct * 100, res.get('target') or 0))
     return {
         'open': open_sig, 'open_reason': open_reason,
         'buy_trigger': buy_trigger, 'buy_detail': buy_detail,
@@ -308,12 +321,14 @@ def base_trade_plan(res):
         'stop_price': res.get('stop'), 'stop_pct': stop_pct,
         'target_price': res.get('target'), 'target_pct': target_pct,
         'conviction': conv,
+        'rationale': rationale,
     }
 
 # ---------- 四层判定（复刻 runScreening） ----------
 def run_screening(stock):
     code=stock['code']; name=stock['name']; price=stock.get('price',0); chg=stock.get('change',0)
     res={'code':code,'name':name,'price':price,'change':chg,'inflow':stock.get('inflow',0),'template':'','suggestion':'',
+         'asset_type':'个股',
          'stop':round(price*(1-STOP_PCT),3) if price else 0,'target':round(price*(1+TP_PCT),3) if price else 0,
          'l1':{},'l2':{},'l3':{},'l4':{},'flows':[],'market':get_market_regime(),'wolf2':{}}
     kd=fetch_kline(code,'day')
@@ -563,6 +578,8 @@ def apply_macro(res, lidaxiao, sentiment):
         tp['open_reason'] = '个股信号可开仓，但大市环境（%s）提示控仓，降为观察' % '；'.join(notes)
     if notes:
         tp['macro_note'] = '；'.join(notes)
+        if 'rationale' in tp:
+            tp['rationale'] += ' 大市环境：' + tp['macro_note'] + '。'
 
 # ---------- 全市场预筛 ----------
 def get_universe(top_n, min_inflow):

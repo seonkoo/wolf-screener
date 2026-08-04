@@ -14,6 +14,7 @@ auto_screen_result.json.bak
 
 # 自动生成的结果数据（由 Actions 工作流运行时生成并随 artifact 部署，不入库以免与代码冲突）
 auto_screen_result.json
+etf_result.json
 blue_chip_result.json
 li_daxiao.json
 overview.json

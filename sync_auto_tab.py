@@ -37,6 +37,8 @@ LD_START, LD_END = '<!--LIDAXIAO_START-->', '<!--LIDAXIAO_END-->'
 SE_START, SE_END = '<!--SECTORFLOW_START-->', '<!--SECTORFLOW_END-->'
 TT_START, TT_END = '<!--TRADETIME_START-->', '<!--TRADETIME_END-->'
 TB_START, TB_END = '<!--TTBANNER_START-->', '<!--TTBANNER_END-->'
+ET_START, ET_END = '<!--ETFTIME_START-->', '<!--ETFTIME_END-->'
+ETF_DATA = os.path.join(HERE, 'etf_result.json')
 
 
 def esc(x):
@@ -489,7 +491,7 @@ def build_lidaxiao(d):
 
 
 # ---------------- 交易时机（主入口）----------------
-def tt_card_py(r):
+def tt_card_py(r, tag=''):
     tp = r.get('trade_plan') or {}
     oc = 'var(--green2)' if tp.get('open') == 'open' else ('#d99e00' if tp.get('open') == 'watch' else 'var(--red2)')
     olab = '✅ 可开仓' if tp.get('open') == 'open' else ('⏳ 等/小仓' if tp.get('open') == 'watch' else '⛔ 禁止')
@@ -500,6 +502,9 @@ def tt_card_py(r):
     l1 = r.get('l1', {}) or {}; l2 = r.get('l2', {}) or {}; l3 = r.get('l3', {}) or {}; l4 = r.get('l4', {}) or {}
     wolf2 = (r.get('wolf2') or {}).get('pass')
     mac = (' ｜ ' + esc(tp['macro_note'])) if tp.get('macro_note') else ''
+    tag_badge = f'<span class="badge" style="border:1px solid var(--t3);color:var(--t3)">{tag}</span>' if tag else ''
+    rationale = tp.get('rationale', '')
+    rat_html = f'<div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5;background:var(--bg3);padding:6px;border-radius:8px">📝 买入理由：{esc(rationale)}</div>' if rationale else ''
     return f'''
     <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid {oc}">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -510,8 +515,10 @@ def tt_card_py(r):
         <span class="badge" style="border:1px solid {oc};color:{oc}">{olab}</span>
         <span style="color:var(--t2)">📍 {esc(tp.get('buy_trigger',''))}</span>
         <span style="font-size:11px;color:{ccol}">确定性 {conv}</span>
+        {tag_badge}
       </div>
       <div style="margin-top:5px;font-size:12px;color:var(--t2)">持股 <b>{tp.get('hold_days','-')}</b> 日 · 止损 <b style="color:var(--red2)">{num(tp.get('stop_price'),3)}</b> ({sp:.0f}%) · 止盈 <b style="color:var(--green2)">{num(tp.get('target_price'),3)}</b> (+{tp2:.0f}%)</div>
+      {rat_html}
       <div style="margin-top:4px;font-size:11px;color:var(--t3)">{esc(tp.get('open_reason',''))}{mac}</div>
       <div style="margin-top:4px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
         {layer_pill('①情绪', l1.get('status'))} {layer_pill('②浪型', l2.get('status'))} {layer_pill('③技术', l3.get('status'))} {layer_pill('④资金', l4.get('status'))}{'<span class="badge b-green">★小狼2.0</span>' if wolf2 else ''}
@@ -536,6 +543,23 @@ def build_tradetime(d):
     return h
 
 
+def build_etftime(d):
+    """ETF/LOF 交易时机快照（结构同 build_tradetime，复用 tt_card_py）。"""
+    if not d:
+        return ''
+    picks = []
+    for r in (d.get('A', []) + d.get('B', [])):
+        if r.get('trade_plan'):
+            picks.append(r)
+    picks.sort(key=lambda r: -(r['trade_plan'].get('conviction', 0)))
+    actionable = [r for r in picks if r['trade_plan'].get('open') != 'no']
+    if not actionable:
+        return '<div class="panel" style="font-size:12px;color:var(--t3)">当前无操作信号 ETF。可观察 B 类（观望/小仓）标的，等信号共振。非投资建议。</div>'
+    h = f'<div class="panel" style="font-size:11px;color:var(--t3)">按确定性排序的可操作 ETF（开仓+观望共 {len(actionable)} 只）。非投资建议。</div>'
+    h += ''.join(tt_card_py(r, 'ETF') for r in actionable)
+    return h
+
+
 def build_tt_banner(d, ld, sent):
     m = (d or {}).get('market', {}) or {}
     tier = ((ld or {}).get('sz50', {}) or {}).get('tier', '-')
@@ -551,12 +575,13 @@ def build_tt_banner(d, ld, sent):
   <div style="font-weight:700;color:var(--t1)">⏱️ 交易时机 · 大市环境</div>
   <div style="font-size:12px;color:var(--t2);margin-top:4px;line-height:1.6">李大霄温度 <b>{esc(tier)}</b>{pe_txt} ｜ 情绪 <b>{sidx_txt}</b> {esc(szone)}
    ｜ {mtrend_txt}{dev_txt}</div>
-  <div style="font-size:11px;color:var(--t3);margin-top:4px">大市环境为开仓「总开关」：温度底部+情绪冰点→可分批低吸；贪婪过热/狂热→控仓。个股买点见下方列表。</div>
+  <div style="font-size:11px;color:var(--t3);margin-top:4px">大市环境为开仓「总开关」：温度底部+情绪冰点→可分批低吸；贪婪过热/狂热→控仓。个股 / ETF 买点见下方分区。</div>
 </div>'''
 
 
 def main():
     d = load(DATA)
+    ed = load(ETF_DATA)
     gd = load(GUARD)
     t = load(TEAM)
     sd = load(SENT)
@@ -577,6 +602,7 @@ def main():
     sector_block = build_sector_flow(se) if se else None
     banner_block = build_tt_banner(d, ld, sd) if d else None
     tt_block = build_tradetime(d) if d else None
+    etf_block = build_etftime(ed) if ed else None
     for fn in FILES:
         p = os.path.join(HERE, fn)
         if not os.path.exists(p):
@@ -615,6 +641,9 @@ def main():
         if tt_block:
             s, m = inject(s, tt_block, TT_START, TT_END, 'ttMount')
             notes.append('tradetime:' + (m or 'FAIL'))
+        if etf_block:
+            s, m = inject(s, etf_block, ET_START, ET_END, 'etfMount')
+            notes.append('etftime:' + (m or 'FAIL'))
         if s != orig:
             open(p, 'w', encoding='utf-8').write(s)
             print('OK %-22s %s  (%d 字节)' % (fn, ' '.join(notes), len(s)))

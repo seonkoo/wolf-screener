@@ -150,9 +150,16 @@ WATCH_PANE = '''<section class="pane" id="pane-watch">
 
 # ---- 交易时机 pane（默认第一个主入口：大市环境横幅 + 按确定性排序的买卖决策列表）----
 TRADETIME_PANE = '''<section class="pane" id="pane-tradetime">
-  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">⏱️ 交易时机：把「大市环境 + 个股信号」收敛成一句话买卖决策（开仓? / 买入时机 / 持股时间 / 止盈止损）。李大霄温度·波浪·板块资金·四层·小狼2.0 是其底层判断逻辑。非投资建议。</div>
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">⏱️ 交易时机：把「大市环境 + 信号」收敛成一句话买卖决策（开仓? / 买入时机 / 持股时间 / 止盈止损 / 买入理由）。李大霄温度·波浪·板块资金·四层·小狼2.0 是其底层判断逻辑。非投资建议。</div>
   <div id="ttBanner"><!--TTBANNER_START-->''' + LOADING_TRADETIME + '''<!--TTBANNER_END--></div>
-  <div id="ttMount"><!--TRADETIME_START-->''' + LOADING_TRADETIME + '''<!--TRADETIME_END--></div>
+  <div style="margin-top:10px">
+    <div class="panel" style="font-weight:700;color:var(--t1);margin-bottom:6px">📈 个股交易时机</div>
+    <div id="ttMount"><!--TRADETIME_START-->''' + LOADING_TRADETIME + '''<!--TRADETIME_END--></div>
+  </div>
+  <div style="margin-top:14px">
+    <div class="panel" style="font-weight:700;color:var(--t1);margin-bottom:6px">📊 ETF / LOF 交易时机</div>
+    <div id="etfMount"><!--ETFTIME_START-->''' + LOADING_TRADETIME + '''<!--ETFTIME_END--></div>
+  </div>
 </section>'''
 
 JS_START = '<!--WOLF_RENDER_JS_START-->'
@@ -798,7 +805,7 @@ SCRIPT = JS_START + r'''
       +'<div style="font-weight:700;color:var(--t1)">⏱️ 交易时机 · 大市环境</div>'
       +'<div style="font-size:12px;color:var(--t2);margin-top:4px;line-height:1.6">李大霄温度 <b>'+esc(tier)+'</b>'+(pe!=null?'（PE '+num(pe)+'）':'')+' ｜ 情绪 <b>'+(sidx!=null?num(sidx,0):'-')+'</b> '+esc(szone)
       +' ｜ '+mtrendTxt+(m.dev_pct!=null?'（年线偏离 '+m.dev_pct+'%）':'')+'</div>'
-      +'<div style="font-size:11px;color:var(--t3);margin-top:4px">大市环境为开仓「总开关」：温度底部+情绪冰点→可分批低吸；贪婪过热/狂热→控仓。个股买点见下方列表。</div></div>';
+      +'<div style="font-size:11px;color:var(--t3);margin-top:4px">大市环境为开仓「总开关」：温度底部+情绪冰点→可分批低吸；贪婪过热/狂热→控仓。个股 / ETF 买点见下方分区。</div></div>';
     var picks=[];
     ((d.A||[]).concat(d.B||[])).forEach(function(r){ if(r.trade_plan) picks.push(r); });
     picks.sort(function(a,b){ return (b.trade_plan.conviction||0)-(a.trade_plan.conviction||0); });
@@ -812,7 +819,7 @@ SCRIPT = JS_START + r'''
     }
     var el=document.getElementById('ttMount'); if(el) el.innerHTML=h;
   }
-  function ttCard(r){
+  function ttCard(r, tag){
     var tp=r.trade_plan||{};
     var oc = tp.open==='open'?'var(--green2)':(tp.open==='watch'?'#d99e00':'var(--red2)');
     var olab = tp.open==='open'?'✅ 可开仓':(tp.open==='watch'?'⏳ 等/小仓':'⛔ 禁止');
@@ -828,8 +835,11 @@ SCRIPT = JS_START + r'''
       +'<div style="margin-top:6px;font-size:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
       +'<span class="badge" style="border:1px solid '+oc+';color:'+oc+'">'+olab+'</span>'
       +'<span style="color:var(--t2)">📍 '+esc(tp.buy_trigger||'')+'</span>'
-      +'<span style="font-size:11px;color:'+ccol+'">确定性 '+conv+'</span></div>'
+      +'<span style="font-size:11px;color:'+ccol+'">确定性 '+conv+'</span>'
+      +(tag?'<span class="badge" style="border:1px solid var(--t3);color:var(--t3)">'+tag+'</span>':'')
+      +'</div>'
       +'<div style="margin-top:5px;font-size:12px;color:var(--t2)">持股 <b>'+ (tp.hold_days||'-') +'</b> 日 · 止损 <b style="color:var(--red2)">'+num(tp.stop_price,3)+'</b> ('+sp.toFixed(0)+'%) · 止盈 <b style="color:var(--green2)">'+num(tp.target_price,3)+'</b> (+'+tp2.toFixed(0)+'%)</div>'
+      +'<div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5;background:var(--bg3);padding:6px;border-radius:8px">📝 买入理由：'+esc(tp.rationale||'')+'</div>'
       +'<div id="'+cid+'" data-name="'+esc(r.name)+'" style="display:none;margin-top:6px">'
       +'<div style="font-size:11px;color:var(--t3)">'+esc(tp.open_reason||'')+(tp.macro_note?' ｜ '+esc(tp.macro_note):'')+'</div>'
       +'<div style="margin-top:4px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">'
@@ -838,6 +848,29 @@ SCRIPT = JS_START + r'''
       +'<div style="margin-top:4px;font-size:12px;color:var(--t2);line-height:1.5">'+esc(r.suggestion||'')+'</div>'
       +'<div id="'+wid+'" style="margin-top:4px"></div></div>'
       +'</div>';
+  }
+  function etfCard(r){ return ttCard(r, 'ETF'); }
+  function loadETFTime(){
+    fetch('etf_result.json').then(function(r){ return r.json(); }).then(function(d){ renderETF(d); }).catch(function(e){
+      var el=document.getElementById('etfMount');
+      if(el && el.innerHTML.indexOf('正在加载')>=0) el.innerHTML='<div class="panel" style="font-size:12px;color:var(--t3)">ETF 时机数据加载失败（离线快照见上方）。</div>';
+    });
+  }
+  function renderETF(d){
+    var el=document.getElementById('etfMount'); if(!el) return;
+    if(!d){ el.innerHTML='<div class="panel" style="font-size:12px;color:var(--t3)">暂无 ETF 数据。</div>'; return; }
+    var picks=[];
+    ((d.A||[]).concat(d.B||[])).forEach(function(r){ if(r.trade_plan) picks.push(r); });
+    picks.sort(function(a,b){ return (b.trade_plan.conviction||0)-(a.trade_plan.conviction||0); });
+    var actionable=picks.filter(function(r){ return r.trade_plan.open!=='no'; });
+    var h='';
+    if(!actionable.length){
+      h='<div class="panel" style="font-size:12px;color:var(--t3)">当前无操作信号 ETF。可观察 B 类（观望/小仓）标的，等信号共振。非投资建议。</div>';
+    } else {
+      h+='<div class="panel" style="font-size:11px;color:var(--t3)">按确定性排序的可操作 ETF（开仓+观望共 '+actionable.length+' 只）。非投资建议。</div>';
+      actionable.forEach(function(r){ h+=etfCard(r); });
+    }
+    el.innerHTML=h;
   }
   function ttToggle(code){
     var el=document.getElementById('ttdet_'+code); if(!el) return;
@@ -866,7 +899,7 @@ SCRIPT = JS_START + r'''
         +'</div>';
     }).catch(function(e){ el.innerHTML='<div style="font-size:11px;color:var(--t3)">🌊 波浪计算失败</div>'; });
   }
-  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadSynthesis(); loadAuto(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); loadTradeTime(); applyHash(); }
+  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadSynthesis(); loadAuto(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); loadTradeTime(); loadETFTime(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();
@@ -938,10 +971,14 @@ def patch(fn):
         print('    · 保留原离线快照')
 
     # 2b) 交易时机 pane（默认主入口）
+    # 先归一化默认激活态的 class（避免 replace_section 因 "pane active" 匹配不到）
+    s = s.replace('<section class="pane active" id="pane-tradetime">', '<section class="pane" id="pane-tradetime">')
     m = re.search(r'<!--TRADETIME_START-->(.*?)<!--TRADETIME_END-->', s, re.S)
     baked_tt = m.group(1) if m else None
     m2 = re.search(r'<!--TTBANNER_START-->(.*?)<!--TTBANNER_END-->', s, re.S)
     baked_tb = m2.group(1) if m2 else None
+    m3 = re.search(r'<!--ETFTIME_START-->(.*?)<!--ETFTIME_END-->', s, re.S)
+    baked_et = m3.group(1) if m3 else None
     s, ok = replace_section(s, 'pane-tradetime', TRADETIME_PANE)
     if not ok:
         ins = s.find('</section>', s.find('<section class="pane" id="pane-watch">'))
@@ -961,6 +998,10 @@ def patch(fn):
         s = s.replace('<!--TTBANNER_START-->' + LOADING_TRADETIME + '<!--TTBANNER_END-->',
                       '<!--TTBANNER_START-->' + baked_tb + '<!--TTBANNER_END-->', 1)
         print('    · 保留原离线快照(大市环境横幅)')
+    if baked_et and '正在加载' not in baked_et:
+        s = s.replace('<!--ETFTIME_START-->' + LOADING_TRADETIME + '<!--ETFTIME_END-->',
+                      '<!--ETFTIME_START-->' + baked_et + '<!--ETFTIME_END-->', 1)
+        print('    · 保留原离线快照(ETF时机)')
     # 设为默认主入口：清除其他 active，激活 tradetime
     s = re.sub(r'class="tab active"', 'class="tab"', s)
     s = re.sub(r'class="pane active"', 'class="pane"', s)

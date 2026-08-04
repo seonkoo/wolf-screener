@@ -29,6 +29,7 @@ if (OFFLINE && htmlFile) {
   if (html.includes('id="ldMount"')) el('ldMount').innerHTML = grab('LIDAXIAO_START', 'LIDAXIAO_END');
   if (html.includes('id="ttBanner"')) el('ttBanner').innerHTML = grab('TTBANNER_START', 'TTBANNER_END');
   if (html.includes('id="ttMount"')) el('ttMount').innerHTML = grab('TRADETIME_START', 'TRADETIME_END');
+  if (html.includes('id="etfMount"')) el('etfMount').innerHTML = grab('ETFTIME_START', 'ETFTIME_END');
 }
 global.window = global;
 const SAMPLE_K = (function () {
@@ -95,11 +96,11 @@ setTimeout(() => {
   // ttBanner 不是 *Mount 命名，单独纳入校验（在线渲染 + 离线快照兜底）
   const ttBannerId = (html.includes('id="ttBanner"')) ? ['ttBanner'] : [];
   const checkIds = OFFLINE
-    ? mountIds.filter(id => ['autoMount', 'ldMount', 'ttMount'].includes(id)).concat(ttBannerId)
+    ? mountIds.filter(id => ['autoMount', 'ldMount', 'ttMount', 'etfMount'].includes(id)).concat(ttBannerId)
     : mountIds.concat(ttBannerId);
   // 各挂载点最小长度：大内容区(列表)要求 ≥500，避免「渲染失败但无报错」漏过；
-  // 小头部(如 ttBanner 仅有几行环境描述，常态 ~400 字)降低阈值，避免误判。
-  const MIN_LEN = { ttBanner: 100 };
+  // 小头部(如 ttBanner/etfMount 仅有环境描述或"无信号"提示时常态 <500 字)降低阈值，避免误判。
+  const MIN_LEN = { ttBanner: 100, etfMount: 50 };
   checkIds.forEach((id) => {
     const h = el(id).innerHTML;
     const issues = [];

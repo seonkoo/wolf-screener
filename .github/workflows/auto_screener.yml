@@ -29,6 +29,8 @@ jobs:
         run: python li_daxiao.py
       - name: 运行自动选股扫描(宽扫描，不按净流入预筛)
         run: python auto_screener.py 1000 0
+      - name: 运行 ETF/LOF 交易时机扫描(复用技术底层，输出 etf_result.json)
+        run: python etf_screener.py
       - name: 运行蓝筹长期价值选股(沪深300·可慢慢低吸)
         run: python blue_chip_screener.py
       - name: 策略回测验证(参数化 opt_backtest，防未来函数)
