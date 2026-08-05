@@ -4497,6 +4497,16 @@ document.getElementById('eventsRefreshBtn').onclick=loadMajorEvents;
       };
       cinput.onkeydown=function(e){ if(e&&e.key==='Enter') cbtn.onclick(); };
     }
+    // 页面加载时自动分析默认指数（上证指数），避免占位文案永远不动；也确保 smoke 有内容
+    if(sel){
+      function defaultRun(){
+        var idx=sel.value||'sh000001';
+        var txt=(sel.options&&sel.options[sel.selectedIndex])?sel.options[sel.selectedIndex].text:'上证指数';
+        run(idx, txt);
+      }
+      if(btn) btn.onclick=defaultRun;
+      defaultRun();
+    }
   }
   // ===== 交易时机（主入口）：大市环境 + 按确定性排序的买卖决策 =====
   function loadTradeTime(){

@@ -76,6 +76,11 @@ global.document = {
         remove() {},
       };
     }
+    // select 元素补 value/options/selectedIndex（loadElliott defaultRun 需要）
+    if (tag === 'select') {
+      return { style: {}, appendChild() {}, remove() {}, setAttribute() {},
+              value: 'sh000001', selectedIndex: 0, options: [{text:'上证指数',value:'sh000001'}] };
+    }
     return { style: {}, appendChild() {}, remove() {}, setAttribute() {} };
   },
 };
@@ -118,7 +123,7 @@ setTimeout(() => {
   // 艾略特波浪操作建议校验（仅在线模式，依赖 K线 mock 渲染）
   if (!OFFLINE && mountIds.includes('ewMount')) {
     const ea = el('ewAdvise').innerHTML;
-    const eaOk = /操作参考/.test(ea) && ea.length > 50;
+    const eaOk = (/操作参考/.test(ea) || /操作结论/.test(ea)) && ea.length > 50;
     console.log('ewAdvise:', ea.length, '字符', eaOk ? '✅ 含操作建议' : '❌ 无建议');
     if (!eaOk) bad++;
   }
