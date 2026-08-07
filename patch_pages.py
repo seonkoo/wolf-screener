@@ -41,6 +41,12 @@ AUTO_PANE = '''<section class="pane" id="pane-auto">
 
 MARKET_TAB_BTN = '  <button class="tab" data-tab="market">📊 市场研判</button>'
 WATCH_TAB_BTN = '  <button class="tab" data-tab="watch">📈 观察池</button>'
+
+# ---- Tab 顺序（操作层在前，阅读层在后）----
+# prs 实战策略(主入口) → auto 自动选股 → watch 观察池 → tradetime 交易时机
+# 后面才是环境阅读类：今日看板/市场研判/选股雷达/资金流/ETF/风控
+TAB_ORDER = ['prs', 'auto', 'watch', 'tradetime', 'overview',
+             'market', 'screener', 'flow', 'etf', 'risk']
 TRADETIME_TAB_BTN = '  <button class="tab" data-tab="tradetime">⏱️ 交易时机</button>'
 LOADING_TRADETIME = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
                 '<div style="margin-top:8px">正在加载交易时机数据…</div></div></div>')
@@ -1160,6 +1166,41 @@ def replace_section(s, sec_id, new_html):
     return s[:start] + new_html + s[end:], True
 
 
+def reorder_tabs(s):
+    """按 TAB_ORDER 重排 nav 内的 tab 按钮（幂等）。
+
+    安全策略：只有当 <nav>…</nav> 内除按钮外没有其它元素时才重排，
+    否则原样返回，避免撕裂 nav（历史踩坑：在 data-tab=" 中间切开）。
+    """
+    ns = s.find('<nav')
+    if ns < 0:
+        return s, False
+    head_end = s.find('>', ns)
+    ne = s.find('</nav>', ns)
+    if head_end < 0 or ne < 0:
+        return s, False
+    body = s[head_end + 1:ne]
+    btns = re.findall(r'<button\b[^>]*>.*?</button>', body, re.S)
+    # 去掉按钮后若还剩非空白内容，说明 nav 里混了别的元素 → 放弃重排
+    residue = re.sub(r'<button\b[^>]*>.*?</button>', '', body, flags=re.S).strip()
+    if not btns or residue:
+        return s, False
+
+    def key_of(b):
+        m = re.search(r'data-tab="([^"]+)"', b)
+        return m.group(1) if m else ''
+
+    def rank(b):
+        k = key_of(b)
+        return TAB_ORDER.index(k) if k in TAB_ORDER else len(TAB_ORDER) + btns.index(b)
+
+    ordered = sorted(btns, key=rank)
+    if [key_of(b) for b in ordered] == [key_of(b) for b in btns]:
+        return s, False
+    new_body = '\n' + '\n'.join('  ' + b.strip() for b in ordered) + '\n'
+    return s[:head_end + 1] + new_body + s[ne:], True
+
+
 def patch(fn):
     p = os.path.join(HERE, fn)
     s = open(p, encoding='utf-8').read()
@@ -1355,6 +1396,12 @@ def patch(fn):
             print('  + 渲染脚本（新建）')
         else:
             print('  ! 未找到 </body>')
+
+    # 5) Tab 顺序归位：操作层(实战策略/自动选股/观察池/交易时机)提到最前
+    s, moved = reorder_tabs(s)
+    if moved:
+        order = re.findall(r'data-tab="([^"]+)"', s[s.find('<nav'):s.find('</nav>')])
+        print('  ~ tab顺序已重排:', ' → '.join(order))
 
     if s != orig:
         open(p, 'w', encoding='utf-8').write(s)
