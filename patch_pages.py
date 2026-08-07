@@ -45,6 +45,15 @@ TRADETIME_TAB_BTN = '  <button class="tab" data-tab="tradetime">⏱️ 交易时
 LOADING_TRADETIME = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
                 '<div style="margin-top:8px">正在加载交易时机数据…</div></div></div>')
 
+# ---- 实战策略（最高指引 v2 · 波浪阶段 + 资金板块 + 仓位/止损）----
+PRS_TAB_BTN = '  <button class="tab" data-tab="prs">🎯 实战策略</button>'
+LOADING_PRS = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
+                '<div style="margin-top:8px">正在加载实战策略数据…</div></div></div>')
+PRS_PANE = '''<section class="pane" id="pane-prs">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🎯 实战策略（最高指引 v2）：①艾略特波浪阶段判操作 ②资金判板块+板块内最强个股 ③入手/仓位/止盈止损 ④概率优先(R:R≥1.5 且 概率≥45% 才入选)。旧 M/E/A/B/C/D 仅作阅读信息。非投资建议。</div>
+  <div id="prsMount"><!--PRS_START-->''' + LOADING_PRS + '''<!--PRS_END--></div>
+</section>'''
+
 # ---- 市场研判（综合研判 + 全球市场 + 重大事件 + 国家队资金 + 情绪指数 合并为一个 Tab）----
 # 注意：综合研判/国家队/情绪 用 snapshot 标记(sync_auto_tab.py 注入)；全球/重大事件 为前端独立渲染空壳(DOM id 由 renderGlobal/loadMajorEvents 填充)
 MARKET_PANE = '''<section class="pane" id="pane-market">
@@ -280,6 +289,56 @@ SCRIPT = JS_START + r'''
     return '<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:'+cfg[0]+';border:1px solid '+cfg[2]+';font-size:12px;line-height:1.6">'
       + '<b style="color:'+cfg[1]+'">'+cfg[3]+'</b> <span style="color:var(--t4)">'+dev+'</span><div style="color:var(--t2);margin-top:2px">'+cfg[4]+'</div></div>';
   }
+  function prsCard(r, observe){
+    r=r||{}; var w=r.wave||{}; var col=colorOf(r.change||0);
+    var waveCol={'imp3':'var(--green2)','corr':'#1e88e5','side':'#d99e00','v':'#e0561f','down':'var(--red2)'}[w.key]||'#888';
+    var h='<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid '+waveCol+'">'
+      + '<div style="display:flex;justify-content:space-between;align-items:baseline">'
+      + '<div style="font-weight:700;color:var(--t1)">'+esc(r.name)+' <span style="color:var(--t3);font-weight:400;font-size:12px">'+esc(r.code)+'</span></div>'
+      + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(r.entry)+'</div>'
+      + '<div style="font-size:12px;color:'+col+'">'+chg(r.change)+'</div></div></div>'
+      + '<div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+      + '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:'+waveCol+'22;color:'+waveCol+';border:1px solid '+waveCol+'55">🌊 '+esc(w.label||'')+'</span>'
+      + '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:var(--red2)18;color:var(--red2);border:1px solid var(--red2)55">板块:'+esc(r.sector)+' +'+num(r.sector_net,0)+'亿</span>'
+      + (r.is_leader?'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#d4a01722;color:#b8860b;border:1px solid #d4a01755">🏆龙头</span>':'')
+      + '</div>'
+      + '<div style="margin-top:5px;font-size:12px;color:var(--t2);display:flex;gap:10px;flex-wrap:wrap">'
+      + '概率 <b style="color:var(--green2)">'+num(r.prob*100,0)+'%</b>'
+      + '· 盈亏比 <b>'+num(r.rr,2)+'</b>'
+      + '· 仓位 <b style="color:#1e88e5">'+num(r.position_pct*100,0)+'%</b>'
+      + '· 止损 <b style="color:var(--red2)">'+num(r.stop)+' ('+num(r.stop_pct*100,1)+'%)</b>'
+      + '· 目标 <b style="color:var(--green2)">'+num(r.target)+' (+'+num(r.target_pct*100,1)+'%)</b>'
+      + '· 持有 <b>'+(r.hold_days||0)+'日</b></div>';
+    if(r.entry_zone&&r.entry_zone.low){ h+='<div style="font-size:11px;color:var(--t3)">📍 买入区 '+num(r.entry_zone.low)+'~'+num(r.entry_zone.high)+'（'+esc(r.entry_zone.note||'')+'）</div>'; }
+    h+='<div style="margin-top:4px;font-size:11px;color:var(--t3)">'+esc(r.rationale||w.op||'')+'</div>';
+    if(observe){ h+='<div style="margin-top:3px;font-size:11px;color:#e0561f">⏸ '+(r.reason||'')+'</div>'; }
+    h+='</div>';
+    return h;
+  }
+  function renderPRS(d){
+    d=d||{}; var el=document.getElementById('prsMount'); if(!el) return;
+    var s=d.summary||{}, mv=d.market||{};
+    var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+      + '<div><h3>🎯 实战策略 · 波浪阶段 + 资金板块 + 仓位/止损</h3><div class="panel-sub" style="margin-bottom:0">最高指引v2：概率优先（R:R≥'+num((d.params?d.params.min_rr:1.5),1)+' 且 概率≥'+num((d.params?d.params.min_prob*100:45),0)+'% 才入选）· 生成于 '+esc(d.generated)+'</div></div>'
+      + '<div style="font-size:12px;color:var(--t2)">可操作 <b style="color:var(--green2)">'+(s.action||0)+'</b> · 观察 <b>'+(s.observe||0)+'</b> · 均概率 <b>'+num(s.avg_prob*100,0)+'%</b> · 均R:R <b>'+num(s.avg_rr,2)+'</b></div></div>';
+    if(mv.verdict){ h+='<div class="panel" style="font-size:12px;color:var(--t2);background:var(--bg2);border-radius:8px;padding:8px 10px;line-height:1.6">💰 全市场主力净额 '+money(mv.main_net!=null?mv.main_net*1e8:0)+' · 净流入板块 '+(mv.up_sectors||0)+'/'+(mv.up_sectors+ (mv.down_sectors||0))+' ('+(mv.breadth||0)+'%) → '+esc(mv.verdict)+'</div>'; }
+    h+='</div>';
+    var hs=(d.hot_sectors||[]);
+    if(hs.length){ h+='<div class="panel"><h3 style="margin-bottom:6px">🔥 资金主线板块（Top '+hs.length+'）</h3><div style="display:flex;gap:6px;flex-wrap:wrap">';
+      hs.forEach(function(x){ var c=x.net1>=50?'var(--red2)':'#d99e00'; h+='<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:'+c+'18;color:'+c+';border:1px solid '+c+'55">'+esc(x.name)+' '+money(x.net1!=null?x.net1*1e8:0)+' · '+esc(x.state)+'</span>'; });
+      h+='</div></div>'; }
+    var acts=(d.candidates||[]);
+    h+='<div class="panel" style="border-left:3px solid var(--green2)"><h3 style="margin-bottom:6px">✅ 可操作候选（按综合分排序）</h3>';
+    if(!acts.length){ h+='<div style="font-size:12px;color:var(--t3)">当前无满足概率/R:R 门槛的标的——纪律就是「不强行出手」。可看下方观察区。</div>'; }
+    acts.forEach(function(r){ h+=prsCard(r,false); });
+    h+='</div>';
+    var obs=(d.observe||[]);
+    if(obs.length){ h+='<details class="panel"><summary style="cursor:pointer;font-size:12px;color:var(--t3)">⏸ 观察 / 回避（'+obs.length+'只，点开）</summary>';
+      obs.forEach(function(r){ h+=prsCard(r,true); }); h+='</details>'; }
+    el.innerHTML=h;
+  }
+  function loadPRS(){ loadJSON('practical_strategy.json').then(renderPRS).catch(function(e){ fallback('prsMount','⚠️ 实战策略数据加载失败（'+esc(e.message)+'）。请确认 practical_strategy.json 与页面同目录。'); }); }
+
   function loadAuto(){
     loadJSON('auto_screen_result.json').then(function(d){
       var s=d.summary||{};
@@ -1076,7 +1135,7 @@ SCRIPT = JS_START + r'''
         +'</div>';
     }).catch(function(e){ el.innerHTML='<div style="font-size:11px;color:var(--t3)">🌊 波浪计算失败</div>'; });
   }
-  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadSynthesis(); loadAuto(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); loadTradeTime(); loadETFTime(); applyHash(); }
+  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadSynthesis(); loadAuto(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); loadTradeTime(); loadETFTime(); loadPRS(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();
@@ -1140,6 +1199,16 @@ def patch(fn):
         else:
             print('  ! 未找到首个 tab 按钮')
 
+    # 1d) 实战策略（最高指引 v2）：同样插到首个 button 之前，成为最左 tab（主入口）
+    if 'data-tab="prs"' not in s:
+        nav_start = s.find('<nav')
+        first_btn = s.find('<button', nav_start) if nav_start >= 0 else s.find('<button')
+        if first_btn >= 0:
+            s = s[:first_btn] + PRS_TAB_BTN + '\n' + s[first_btn:]
+            print('  + tab按钮: prs (置顶·主入口)')
+        else:
+            print('  ! 未找到首个 tab 按钮')
+
     # 2) 自动选股 pane -> fetch 结构（保留已烘焙快照）
     m = re.search(r'<!--AUTOPICK_START-->(.*?)<!--AUTOPICK_END-->', s, re.S)
     baked_auto = m.group(1) if m else None
@@ -1149,6 +1218,23 @@ def patch(fn):
         s = s.replace('<!--AUTOPICK_START-->' + LOADING_AUTO + '<!--AUTOPICK_END-->',
                       '<!--AUTOPICK_START-->' + baked_auto + '<!--AUTOPICK_END-->', 1)
         print('    · 保留原离线快照')
+
+    # 2a) 实战策略 pane（最高指引 v2 主入口）
+    m = re.search(r'<!--PRS_START-->(.*?)<!--PRS_END-->', s, re.S)
+    baked_prs = m.group(1) if m else None
+    s, ok = replace_section(s, 'pane-prs', PRS_PANE)
+    if not ok:
+        ins = s.find('</section>', s.find('<section class="pane" id="pane-auto">'))
+        if ins >= 0:
+            ins += len('</section>')
+            s = s[:ins] + '\n' + PRS_PANE + s[ins:]
+            print('  + 实战策略pane（新建）')
+        else:
+            print('  ! 无法定位实战策略pane插入点')
+    if baked_prs and '正在加载' not in baked_prs:
+        s = s.replace('<!--PRS_START-->' + LOADING_PRS + '<!--PRS_END-->',
+                      '<!--PRS_START-->' + baked_prs + '<!--PRS_END-->', 1)
+        print('    · 保留原离线快照(实战策略)')
 
     # 2b) 交易时机 pane（默认主入口）
     # 先归一化默认激活态的 class（避免 replace_section 因 "pane active" 匹配不到）
@@ -1185,8 +1271,8 @@ def patch(fn):
     # 设为默认主入口：清除其他 active，激活 tradetime
     s = re.sub(r'class="tab active"', 'class="tab"', s)
     s = re.sub(r'class="pane active"', 'class="pane"', s)
-    s = s.replace('<button class="tab" data-tab="tradetime">', '<button class="tab active" data-tab="tradetime">', 1)
-    s = s.replace('<section class="pane" id="pane-tradetime">', '<section class="pane active" id="pane-tradetime">', 1)
+    s = s.replace('<button class="tab" data-tab="prs">', '<button class="tab active" data-tab="prs">', 1)
+    s = s.replace('<section class="pane" id="pane-prs">', '<section class="pane active" id="pane-prs">', 1)
 
     # 3) 清理可能残留的「蓝筹低吸」独立 pane/tab（已废弃：回测显示跌破年线低吸无超额）
     s = re.sub(r'<section class="pane" id="pane-bluechip">.*?</section>\s*', '', s, flags=re.S)

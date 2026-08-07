@@ -31,6 +31,8 @@ jobs:
         run: python blue_chip_screener.py
       - name: 生成板块资金流向(行业/概念板块主力净流入·市场动态主线，供 auto_screener 板块加成)
         run: python sector_flow.py
+      - name: 运行实战策略(波浪阶段+资金板块+仓位止损·最高指引v2 主引擎)
+        run: python practical_strategy.py
       - name: 运行自动选股扫描(宽扫描+顺势池，不按净流入预筛)
         run: python auto_screener.py 1000 0
       - name: 运行 ETF/LOF 交易时机扫描(复用技术底层，输出 etf_result.json)

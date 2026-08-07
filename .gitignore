@@ -27,6 +27,7 @@ auto_pick.html
 index.html
 sector_flow.json
 industry_map.json
+practical_strategy.json
 backtest_winrate.json
 
 # 策略实验室大缓存(由 strategy_lab.py 生成，可重建，不入库)
