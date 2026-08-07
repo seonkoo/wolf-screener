@@ -184,18 +184,32 @@ SCRIPT = JS_START + r'''
     var t = st=='pass'?'✓通过':(st=='fail'?'✗未过':'⏳观望');
     return '<span class="badge '+c+'">'+label+' '+t+'</span>';
   }
+  function tierTag(r){
+    var m={M:['#1e88e5','🚀强势顺势'],A:['var(--green2)','🟢低位低吸'],B:['#d99e00','🔵观察'],C:['var(--red2)','🔴过热禁止'],D:['#888','⚪观望']};
+    var t=m[r.template]||['#d99e00','?'];
+    return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:'+t[0]+'22;color:'+t[0]+';border:1px solid '+t[0]+'55">'+t[1]+'</span>';
+  }
+  function sectorChip(r){
+    if(!r.sector) return '';
+    var col=r.sector_hot?'var(--red2)':'#888';
+    return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:'+col+'18;color:'+col+';border:1px solid '+col+'55">板块:'+esc(r.sector)+(r.sector_hot?' 🔥热点':'')+'</span>';
+  }
+  function darkChip(r){
+    if(r.darkpool==null||r.darkpool<=0) return '';
+    return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#7b3fa022;color:#7b3fa0;border:1px solid #7b3fa055">暗盘+'+Number(r.darkpool).toFixed(1)+'亿</span>';
+  }
   function autoCard(r){
     var l1=r.l1||{}, l2=r.l2||{}, l3=r.l3||{}, l4=r.l4||{};
     var cc=colorOf(r.change||0);
     var l3t = l3.proxy? '⚠代理':'';
     var fund = r.fund && r.fund.good ? ' ★好公司' : '';
-    return '<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">'
+    return '<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid '+(r.template==='M'?'var(--blue)':'var(--green2)')+'">'
       + '<div style="display:flex;justify-content:space-between;align-items:baseline">'
       + '<div style="font-weight:700;color:var(--t1)">'+esc(r.name)+' <span style="color:var(--t3);font-weight:400;font-size:12px">'+esc(r.code)+fund+'</span></div>'
       + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(r.price)+'</div>'
       + '<div style="font-size:12px;color:'+cc+'">'+chg(r.change)+'</div></div></div>'
       + '<div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
-      + greedBadge(l1.greed) + ' <span>主力 <b style="color:var(--green2)">'+money(r.inflow)+'</b></span></div>'
+      + tierTag(r) + greedBadge(l1.greed) + ' <span>主力 <b style="color:var(--green2)">'+money(r.inflow)+'</b></span>' + sectorChip(r) + darkChip(r) + '</div>'
       + '<div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">'
       + pill('①情绪',l1.status) + pill('②浪型',l2.status) + pill('③技术'+l3t,l3.status) + pill('④资金',l4.status) + '</div>'
       + '<div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>'+num(r.stop,3)+'</b> · 目标 <b>'+num(r.target,3)+'</b></div>'
@@ -232,7 +246,8 @@ SCRIPT = JS_START + r'''
       var s=d.summary||{};
       var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
         + '<div><h3>🤖 自动选股 · 全A四层扫描</h3><div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 生成于 '+esc(d.generated)+'</div></div>'
-        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div></div>';
+        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🚀M <b>'+(s.M||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div></div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段） '+(s.M||0)+'只）</h3>'+ (d.M||[]).map(autoCard).join('') +'</div>';
       h+='<div class="panel"><h3 style="margin-bottom:6px">🟢 A · 建议低吸（四层全过 '+(s.A||0)+'只）</h3>'+ (d.A||[]).map(autoCard).join('') +'</div>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔵 B · 观察（'+(s.B||0)+'只）</summary>'+ autoTable(d.B) +'</details>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔴 C · 禁止（'+(s.C||0)+'只）</summary>'+ autoTable(d.C) +'</details>';
@@ -248,11 +263,28 @@ SCRIPT = JS_START + r'''
       var dot=lvl=='GREEN'?'🟢':(lvl=='AMBER'?'🟡':'🔴');
       var label=lvl=='GREEN'?'正常':(lvl=='AMBER'?'建议调整':'建议暂停');
       var border=lvl=='GREEN'?'var(--green2)':(lvl=='AMBER'?'#d99e00':'var(--red2)');
+      var v=g.volume||{}; var volHtml='';
+      if(v.ok){
+        var vcol=v.level=='GREEN'?'var(--green2)':(v.level=='AMBER'?'#d99e00':'var(--red2)');
+        var fav=v.favor=='M'?'<span style="margin-left:6px;font-size:11px;color:var(--red2)">🚀 更利于M档顺势</span>'
+               :(v.favor=='A'?'<span style="margin-left:6px;font-size:11px;color:var(--green2)">🟢 更利于A档低吸</span>':'');
+        var cv=(v.chg==null?0:v.chg); var ccol=cv>=0?'var(--red2)':'var(--green2)';
+        volHtml='<div style="margin-top:6px;padding:6px 8px;border-radius:6px;background:var(--bg1);border-left:3px solid '+vcol+'">'
+          +'<div style="font-size:12px;color:var(--t1)">📊 大盘量能 · <b style="color:'+vcol+'">'+esc(v.verdict||'')+'</b>'
+          +'<span style="font-size:11px;color:var(--t3)"> ｜ 量比 '+Math.round((v.ratio20||0)*100)+'%'
+          +(v.amount_yi?(' ｜ 两市 '+(v.amount_yi/1e4).toFixed(2)+' 万亿'):'')
+          +' ｜ 上证 <span style="color:'+ccol+'">'+(cv>=0?'+':'')+cv.toFixed(2)+'%</span>'
+          +(v.intraday?' ｜ 盘中折算':'')+'</span>'+fav+'</div>'
+          +'<div style="margin-top:3px;font-size:11px;color:var(--t2);line-height:1.5">操作：'+esc(v.action||'')+'</div>'
+          +'<div style="margin-top:2px;font-size:11px;color:var(--t3);line-height:1.5">风险：'+esc(v.risk||'')+'</div>'
+          +'</div>';
+      }
       var html='<div class="panel" style="border-left:4px solid '+border+';background:var(--bg2)">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">'
         +'<div style="font-weight:700;color:var(--t1)">'+dot+' 策略体检 · '+label+'</div>'
         +'<div style="font-size:12px;color:var(--t2)">市场 '+(rg.level||'-')+' · 仓位 '+(pr.size_mult!=null?pr.size_mult:1)+'x · 止损 '+Math.round((pr.stop_pct!=null?pr.stop_pct:0.08)*100)+'%</div></div>'
         +'<div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">'+esc(rg.note||'')+'</div>'
+        +volHtml
         +'<div style="margin-top:5px;font-size:11px;color:var(--t3)">'+(g.actions?g.actions.join(' ｜ '):'')+'</div></div>';
       var el=document.getElementById('guardMount'); if(el) el.innerHTML=html;
     }).catch(function(e){

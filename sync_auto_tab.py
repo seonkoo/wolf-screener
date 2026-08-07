@@ -133,16 +133,40 @@ def layer_pill(label, st):
     return f'<span class="badge {c}">{label} {t}</span>'
 
 
+def tier_tag(r):
+    m = {'M': ('#1e88e5', '🚀强势顺势'), 'A': ('var(--green2)', '🟢低位低吸'),
+         'B': ('#d99e00', '🔵观察'), 'C': ('var(--red2)', '🔴过热禁止'), 'D': ('#888', '⚪观望')}
+    col, txt = m.get(r.get('template'), ('#d99e00', '?'))
+    return f'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:{col}22;color:{col};border:1px solid {col}55">{txt}</span>'
+
+
+def sector_chip(r):
+    sec = r.get('sector')
+    if not sec:
+        return ''
+    col = 'var(--red2)' if r.get('sector_hot') else '#888'
+    hot = ' 🔥热点' if r.get('sector_hot') else ''
+    return f'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:{col}18;color:{col};border:1px solid {col}55">板块:{esc(sec)}{hot}</span>'
+
+
+def dark_chip(r):
+    dp = r.get('darkpool')
+    if dp is None or dp <= 0:
+        return ''
+    return f'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#7b3fa022;color:#7b3fa0;border:1px solid #7b3fa055">暗盘+{num(dp,1)}亿</span>'
+
+
 # ---------------- 自动选股 ----------------
 def a_cards(items):
     out = ''
-    for r in items:
+    for r in (items or []):
         l1, l2, l3, l4 = r.get('l1', {}), r.get('l2', {}), r.get('l3', {}), r.get('l4', {})
         chgcol = color_of(r.get('change'))
         l3txt = '⚠代理' if l3.get('proxy') else ''
         fund = ' ★好公司' if (r.get('fund') or {}).get('good') else ''
+        border = 'var(--blue)' if r.get('template') == 'M' else 'var(--green2)'
         out += f'''
-    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid var(--green2)">
+    <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid {border}">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <div style="font-weight:700;color:var(--t1)">{r['name']} <span style="color:var(--t3);font-weight:400;font-size:12px">{r['code']}{fund}</span></div>
         <div style="text-align:right">
@@ -151,7 +175,7 @@ def a_cards(items):
         </div>
       </div>
       <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        {greed_badge(l1.get('greed'))} <span>主力 <b style="color:var(--green2)">{money(r.get('inflow'))}</b></span>
+        {tier_tag(r)} {greed_badge(l1.get('greed'))} <span>主力 <b style="color:var(--green2)">{money(r.get('inflow'))}</b></span> {sector_chip(r)} {dark_chip(r)}
       </div>
       <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
         {layer_pill('①情绪', l1.get('status'))}
@@ -189,8 +213,12 @@ def build_auto(d):
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <div><h3>🤖 自动选股 · 全A四层扫描</h3>
     <div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 快照 {d['generated']}</div></div>
-    <div style="font-size:12px;color:var(--t2)">候选 <b>{s['cand']}</b> · 🟢A <b>{s['A']}</b> · 🔵B <b>{s['B']}</b> · 🔴C <b>{s['C']}</b> · ⚪D <b>{s['D']}</b></div>
+    <div style="font-size:12px;color:var(--t2)">候选 <b>{s['cand']}</b> · 🚀M <b>{s.get('M',0)}</b> · 🟢A <b>{s['A']}</b> · 🔵B <b>{s['B']}</b> · 🔴C <b>{s['C']}</b> · ⚪D <b>{s['D']}</b></div>
   </div>
+</div>
+<div class="panel">
+  <h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段） {s.get('M',0)}只）</h3>
+  {a_cards(d.get('M', []))}
 </div>
 <div class="panel">
   <h3 style="margin-bottom:6px">🟢 A · 建议低吸（四层全过 {s['A']}只）</h3>
@@ -275,6 +303,7 @@ def build_guard(g):
     lvl = g.get('risk_level', 'GREEN')
     rg = g.get('regime', {}) or {}
     pr = g.get('position_rule', {}) or {}
+    v = g.get('volume', {}) or {}
     dot = '🟢' if lvl == 'GREEN' else ('🟡' if lvl == 'AMBER' else '🔴')
     label = '正常' if lvl == 'GREEN' else ('建议调整' if lvl == 'AMBER' else '建议暂停')
     border = 'var(--green2)' if lvl == 'GREEN' else ('#d99e00' if lvl == 'AMBER' else 'var(--red2)')
@@ -282,6 +311,28 @@ def build_guard(g):
     stop = round((pr.get('stop_pct', 0.08)) * 100)
     note = rg.get('note', '')
     actions = ' ｜ '.join(g.get('actions', []))
+
+    # 大盘量能行（与在线 loadGuard 文案/结构保持一致）
+    vol_html = ''
+    if v.get('ok'):
+        vl = v.get('level', 'GREEN')
+        vcol = 'var(--green2)' if vl == 'GREEN' else ('#d99e00' if vl == 'AMBER' else 'var(--red2)')
+        fv = v.get('favor', 'none')
+        fav = ('<span style="margin-left:6px;font-size:11px;color:var(--red2)">🚀 更利于M档顺势</span>' if fv == 'M'
+               else ('<span style="margin-left:6px;font-size:11px;color:var(--green2)">🟢 更利于A档低吸</span>' if fv == 'A' else ''))
+        cv = v.get('chg') or 0
+        ccol = 'var(--red2)' if cv >= 0 else 'var(--green2)'
+        amt = (' ｜ 两市 %.2f 万亿' % (v['amount_yi'] / 1e4)) if v.get('amount_yi') else ''
+        intr = ' ｜ 盘中折算' if v.get('intraday') else ''
+        vol_html = (
+            f'<div style="margin-top:6px;padding:6px 8px;border-radius:6px;background:var(--bg1);border-left:3px solid {vcol}">'
+            f'<div style="font-size:12px;color:var(--t1)">📊 大盘量能 · <b style="color:{vcol}">{v.get("verdict", "")}</b>'
+            f'<span style="font-size:11px;color:var(--t3)"> ｜ 量比 {round((v.get("ratio20") or 0) * 100)}%{amt}'
+            f' ｜ 上证 <span style="color:{ccol}">{"+" if cv >= 0 else ""}{cv:.2f}%</span>{intr}</span>{fav}</div>'
+            f'<div style="margin-top:3px;font-size:11px;color:var(--t2);line-height:1.5">操作：{v.get("action", "")}</div>'
+            f'<div style="margin-top:2px;font-size:11px;color:var(--t3);line-height:1.5">风险：{v.get("risk", "")}</div>'
+            f'</div>')
+
     return f'''
 <div class="panel" style="border-left:4px solid {border};background:var(--bg2)">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
@@ -289,6 +340,7 @@ def build_guard(g):
     <div style="font-size:12px;color:var(--t2)">市场 {rg.get('level', '-')} · 仓位 {size}x · 止损 {stop}%</div>
   </div>
   <div style="margin-top:5px;font-size:12px;color:var(--t2);line-height:1.5">{note}</div>
+  {vol_html}
   <div style="margin-top:5px;font-size:11px;color:var(--t3)">{actions}</div>
 </div>
 '''

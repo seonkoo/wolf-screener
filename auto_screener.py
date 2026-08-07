@@ -11,7 +11,7 @@ Template: A建议低吸 / B观察 / C禁止 / D观望
 数据：东方财富(push2delay 列表&资金流) + 腾讯(ifzq.gtimg.cn K线)
 用法：python auto_screener.py  [topN=100]  [minInflow=0]
 """
-import urllib.request, json, ssl, urllib.parse, math, random, sys, time, concurrent.futures, threading
+import urllib.request, json, ssl, urllib.parse, math, random, sys, time, concurrent.futures, threading, os
 
 CTX = ssl.create_default_context(); CTX.check_hostname=False; CTX.verify_mode=ssl.CERT_NONE
 HDR = {'User-Agent':'Mozilla/5.0','Referer':'https://quote.eastmoney.com/'}
@@ -426,7 +426,10 @@ def base_trade_plan(res):
 # ---------- 四层判定（复刻 runScreening） ----------
 def run_screening(stock):
     code=stock['code']; name=stock['name']; price=stock.get('price',0); chg=stock.get('change',0)
-    res={'code':code,'name':name,'price':price,'change':chg,'inflow':stock.get('inflow',0),'template':'','suggestion':'',
+    res={'code':code,'name':name,'price':price,'change':chg,'inflow':stock.get('inflow',0),
+         'darkpool':stock.get('darkpool'),'sector':stock.get('sector',''),
+         'sector_hot':False,'sector_net':0,'sector_rank':None,
+         'template':'','suggestion':'',
          'asset_type':'个股',
          'stop':round(price*(1-STOP_PCT),3) if price else 0,'target':round(price*(1+TP_PCT),3) if price else 0,
          'l1':{},'l2':{},'l3':{},'l4':{},'flows':[],'market':get_market_regime(),'wolf2':{}}
@@ -529,6 +532,7 @@ def run_screening(stock):
     # Template —— 小狼 2.0 为最高优先级独立信号（回测 74.2%，不依赖四层 L1/L3 共振）
     # 恐慌急跌底部常表现为 L2 死叉/L3 无量，四层法会误杀；WOLF2 单独捕获这类均值回归买点。
     w2 = res['wolf2'].get('pass')
+    l5score = res['l5'].get('score', 0); inf = res.get('inflow', 0) or 0
     if w2:
         res['template']='A'
         res['stop']=round(price*(1-WOLF2_STOP),3) if price else 0
@@ -537,6 +541,17 @@ def run_screening(stock):
         res['suggestion']=('【小狼2.0强化·回测胜率74.2%%】低位恐慌+小市值+技术底背离，命中：%s。'
             '分批低吸，持有约%d日做均值回归，止损%d%%目标%d%%，急跌修复即走，不长期持有。')%(
             ' / '.join(w.get('reasons',[])) or '多因子共振', WOLF2_HOLD, int(WOLF2_STOP*100), int(WOLF2_TP*100))
+    elif l5score>=2 and inf>0 and chg>0:
+        # M 档 — 强势顺势(右侧·跟主力): 趋势向上(L5≥2)+主力净流入>0(L4)+当日上涨(处于"上涨阶段")。
+        # 豁免 L1 贪婪过热: 领涨强势股本就处高位, 顺势追强不应被"贪婪过热禁止"误杀。
+        res['template']='M'
+        sig=res['l5'].get('why',[])
+        opp='量价齐升' if ('放量' in sig and chg>0) else ('均线多头' if '均线多头' in sig else '趋势向上')
+        dp=res.get('darkpool')
+        dp_note='；明暗双线(主力+暗盘同流入)' if (dp is not None and dp>0) else ''
+        sec=res.get('sector',''); sechot=res.get('sector_hot')
+        sec_note=('；所属板块【%s】资金持续流入，市场动态主线'%(sec)) if sechot else ''
+        res['suggestion']='强势顺势(右侧·跟主力): %s+主力净流入%.2f亿%s%s，沿5/10/20日线持有，止损%d%%、目标%d%%。'%(opp, inf/1e8, dp_note, sec_note, int(STOP_PCT*100), int(TP_PCT*100))
     elif l1[0]=='fail': res['template']='C'; res['suggestion']='贪婪过热，禁止新开仓，持仓逢高逐步兑现。'
     elif res['l2']['status']=='fail': res['template']='D'; res['suggestion']='主跌阶段，观望，规避下跌风险。'
     elif l1[0]=='pass' and l3status=='pass':
@@ -739,12 +754,119 @@ def get_universe(top_n, min_inflow):
     cand.sort(key=lambda x:x['change'])
     return cand[:top_n]
 
+# ---------- 动量顺势候选池 / 暗盘 / 行业映射 / 板块热度 ----------
+def get_flow_rank(top=60):
+    """动量顺势候选池：全市场主力净流入排行 Top（"跟主力资金走"）。
+    复用 push2 clist(fid=f62 排序)，与网页「个股资金流向」榜同源；只作顺势候选，
+    绝不用于预筛/排序 A 档（A 仍全市场宽扫，遵守回测铁律）。"""
+    fs='m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23'
+    out=[]; pn=1
+    while len(out)<top and pn<=4:
+        u='https://push2delay.eastmoney.com/api/qt/clist/get?pn=%d&pz=100&fid=f62&po=1&fltt=2&invt=2&np=1&fs=%s&fields=f12,f14,f2,f3,f62'%(pn,urllib.parse.quote(fs))
+        try:
+            d=json.loads(get(u)); rows=d.get('data',{}).get('diff',[]) if d.get('data') else []
+        except Exception:
+            rows=[]
+        if not rows: break
+        out+=rows; pn+=1; time.sleep(0.05)
+    res=[]
+    for r in out[:top]:
+        code=str(r.get('f12') or ''); name=str(r.get('f14') or '')
+        try: price=float(r.get('f2') or 0)
+        except Exception: price=0
+        try: chg=float(r.get('f3') or 0)
+        except Exception: chg=0
+        try: inflow=float(r.get('f62') or 0)
+        except Exception: inflow=0
+        if not code or len(code)<6: continue
+        if code[0] in '849': continue
+        if 'ST' in name or '退' in name: continue
+        if price<2: continue
+        res.append({'code':code,'name':name,'price':price,'change':chg,'inflow':inflow})
+    return res
+
+def load_darkpool_rank(path='darkpool_rank.json'):
+    """加载「暗盘资金榜」快照(由 emrnweb 暗盘资金页抓取保存)。
+    暗盘资金=东财算法估算的隐藏主力行为(中单+小单拆单)，与主力净流入(明盘)互为补充。
+    文件缺失时返回空 dict，M 档自动降级为仅看主力净流入(不阻断流水线)。"""
+    try:
+        d=json.load(open(path,encoding='utf-8'))
+        return {str(x.get('code','')):float(x.get('amount_yi',0) or 0) for x in d if x.get('code')}
+    except Exception:
+        return {}
+
+def load_industry_map(cache='industry_map.json'):
+    """一次性构建 code→所属行业 映射（push2delay f100，缓存当日）。
+    不用 akshare stock_zh_a_spot_em：该端点在本环境频繁 RemoteDisconnected，push2delay 稳定。
+    失败则降级为空 dict：板块加成失效，但 M 顺势档仍可基于 L5+净流入+涨幅工作。"""
+    HERE=os.path.dirname(os.path.abspath(__file__)); p=os.path.join(HERE,cache)
+    today=time.strftime('%Y-%m-%d')
+    MIN_MAP=3000   # 全市场行业归属应远多于 3000；少于此视为拉取不完整，不复用
+    try:
+        if os.path.exists(p):
+            d=json.load(open(p,encoding='utf-8'))
+            # 仅当日且"足够完整"才复用缓存；空/过小 map(上次拉取失败或 fs 不全)必须重拉
+            if d.get('date')==today and len(d.get('map',{}))>=MIN_MAP: return d.get('map',{})
+    except Exception: pass
+    mp={}
+    ALL_FS='m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23'   # 深A主板/创业板/沪A主板/科创板 全覆盖(含沪市)
+    def _page(pn):
+        u='https://push2delay.eastmoney.com/api/qt/clist/get?pn=%d&pz=200&po=1&np=1&fltt=2&invt=2&fid=f3&fs=%s&fields=f12,f14,f100'%(pn,urllib.parse.quote(ALL_FS))
+        try:
+            d=json.loads(get(u))
+            data=d.get('data') or {}   # 个别分页返回 data:null，需 None 安全
+            return data.get('diff') or []
+        except Exception:
+            return None
+    try:
+        pn=1
+        while len(mp)<6000 and pn<=60:
+            rows=_page(pn)
+            if rows is None:
+                time.sleep(0.2); rows=_page(pn)   # 单页瞬时失败重试一次
+                if rows is None: break
+            if not rows: break
+            for r in rows:
+                code=str(r.get('f12') or ''); ind=r.get('f100')
+                if code and ind: mp[code]=str(ind)
+            pn+=1; time.sleep(0.05)
+        print('      [行业映射] push2delay 获取 %d 只行业归属'%len(mp))
+    except Exception as e:
+        print('  [warn] 行业映射获取失败(板块加成降级):',e)
+    try:
+        # 仅当足够完整才落盘缓存，避免污染后续运行
+        if len(mp)>=MIN_MAP:
+            json.dump({'date':today,'map':mp}, open(p,'w',encoding='utf-8'), ensure_ascii=False)
+    except Exception: pass
+    return mp
+
+def load_sector_flow(path='sector_flow.json'):
+    """读取板块资金流快照，返回 {行业名: sector_dict} 仅含"资金持续/短线流入"的热点板块。
+    个股行业命中即视为市场动态主线。文件缺失则空 dict（板块加成失效，M 档仍可独立工作）。"""
+    try:
+        d=json.load(open(path,encoding='utf-8'))
+        return {s['name']:s for s in (d.get('sectors',[]) or [])
+                if s.get('net1',0)>0 and s.get('state') in ('持续流入','短线回流')}
+    except Exception:
+        return {}
+
 def main():
     top_n=int(sys.argv[1]) if len(sys.argv)>1 else 100
     min_inflow=float(sys.argv[2]) if len(sys.argv)>2 else 0
-    print('[1/3] 拉取全市场按跌幅预筛 top%d (不再按净流入，避免漏掉恐慌低位股) ...'%(top_n))
-    cand=get_universe(top_n, min_inflow)
-    print('      预筛候选 %d 只，开始四层判定...'%(len(cand)))
+    print('[1/3] 拉取候选（低位池 + 主力净流入顺势池）...')
+    cand=get_universe(top_n, min_inflow); n_dec=len(cand)
+    m_cand=get_flow_rank(60); n_mom=len(m_cand)
+    seen=set(); merged=[]
+    for c in cand+m_cand:
+        if c['code'] in seen: continue
+        seen.add(c['code']); merged.append(c)
+    cand=merged
+    dp_map=load_darkpool_rank()
+    if dp_map: print('      暗盘资金榜快照载入 %d 只(明暗双线确认启用)'%len(dp_map))
+    ind_map=load_industry_map(); sec_flow=load_sector_flow()
+    for c in cand:
+        c['darkpool']=dp_map.get(c['code']); c['sector']=ind_map.get(c['code'],'')
+    print('      候选 %d 只（低位池 %d + 顺势池 %d，去重后 %d），开始四层判定...'%(n_dec+n_mom, n_dec, n_mom, len(cand)))
     print('[2/3] 载入最新业绩报表(好公司过滤用)...')
     load_yj_map()
     if not YJ_MAP:
@@ -758,13 +880,21 @@ def main():
             r=f.result(); results.append(r)
             if done%10==0 or done==len(cand):
                 print('      [%d/%d] %s %s -> %s'%(done,len(cand),r['code'],r['name'],r['template']))
+    # 板块热度标注：个股行业命中资金持续流入的板块 → sector_hot
+    for r in results:
+        sec=r.get('sector',''); info=sec_flow.get(sec) if sec else None
+        if info:
+            r['sector_hot']=bool(info.get('net1',0)>0 and info.get('state') in ('持续流入','短线回流'))
+            r['sector_net']=info.get('net1',0); r['sector_rank']=info.get('rank')
+        else:
+            r['sector_hot']=False; r['sector_net']=0; r['sector_rank']=None
     A=[r for r in results if r['template']=='A']
     B=[r for r in results if r['template']=='B']
     C=[r for r in results if r['template']=='C']
     D=[r for r in results if r['template']=='D']
-    A.sort(key=lambda r:(0 if r.get('wolf2',{}).get('pass') else 1,
-                         0 if r.get('fund',{}).get('good',False) else 1,
-                         r['l1']['greed'], -r.get('inflow',0)))
+    M=[r for r in results if r['template']=='M']
+    M.sort(key=lambda r:(0 if r.get('sector_hot') else 1, -(r.get('sector_net') or 0), -(r.get('darkpool') or 0), -(r.get('l5',{}).get('score',0))))
+    A.sort(key=lambda r:(0 if r.get('sector_hot') else 1, 0 if r.get('fund',{}).get('good',False) else 1, r['l1']['greed'], -r.get('inflow',0)))
     B.sort(key=lambda r:(r['l1']['greed'], -r.get('inflow',0)))
     # 大市环境调制开仓信号（best-effort 读 李大霄温度 + 情绪）
     ld, sd = load_macro_best_effort()
@@ -779,8 +909,8 @@ def main():
     wolf2A=[r for r in A if r.get('wolf2',{}).get('pass')]
     goodA=[r for r in A if r.get('fund',{}).get('good',False)]
     print('\n========== 小狼策略 · A股自动扫描结果 ==========')
-    print('候选 %d 只 | A建议买入 %d (其中 ★小狼2.0强化 %d · 好公司 %d) | B观察 %d | C禁止 %d | D观望 %d'%(
-        len(results),len(A),len(wolf2A),len(goodA),len(B),len(C),len(D)))
+    print('候选 %d 只 | 🚀M强势顺势 %d | A建议买入 %d (★小狼2.0 %d·好公司 %d) | B观察 %d | C禁止 %d | D观望 %d'%(
+        len(results),len(M),len(A),len(wolf2A),len(goodA),len(B),len(C),len(D)))
     if any(r['l3'].get('proxy') for r in results):
         print('⚠️ 注：本扫描环境取不到15分钟K线，第3层"技术共振"改用日线代理(布林支撑/站上MA20/放量/日线底背离)。')
         print('   网页端(wolf-screener3.0.html)以真实15分钟MACD复核可得严格结论，两者第1/2/4层完全一致。')
@@ -793,6 +923,9 @@ def main():
             r['l1']['status'],r['l2']['status'],r['l3']['status'],r['l4']['status'])
     print('\n--- 🟢 A 建议低吸（低位+技术共振，★好公司优先） ---')
     for r in A: print(' '+line(r)+'\n    '+r['suggestion'])
+    if M:
+        print('\n--- 🚀 M 强势顺势（右侧·跟主力，捕捉上涨阶段/市场动态主线） ---')
+        for r in M[:30]: print(' '+line(r)+('  [板块]%s%s'%(r.get('sector',''),'·🔥热点' if r.get('sector_hot') else ''))+'\n    '+r['suggestion'])
     print('\n--- 🟡 B 纳入观察池 ---')
     for r in B[:30]: print(' '+line(r))
     if C:
@@ -802,8 +935,8 @@ def main():
         print('\n--- ⚪ D 主跌观望 ---')
         for r in D[:10]: print(' '+line(r))
     # 保存
-    out={'generated':time.strftime('%Y-%m-%d %H:%M'),'summary':{'cand':len(results),'A':len(A),'B':len(B),'C':len(C),'D':len(D)},
-         'market':get_market_regime(),'A':A,'B':B,'C':C,'D':D}
+    out={'generated':time.strftime('%Y-%m-%d %H:%M'),'summary':{'cand':len(results),'M':len(M),'A':len(A),'B':len(B),'C':len(C),'D':len(D)},
+         'market':get_market_regime(),'M':M,'A':A,'B':B,'C':C,'D':D}
     # 浏览器 JSON.parse 不接受 NaN/Infinity，写盘前先清洗成 null
     def _clean(o):
         if isinstance(o,dict): return {k:_clean(v) for k,v in o.items()}
