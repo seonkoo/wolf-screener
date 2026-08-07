@@ -26,6 +26,7 @@ import json, time, os, math, urllib.request, ssl
 HERE = os.path.dirname(os.path.abspath(__file__))
 POOL = os.path.join(HERE, 'watch_pool.json')
 AUTO = os.path.join(HERE, 'auto_screen_result.json')
+PRACTICAL = os.path.join(HERE, 'practical_strategy.json')   # 实战策略(最高指引v2) · 2026-08-08 纳入观察池优先入选
 
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 HDR = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://quote.eastmoney.com/'}
@@ -68,9 +69,9 @@ def load_pool():
     except Exception:
         return {'items': [], 'updated': ''}
 
-def pick_daily(items, auto, today, meta):
-    """每天(按日期去重)从 M(强势顺势) + E(热点早期突破) + A(低位低吸) 名单挑「策略排序最靠前的 1 只」补入动态池。
-    同时纳入三档，使观察池能自然积累 M vs E vs A 的真实盈亏，供「不同策略相互对比」之用。
+def pick_daily(items, auto, practical, today, meta):
+    """每天(按日期去重)补入 1 只动态池。
+    优先级：P(实战策略/最高指引v2) > M/E/A(旧体系, 仅作阅读信息对比)。
     仅当活跃格 < POOL_MAX 才补；返回入选的 item 或 None。"""
     if meta.get('last_pick_date') == today:
         return None  # 今天已经选过，防同日重复选
@@ -78,6 +79,13 @@ def pick_daily(items, auto, today, meta):
     if len(active_codes) >= POOL_MAX:
         return None  # 满格，等清出腾位
     cands = []
+    # P(实战策略) 优先：其 candidates(可操作) 直接入选, 按综合分排序
+    if practical:
+        for r in practical.get('candidates', []):
+            code = str(r.get('code', ''))
+            if not code or code in active_codes:
+                continue
+            cands.append((r, 'P'))
     for tier in ('M', 'E', 'A'):
         for r in auto.get(tier, []):
             code = str(r.get('code', ''))
@@ -86,15 +94,17 @@ def pick_daily(items, auto, today, meta):
             cands.append((r, tier))
     if not cands:
         return None
-    # 排序：wolf2强化 > 档位(M优先于A) > 好公司 > 确定性conviction高
+    # 排序：P 优先于 M/E/A；P 内部按综合分; M/E/A 旧排序(wolf2>好公司>conviction)
     def sc(x):
         r, tier = x
+        if tier == 'P':
+            return (0, -r.get('score', 0))
         tp = r.get('trade_plan') or {}
         conv = tp.get('conviction', 0) or 0
         w2 = 0 if (r.get('wolf2') or {}).get('pass') else 1
         good = 0 if (r.get('fund') or {}).get('good', False) else 1
         tier_rank = {'M': 0, 'E': 1, 'A': 2}.get(tier, 1)
-        return (w2, tier_rank, good, -conv)
+        return (1, tier_rank, good, -conv)
     cands.sort(key=sc)
     # 集中度控制：单板块≤30%(≤6/20)；E 档侦察仓≤15%(≤3只)。超限候选顺延到下一只。
     active = [it for it in items if it.get('status') == '持有中']
@@ -113,21 +123,41 @@ def pick_daily(items, auto, today, meta):
             continue
         code = str(r.get('code', ''))
         try:
-            price = float(r.get('price') or 0)
+            price = float(r.get('price') or r.get('entry') or 0)
         except Exception:
             price = 0.0
         tp = (r.get('trade_plan') or {})
-        item = {
-            'code': code, 'name': str(r.get('name', '')), 'template': tier,
-            'entry_date': today, 'entry_price': price,
-            'last_date': '', 'last_price': None, 'return': None,
-            'hold_days': 0, 'status': '持有中', 'expectation': '待观察',
-            'plan_exit_days': EXIT_DAYS,   # 冻结入池时的结算期，日后调参不追溯污染样本
-            'is_leader': bool(r.get('is_leader')), 'sector': str(r.get('sector', '')),
-            'target_pct': (tp.get('target_pct', 0) or 0),
-            'side': (tp.get('side', '') or ''),
-            'note': ('侦察仓≤15%' if tier == 'E' else ''),
-        }
+        if tier == 'P':
+            stop_mag = abs(r.get('stop_pct') or 0.08)
+            item = {
+                'code': code, 'name': str(r.get('name', '')), 'template': 'P',
+                'entry_date': today, 'entry_price': price,
+                'last_date': '', 'last_price': None, 'return': None,
+                'hold_days': 0, 'status': '持有中', 'expectation': '待观察',
+                # 冻结入池时的结算期 = 实战策略给的波浪持有期(imp3=60/corr=20/...),
+                # 日后调参不追溯污染在途样本
+                'plan_exit_days': int(r.get('hold_days') or EXIT_DAYS),
+                'is_leader': bool(r.get('is_leader')), 'sector': str(r.get('sector', '')),
+                'target_pct': (r.get('target_pct') or 0),
+                'stop_mag': round(stop_mag, 4),
+                'side': '', 'prob': r.get('prob'), 'rr': r.get('rr'),
+                'position_pct': r.get('position_pct'),
+                'note': '🎯实战·' + ((r.get('wave') or {}).get('label', '') or ''),
+            }
+        else:
+            stop_mag = abs(tp.get('stop_pct', 0.08))
+            item = {
+                'code': code, 'name': str(r.get('name', '')), 'template': tier,
+                'entry_date': today, 'entry_price': price,
+                'last_date': '', 'last_price': None, 'return': None,
+                'hold_days': 0, 'status': '持有中', 'expectation': '待观察',
+                'plan_exit_days': EXIT_DAYS,   # 冻结入池时的结算期，日后调参不追溯污染样本
+                'is_leader': bool(r.get('is_leader')), 'sector': str(r.get('sector', '')),
+                'target_pct': (tp.get('target_pct', 0) or 0),
+                'stop_mag': round(stop_mag, 4),
+                'side': (tp.get('side', '') or ''),
+                'note': ('侦察仓≤15%' if tier == 'E' else ''),
+            }
         items.append(item)
         return item
     return None
@@ -158,6 +188,9 @@ def track(items):
         if it.get('status') == '持有中':
             # 每条记录带自己的结算期：改全局常量不会追溯改写在途样本（老样本仍按入池时的 11 天结算）
             exit_at = it.get('plan_exit_days') or EXIT_DAYS
+            # 止盈/止损阈值优先取该股自带的(实战策略按 ATR 算的宽止损), 缺省回落全局 TP/STOP
+            tp_th = it.get('target_pct') or TP
+            sp_th = -(it.get('stop_mag') or abs(STOP))
             if it['hold_days'] >= exit_at:
                 # 时间到期清出：以当前收益为结算点（动态池的「出场」=满持有期）
                 it['exit_date'] = it['last_date']; it['exit_return'] = ret
@@ -167,9 +200,9 @@ def track(items):
                 # 信息性标注（不提前出场，保持一进一出节奏）
                 if ret is None:
                     it['expectation'] = '待观察'
-                elif ret >= TP:
+                elif ret >= tp_th:
                     it['expectation'] = '达标·触止盈'
-                elif ret <= STOP:
+                elif ret <= sp_th:
                     it['expectation'] = '破位·触止损'
                 elif ret > 0:
                     it['expectation'] = '偏符合'
@@ -211,7 +244,8 @@ def aggregate(items, meta):
     m_sub = [it for it in cleared if (it.get('template') or 'A') == 'M']
     e_sub = [it for it in cleared if (it.get('template') or 'A') == 'E']
     a_sub = [it for it in cleared if (it.get('template') or 'A') == 'A']
-    by_tier = {'M': _tier_stats(m_sub), 'E': _tier_stats(e_sub), 'A': _tier_stats(a_sub)}
+    p_sub = [it for it in cleared if (it.get('template') or 'A') == 'P']
+    by_tier = {'P': _tier_stats(p_sub), 'M': _tier_stats(m_sub), 'E': _tier_stats(e_sub), 'A': _tier_stats(a_sub)}
     return {
         'total': n, 'active': na, 'cleared': nc, 'win': wins,
         'win_rate': round(win_rate, 3) if win_rate is not None else None,
@@ -243,7 +277,11 @@ def main():
     # 2) 每日一只入选（日期去重 + 满格不补）
     if os.path.exists(AUTO):
         auto = json.load(open(AUTO, encoding='utf-8'))
-        picked = pick_daily(items, auto, today, meta)
+        practical = None
+        if os.path.exists(PRACTICAL):
+            practical = json.load(open(PRACTICAL, encoding='utf-8'))
+            log('实战策略候选已载入: 可操作 %d 只 (优先入选)' % len(practical.get('candidates', [])))
+        picked = pick_daily(items, auto, practical, today, meta)
         if picked:
             tgt = (picked.get('target_pct') or 0) * 100
             log('今日入选: %s %s ｜ 策略目标盈利率 %.1f%%' % (picked['name'], picked['code'], tgt))

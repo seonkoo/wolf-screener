@@ -63,12 +63,12 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
-      - name: 持久化资金流历史(供"由负转正"跨日累积 · 不改变页面产物)
+      - name: 持久化跨日状态(资金流历史+观察池账本 · 供"由负转正"与"实战策略真实命中率"累积)
         run: |
           git config user.email "bot@workbuddy.local"
           git config user.name "workbuddy-bot"
-          git add inflow_history.json
-          git commit -m "chore: update inflow history [skip ci]" || echo "no-change"
+          git add -f inflow_history.json watch_pool.json
+          git commit -m "chore: update inflow history & watch pool [skip ci]" || echo "no-change"
           git push origin HEAD:main || echo "push-failed"
 
   deploy:

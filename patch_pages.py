@@ -194,7 +194,7 @@ SCRIPT = JS_START + r'''
     return '<span class="badge '+c+'">'+label+' '+t+'</span>';
   }
   function tierTag(r){
-    var m={M:['#1e88e5','🚀强势顺势'],E:['#ff7043','🔥早期突破'],A:['var(--green2)','🟢低位低吸'],B:['#d99e00','🔵观察'],C:['var(--red2)','🔴过热禁止'],D:['#888','⚪观望']};
+    var m={M:['#1e88e5','🚀强势顺势'],E:['#ff7043','🔥早期突破'],A:['var(--green2)','🟢低位低吸'],B:['#d99e00','🔵观察'],C:['var(--red2)','🔴过热禁止'],D:['#888','⚪观望'],P:['#8e24aa','🎯实战策略']};
     var t=m[r.template]||['#d99e00','?'];
     return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:'+t[0]+'22;color:'+t[0]+';border:1px solid '+t[0]+'55">'+t[1]+'</span>';
   }
@@ -535,20 +535,22 @@ SCRIPT = JS_START + r'''
     var day='第'+Math.min(hdd,hd)+'/'+hd+'日';
     var note=it.expectation||'';
     return '<tr style="font-size:12px;border-top:1px solid var(--line)">'
-      +'<td style="padding:5px 4px;color:var(--t1)">'+esc(it.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(it.code)+'</span></td>'
+      +'<td style="padding:5px 4px;color:var(--t1)">'+tierTag(it)+' '+esc(it.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(it.code)+'</span></td>'
       +'<td style="padding:5px 4px;color:var(--t3)">'+esc(it.entry_date||'')+'</td>'
       +'<td style="padding:5px 4px;color:var(--t3)">'+day+'</td>'
       +'<td style="padding:5px 4px">'+num(it.entry_price)+'</td>'
       +'<td style="padding:5px 4px">'+num(it.last_price)+'</td>'
       +'<td style="padding:5px 4px;color:'+col+'">'+chg((it.return||0)*100)+'</td>'
-      +'<td style="padding:5px 4px;color:var(--t3)">持有中<br><span style="font-size:10px">'+esc(note)+'</span></td></tr>';
+      +'<td style="padding:5px 4px;color:var(--t3)">持有中<br><span style="font-size:10px">'+esc(note)
+        + (it.prob?(' · 概率'+(it.prob*100).toFixed(0)+'%'):'')
+        + (it.rr?(' · RR'+it.rr.toFixed(1)):'') +'</span></td></tr>';
   }
   function watchExitRow(it){
     var col=colorOf((it.return||0));
     var exr=(it.exit_return||0); var diff=(it.return||0)-exr;
     var excol=colorOf(exr); var dcol=colorOf(diff);
     return '<tr style="font-size:12px;border-top:1px solid var(--line)">'
-      +'<td style="padding:5px 4px;color:var(--t1)">'+esc(it.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(it.code)+'</span></td>'
+      +'<td style="padding:5px 4px;color:var(--t1)">'+tierTag(it)+' '+esc(it.name)+'<br><span style="color:var(--t4);font-size:10px">'+esc(it.code)+'</span></td>'
       +'<td style="padding:5px 4px;color:var(--t3)">'+esc(it.entry_date||'')+'</td>'
       +'<td style="padding:5px 4px;color:var(--t3)">'+esc(it.exit_date||'')+'</td>'
       +'<td style="padding:5px 4px;color:'+excol+'">'+chg(exr*100)+'</td>'

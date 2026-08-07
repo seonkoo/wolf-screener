@@ -135,7 +135,8 @@ def layer_pill(label, st):
 
 def tier_tag(r):
     m = {'M': ('#1e88e5', '🚀强势顺势'), 'E': ('#ff7043', '🔥早期突破'), 'A': ('var(--green2)', '🟢低位低吸'),
-         'B': ('#d99e00', '🔵观察'), 'C': ('var(--red2)', '🔴过热禁止'), 'D': ('#888', '⚪观望')}
+         'B': ('#d99e00', '🔵观察'), 'C': ('var(--red2)', '🔴过热禁止'), 'D': ('#888', '⚪观望'),
+         'P': ('#8e24aa', '🎯实战策略')}
     col, txt = m.get(r.get('template'), ('#d99e00', '?'))
     return f'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:{col}22;color:{col};border:1px solid {col}55">{txt}</span>'
 
@@ -588,7 +589,8 @@ def build_watch(d):
         if not st.get('n'): return '样本不足'
         return '命中率%.1f%% / 均值%+.2f%% (n=%d)' % (st['win_rate'] * 100, st['avg_return'] * 100, st['n'])
     tier_html = ('<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">'
-                 '🏁 <b>策略对比(已清出样本)</b> ｜ 🚀M强势顺势：' + _fmt_tier('M')
+                 '🏁 <b>策略对比(已清出样本)</b> ｜ 🎯P实战策略：' + _fmt_tier('P')
+                 + ' ｜ 🚀M强势顺势：' + _fmt_tier('M')
                  + ' ｜ 🔥E早期突破：' + _fmt_tier('E')
                  + ' ｜ 🟢A低位低吸：' + _fmt_tier('A') + '</div>')
 
@@ -600,13 +602,15 @@ def build_watch(d):
         day = f'第{min(hdd, hd)}/{hd}日'
         note = esc(it.get('expectation', '') or '')
         return ('<tr style="font-size:12px;border-top:1px solid var(--line)">'
-                f'<td style="padding:5px 4px;color:var(--t1)">{nm}<br><span style="color:var(--t4);font-size:10px">{cd}</span></td>'
+                f'<td style="padding:5px 4px;color:var(--t1)">{tier_tag(it)} {nm}<br><span style="color:var(--t4);font-size:10px">{cd}</span></td>'
                 f'<td style="padding:5px 4px;color:var(--t3)">{esc(it.get("entry_date",""))}</td>'
                 f'<td style="padding:5px 4px;color:var(--t3)">{day}</td>'
                 f'<td style="padding:5px 4px">{num(it.get("entry_price"))}</td>'
                 f'<td style="padding:5px 4px">{num(it.get("last_price"))}</td>'
                 f'<td style="padding:5px 4px;color:{col}">{chg(ret*100)}</td>'
-                f'<td style="padding:5px 4px;color:var(--t3)">持有中<br><span style="font-size:10px">{note}</span></td></tr>')
+                f'<td style="padding:5px 4px;color:var(--t3)">持有中<br><span style="font-size:10px">{note}'
+                + (f' · 概率{it.get("prob")*100:.0f}%' if it.get("prob") else '')
+                + (f' · RR{it.get("rr"):.1f}' if it.get("rr") else '') + '</span></td></tr>')
 
     def erow(it):
         col = color_of(it.get('return'))
@@ -616,7 +620,7 @@ def build_watch(d):
         diff = ret - exr
         excol = color_of(exr); dcol = color_of(diff)
         return ('<tr style="font-size:12px;border-top:1px solid var(--line)">'
-                f'<td style="padding:5px 4px;color:var(--t1)">{nm}<br><span style="color:var(--t4);font-size:10px">{cd}</span></td>'
+                f'<td style="padding:5px 4px;color:var(--t1)">{tier_tag(it)} {nm}<br><span style="color:var(--t4);font-size:10px">{cd}</span></td>'
                 f'<td style="padding:5px 4px;color:var(--t3)">{esc(it.get("entry_date",""))}</td>'
                 f'<td style="padding:5px 4px;color:var(--t3)">{esc(it.get("exit_date",""))}</td>'
                 f'<td style="padding:5px 4px;color:{excol}">{chg(exr*100)}</td>'
