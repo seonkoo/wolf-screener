@@ -4,22 +4,21 @@
 
 四大支柱(用户定稿, 2026-08-08):
 1. 艾略特波浪阶段研判 -> 操作指引 + 概率(务实阶段引擎, 不精确数浪)
-2. 资金判断板块(行业板块资金流) + 板块内最强个股(主力净流入 Top ∩ 热点板块)
+2. 资金判断板块(行业板块资金流) + 板块内最强个股(东财板块成分股接口直连 BK 代码, 按主力净流入取前 N)
 3. 入手可行性 + 仓位 + 止盈止损(ATR动态 + 斐波那契回踩区 + 风险预算)
 4. 全程概率优先: 只输出 R:R>=1.5 且 概率>=阈值 的候选, 按综合分排序
 
 旧 M/E/A/B/C/D 多档体系已降级为"阅读信息", 本模块是新的选股主引擎。
 依赖: sector_flow.json(由 sector_flow.py 生成) 须先于本脚本存在。
 """
-import os, json, time, math
-import auto_screener as A   # 复用已验证底层: fetch_kline/calc_atr/wave_stage/calc_rsi/get_flow_rank/load_industry_map/build_leaders/load_sector_flow
+import os, json, time, math, urllib.request, urllib.parse
+import auto_screener as A   # 复用已验证底层: fetch_kline/calc_atr/wave_stage/calc_rsi/load_industry_map/build_leaders/load_sector_flow
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 # ---- 参数 ----
 HOT_SECTOR_N   = 8     # 取资金流入最强的 N 个行业板块
-FLOW_TOP       = 150   # 主力净流入排行取前 N 只(作为"板块内最强个股"候选池)
-PER_SECTOR_TOP = 4     # 每个热点板块最多保留几只(避免单板块过载)
+PER_SECTOR_TOP = 5     # 每个热点板块经成分股接口直连, 取净流入最强前 N 只(绕开行业名匹配)
 MIN_PROB       = 0.45  # 概率优先: 低于此概率不进可操作面板
 MIN_RR         = 1.5   # 风险报酬比门槛
 CAPITAL_RISK   = 0.02  # 单名最大可亏资本比例(风险预算)
@@ -56,6 +55,42 @@ def name_of(code):
         return parts[1] if len(parts) > 1 and parts[1] else code
     except Exception:
         return code
+
+
+EM_HDRS = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://quote.eastmoney.com/'}
+
+
+def em_get(u, timeout=25):
+    return urllib.request.urlopen(urllib.request.Request(u, headers=EM_HDRS), timeout=timeout).read().decode('utf-8', 'ignore')
+
+
+def fetch_board_members(board_code, topn=PER_SECTOR_TOP):
+    """东财板块成分股接口: 直连板块 BK 代码(fs=b:BKxxxx), 按主力净流入(f62)取前 topn 只。
+    彻底绕开之前『个股行业名 ↔ 板块资金名』的脆弱子串匹配 —— 板块成员精确到只, 不再漏健康趋势票。"""
+    def fnum(x, d=0.0):
+        try:
+            return float(x)
+        except Exception:
+            return d
+    u = ('https://push2delay.eastmoney.com/api/qt/clist/get?pn=1&pz=500&po=1&np=1&fltt=2&invt=2'
+         '&fid=f62&fs=b:%s&fields=f12,f14,f2,f3,f62,f184'
+         % urllib.parse.quote(str(board_code), safe=''))
+    try:
+        d = json.loads(em_get(u))
+        diff = (d.get('data', {}) or {}).get('diff', []) or []
+    except Exception as e:
+        print('  [warn] 板块 %s 成分股拉取失败: %s' % (board_code, e))
+        return []
+    if not diff:
+        return []
+    rows = []
+    for r in diff:
+        inflow = fnum(r.get('f62'), 0.0) / 1e8
+        rows.append({'code': r.get('f12'), 'name': r.get('f14'),
+                     'price': fnum(r.get('f2'), 0.0), 'change': fnum(r.get('f3'), 0.0),
+                     'inflow': round(inflow, 3), 'net_ratio': fnum(r.get('f184'), 0.0)})
+    rows.sort(key=lambda x: -x['inflow'])
+    return rows[:topn]
 
 
 def wave_profile(closes, kd):
@@ -195,46 +230,27 @@ def main():
     hot_names = {s['name'] for s in hot}
     print('[P1] 热点板块 %d 个: %s' % (len(hot), ' / '.join('%s(%+.0f亿)' % (s['name'], s['net1']) for s in hot)))
 
-    def hot_match(ind):
-        """行业名与板块资金名做子串匹配(东财行业与板块常嵌套, 如 半导体/半导体器件)。"""
-        if not ind:
-            return None
-        for s in hot:
-            if s['name'] == ind or s['name'] in ind or ind in s['name']:
-                return s['name']
-        return None
-
-    print('[P2] 主力净流入 Top%d ...' % FLOW_TOP)
-    flow = A.get_flow_rank(FLOW_TOP)
-    print('     净流入榜 %d 只' % len(flow))
-
-    print('[P3] 行业映射 + 龙头集 ...')
-    ind_map = A.load_industry_map()
-    leaders = A.build_leaders(ind_map)
-    code2ind = {c: v.get('ind', '') for c, v in ind_map.items()}
-
-    # 资金Top ∩ 热点板块 = 板块内最强个股
+    print('[P2] 逐热点板块拉取成分股(东财板块成分股接口, 直连 BK 代码绕开行业名匹配)...')
     cands, seen = [], set()
-    for f in flow:
-        code = f['code']; ind = code2ind.get(code, '')
-        m = hot_match(ind)
-        if m and code not in seen:
-            seen.add(code)
-            cands.append({'code': code, 'name': f['name'], 'price': f['price'],
-                          'change': f['change'], 'inflow': f['inflow'], 'sector': m})
-    # 补: 热点板块的市值龙头(可能不在今日净流入榜, 但属板块最强地位), 扩池防漏健康趋势票
     for s in hot:
-        cnt = sum(1 for c in cands if c['sector'] == s['name'])
-        for code, v in leaders.items():
-            m = hot_match(v.get('industry'))
-            if m == s['name'] and v.get('is_leader') and code not in seen and cnt < PER_SECTOR_TOP:
-                seen.add(code)
-                cands.append({'code': code, 'name': name_of(code), 'price': 0,
-                              'change': 0, 'inflow': 0, 'sector': s['name'], 'leader_added': True})
-                cnt += 1
-    print('[P4] 板块∩资金+龙头 候选 %d 只' % len(cands))
+        members = fetch_board_members(s['code'], PER_SECTOR_TOP)
+        for m in members:
+            code = m['code']
+            if not code or code in seen:
+                continue
+            seen.add(code)
+            cands.append({'code': code, 'name': m['name'], 'price': m['price'],
+                          'change': m['change'], 'inflow': m['inflow'], 'sector': s['name']})
+    print('[P3] 板块∩资金 候选 %d 只 (覆盖 %d 个热点板块)' % (len(cands), len(hot)))
 
-    # 每板块取净流入最强若干截断
+    print('[P4] 行业龙头集(用于 is_leader 概率加成, 可选)...')
+    leaders = {}
+    try:
+        leaders = A.build_leaders(A.load_industry_map())
+    except Exception as e:
+        print('  [warn] 龙头集载入失败(不影响主流程):', e)
+
+    # 每板块取净流入最强若干截断(去重后边界保护)
     by_sec = {}
     for c in cands:
         by_sec.setdefault(c['sector'], []).append(c)
@@ -266,7 +282,7 @@ def main():
         'generated': time.strftime('%Y-%m-%d %H:%M'),
         'source_note': '最高指引v2: 波浪阶段引擎(不精确数浪) + 资金判板块∩主力净流入最强个股 + ATR/斐波那契止损止盈 + 概率优先(R:R≥%.1f, 概率≥%.0f%%)。旧M/E/A/B/C/D仅作阅读信息。'
                        % (MIN_RR, MIN_PROB * 100),
-        'params': {'hot_sector_n': HOT_SECTOR_N, 'flow_top': FLOW_TOP, 'per_sector_top': PER_SECTOR_TOP,
+        'params': {'hot_sector_n': HOT_SECTOR_N, 'per_sector_top': PER_SECTOR_TOP,
                    'min_prob': MIN_PROB, 'min_rr': MIN_RR, 'capital_risk': CAPITAL_RISK, 'pos_cap': POS_CAP},
         'market': sf.get('market', {}),
         'hot_sectors': [{'name': s['name'], 'net1': s['net1'], 'net5': s.get('net5'),
