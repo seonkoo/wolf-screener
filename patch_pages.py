@@ -301,6 +301,7 @@ SCRIPT = JS_START + r'''
       + '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:'+waveCol+'22;color:'+waveCol+';border:1px solid '+waveCol+'55">🌊 '+esc(w.label||'')+'</span>'
       + '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:var(--red2)18;color:var(--red2);border:1px solid var(--red2)55">板块:'+esc(r.sector)+' +'+num(r.sector_net,0)+'亿</span>'
       + (r.is_leader?'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#d4a01722;color:#b8860b;border:1px solid #d4a01755">🏆龙头</span>':'')
+      + (r.regime_note?'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#e5393522;color:#c62828;border:1px solid #e5393555">🔒 '+esc(r.regime_note)+'</span>':'')
       + '</div>'
       + '<div style="margin-top:5px;font-size:12px;color:var(--t2);display:flex;gap:10px;flex-wrap:wrap">'
       + '概率 <b style="color:var(--green2)">'+num(r.prob*100,0)+'%</b>'
@@ -322,6 +323,7 @@ SCRIPT = JS_START + r'''
       + '<div><h3>🎯 实战策略 · 波浪阶段 + 资金板块 + 仓位/止损</h3><div class="panel-sub" style="margin-bottom:0">最高指引v2：概率优先（R:R≥'+num((d.params?d.params.min_rr:1.5),1)+' 且 概率≥'+num((d.params?d.params.min_prob*100:45),0)+'% 才入选）· 生成于 '+esc(d.generated)+'</div></div>'
       + '<div style="font-size:12px;color:var(--t2)">可操作 <b style="color:var(--green2)">'+(s.action||0)+'</b> · 观察 <b>'+(s.observe||0)+'</b> · 均概率 <b>'+num(s.avg_prob*100,0)+'%</b> · 均R:R <b>'+num(s.avg_rr,2)+'</b></div></div>';
     if(mv.verdict){ h+='<div class="panel" style="font-size:12px;color:var(--t2);background:var(--bg2);border-radius:8px;padding:8px 10px;line-height:1.6">💰 全市场主力净额 '+money(mv.main_net!=null?mv.main_net*1e8:0)+' · 净流入板块 '+(mv.up_sectors||0)+'/'+(mv.up_sectors+ (mv.down_sectors||0))+' ('+(mv.breadth||0)+'%) → '+esc(mv.verdict)+'</div>'; }
+    h+=regimeBar(d.regime);
     h+='</div>';
     var hs=(d.hot_sectors||[]);
     if(hs.length){ h+='<div class="panel"><h3 style="margin-bottom:6px">🔥 资金主线板块（Top '+hs.length+'）</h3><div style="display:flex;gap:6px;flex-wrap:wrap">';

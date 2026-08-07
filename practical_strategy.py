@@ -154,7 +154,32 @@ def composite_prob(wave_key, sector_net, st, is_leader):
     return round(min(max(p, 0.35), 0.72), 3)
 
 
-def build_candidate(c, kd, sector_net, is_leader):
+def regime_gate_practical(c, regime):
+    """实战策略的大盘方向门控(与 auto_screener.regime_gate 同一口径, 用沪深300 年线/120线)。
+    回测结论: 顺势追强(M/E/S2/S3)在下跌趋势中必输(无 Alpha、接飞刀风险大), 故下行期封杀顺势依赖型候选。
+    实战策略的候选多依赖「趋势延续」(主升浪/震荡顺势), 熊市里正是要被封杀的; 只留调整浪低吸(且小仓)。
+    返回 (status_override, pos_scale, note):
+      status_override: 'skip' / 'observe' / None(不改)
+      pos_scale:       仓位缩放系数
+      note:            附加到 rationale 的 regime 提示
+    """
+    t = regime.get('trend', 'na')
+    k = (c.get('wave') or {}).get('key')
+    if t == 'down':
+        if k in ('imp3', 'side'):
+            return 'skip', 0.0, '大盘下行(沪深300跌破年线) — 顺势追强易接飞刀, 封杀主升浪/震荡顺势候选'
+        if k == 'corr':
+            return None, 0.5, '大盘下行 — 仅留调整浪低吸, 仓位减半, 严格止损'
+        return None, 1.0, '大盘下行 — 谨慎'
+    if t == 'neutral':
+        if k in ('imp3', 'side'):
+            return None, 0.8, '大盘震荡(年线附近) — 顺势候选小仓试探'
+        return None, 1.0, '大盘震荡 — 谨慎'
+    return None, 1.0, ''   # up / na(未知时保守放行)
+
+
+
+def build_candidate(c, kd, sector_net, is_leader, regime):
     closes = [k['close'] for k in kd]
     c['atr_pct'] = round(A.calc_atr(kd) or 0.03, 4)
     wave = wave_profile(closes, kd)
@@ -189,6 +214,20 @@ def build_candidate(c, kd, sector_net, is_leader):
     pos = base * sec_scale
     pos = min(pos, CAPITAL_RISK / stop_pct, POS_CAP)   # 风险预算封顶
     pos = round(pos, 3)
+    # —— 大盘方向门控: 下行封杀顺势候选、仅留调整浪低吸并减半仓; 震荡顺势小仓 ——
+    rstat, rscale, rnote = regime_gate_practical(c, regime)
+    if rscale != 1.0:
+        pos = round(min(pos * rscale, CAPITAL_RISK / stop_pct, POS_CAP), 3)
+    if rnote:
+        c['regime_note'] = rnote
+    if rstat == 'skip':
+        c['status'] = 'skip'
+        c['reason'] = rnote + '；' + (c.get('reason') or '回避顺势候选')
+        c['position_pct'] = pos
+        return c
+    if rstat == 'observe':
+        c['status'] = 'observe'
+        c['reason'] = rnote
     prob = composite_prob(wave['key'], sector_net, st, is_leader)
     zone = entry_zone(wave['key'], closes, atr_pct, st['ma20'])
     score = round(prob * rr * (1 + min(sector_net, 100) / 200), 4)
@@ -212,6 +251,8 @@ def build_candidate(c, kd, sector_net, is_leader):
                       % (wave['label'], c['sector'], sector_net, st['ret20'] * 100, st['rsi'],
                          st['vratio'], prob * 100, rr, pos * 100, stop_pct * 100, tp_pct * 100,
                          wave['hold_days']))
+    if rnote:
+        c['rationale'] += ' ｜ ' + rnote
     return c
 
 
@@ -229,6 +270,11 @@ def main():
     hot = hot[:HOT_SECTOR_N]
     hot_names = {s['name'] for s in hot}
     print('[P1] 热点板块 %d 个: %s' % (len(hot), ' / '.join('%s(%+.0f亿)' % (s['name'], s['net1']) for s in hot)))
+
+    # 大盘方向门控(沪深300 年线/120线) —— 下行期封杀顺势候选, 与 auto_screener.regime_gate 同口径
+    regime = A.get_market_regime()
+    print('[P0] 大盘方向(%s): 沪深300 %.1f / 年线 %.1f (偏离%+.1f%%)'
+          % (regime.get('trend', 'na'), regime.get('close') or 0, regime.get('ma250') or 0, regime.get('dev_pct') or 0))
 
     print('[P2] 逐热点板块拉取成分股(东财板块成分股接口, 直连 BK 代码绕开行业名匹配)...')
     cands, seen = [], set()
@@ -269,11 +315,12 @@ def main():
             continue
         sn = next((s['net1'] for s in hot if s['name'] == c['sector']), 0)
         is_lead = bool(leaders.get(c['code'], {}).get('is_leader'))
-        results.append(build_candidate(c, kd, sn, is_lead))
+        results.append(build_candidate(c, kd, sn, is_lead, regime))
         time.sleep(0.02)
 
     actions = [r for r in results if r.get('status') == 'action']
     observes = [r for r in results if r.get('status') in ('observe', 'skip')]
+    regime_skip = sum(1 for r in results if r.get('status') == 'skip' and r.get('regime_note'))
     actions.sort(key=lambda x: -x.get('score', 0))
     observes.sort(key=lambda x: -x.get('score', 0))
 
@@ -284,6 +331,7 @@ def main():
                        % (MIN_RR, MIN_PROB * 100),
         'params': {'hot_sector_n': HOT_SECTOR_N, 'per_sector_top': PER_SECTOR_TOP,
                    'min_prob': MIN_PROB, 'min_rr': MIN_RR, 'capital_risk': CAPITAL_RISK, 'pos_cap': POS_CAP},
+        'regime': regime,
         'market': sf.get('market', {}),
         'hot_sectors': [{'name': s['name'], 'net1': s['net1'], 'net5': s.get('net5'),
                          'state': s['state'], 'rank': s.get('rank'), 'picked': picked.get(s['name'], [])}
@@ -292,7 +340,9 @@ def main():
         'observe': observes,     # 观察/回避
         'summary': {
             'hot_sectors': len(hot), 'candidates_total': len(results),
+            'regime_trend': regime.get('trend', 'na'), 'regime_dev': regime.get('dev_pct'),
             'action': len(actions), 'observe': len(observes),
+            'regime_skip': regime_skip,
             'avg_prob': round(sum(r['prob'] for r in actions) / len(actions), 3) if actions else 0,
             'avg_rr': round(sum(r['rr'] for r in actions) / len(actions), 2) if actions else 0,
             'top_sector': max(hot, key=lambda s: s['net1'])['name'] if hot else None,
@@ -300,8 +350,8 @@ def main():
     }
     json.dump(clean_nan(out), open(os.path.join(HERE, 'practical_strategy.json'), 'w', encoding='utf-8'),
               ensure_ascii=False, indent=1, allow_nan=False)
-    print('\n✅ 已保存 practical_strategy.json  (可操作 %d / 观察 %d, 用时 %.0fs)'
-          % (len(actions), len(observes), time.time() - t0))
+    print('\n✅ 已保存 practical_strategy.json  (可操作 %d / 观察 %d, 大盘 %s 封杀 %d, 用时 %.0fs)'
+          % (len(actions), len(observes), regime.get('trend', 'na'), regime_skip, time.time() - t0))
     if actions:
         print('--- 可操作候选(按综合分) ---')
         for r in actions[:10]:
