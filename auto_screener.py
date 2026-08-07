@@ -208,8 +208,12 @@ def fetch_kline(code, period='day'):
     return []
 
 def fetch_fund_flow(secid):
+    # 近5日主力净流入(真实)——用于 Layer4 资金校验。仅走 push2delay(延迟服务器，稳定但只给当日1天)；
+    # 不足多日时由 run_screening 用 K线估算补齐(标记 estimated)。估算仅用于 L4 趋势，不用于"由负转正"
+    # 判定(估算符号不可靠)。"由负转正"改用跨日快照 inflow_history.json 判定(见下方 *inflow_hist*)。
+    # 注：push2his(历史服务器) 在沙箱间歇性挂且常慢超时，曾拖垮整轮扫描，故不在此调用。
     fields='&fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63,f64,f65'
-    url='https://push2delay.eastmoney.com/api/qt/stock/fflow/daykline/get?secid=%s&lmt=5%s'%(secid,fields)
+    url='https://push2delay.eastmoney.com/api/qt/stock/fflow/daykline/get?lmt=6&secid=%s%s'%(secid,fields)
     for _ in range(2):
         try:
             d=json.loads(get(url))
@@ -218,6 +222,30 @@ def fetch_fund_flow(secid):
         except Exception:
             time.sleep(0.1)
     return []
+
+# ---------- 跨日资金流快照（用于"主力净流入由负转正"判定）----------
+# 真实逐日主力净流入(东财 clist f62) 在沙箱无法稳定批量回溯(push2his 间歇性挂、push2delay 只给当日)，
+# 故改用本地快照：每次扫描把当日 f62 落盘，跨日累积后即可比较"昨日 vs 今日"。本地工作区持久化；
+# CI 侧由 workflow 把该文件 commit 回去以跨日累积。无历史时由负转正信号为空(不误触发)。
+INFLOW_HIST_FILE='inflow_history.json'
+INFLOW_HIST_KEEP=20   # 每只保留最近 N 日
+def load_inflow_hist():
+    try:
+        return json.load(open(INFLOW_HIST_FILE, encoding='utf-8'))
+    except Exception:
+        return {}
+def save_inflow_hist(h):
+    try:
+        json.dump(h, open(INFLOW_HIST_FILE, 'w', encoding='utf-8'), ensure_ascii=False)
+    except Exception:
+        pass
+def inflow_yesterday(hist, code, today):
+    """返回 code 在 today 之前最近一个交易日的主力净流入(元)，无则 None。"""
+    rec = hist.get(code)
+    if not rec:
+        return None
+    prev = sorted(d for d in rec if d < today)
+    return rec[prev[-1]] if prev else None
 
 # ---------- 大盘方向门控（沪深300 年线/120日线）----------
 # 这是我们回测发现胜率的最大开关：大盘下行期低吸胜率仅~18%，上行期~40%。
@@ -566,6 +594,14 @@ def run_screening(stock):
     # 恐慌急跌底部常表现为 L2 死叉/L3 无量，四层法会误杀；WOLF2 单独捕获这类均值回归买点。
     w2 = res['wolf2'].get('pass')
     l5score = res['l5'].get('score', 0); inf = res.get('inflow', 0) or 0
+    # —— 由负转正(资金拐点)：这是最强的早期突破确认 ——
+    # 用跨日快照 inflow_history.json 中"昨日主力净流入"(真实 clist f62，非 K线估算)判断：昨日净流出、今日净流入。
+    # 快照由每次扫描写入并跨日累积(本地工作区持久化；CI 由 workflow commit 回去)，故可稳定判定；
+    # 无历史时此信号为空(不误触发)。用户定稿：突破信号=个股主力净流入>1亿，特别是"由负转正"的那一刻。
+    _rev_yest = stock.get('inflow_yest')
+    inflow_reversal = bool(_rev_yest is not None and _rev_yest < 0 and inf > 0)
+    res['inflow_reversal'] = inflow_reversal
+    res['inflow_yest'] = _rev_yest  # 元；suggestion/Note 展示用
     if w2:
         res['template']='A'
         res['stop']=round(price*(1-WOLF2_STOP),3) if price else 0
@@ -584,20 +620,22 @@ def run_screening(stock):
         dp=res.get('darkpool')
         dp_note='；明暗双线(主力+暗盘同流入)' if (dp is not None and dp>0) else ''
         res['suggestion']='强势顺势(右侧·跟主力): %s+主力净流入%.2f亿%s，沿5/10/20日线持有，止损%d%%、目标%d%%。'%(opp, inf/1e8, dp_note, int(STOP_PCT*100), int(TP_PCT*100))
-    elif res['sector_hot'] and inf>E_INFLOW_MIN and chg>0 and _vol_up:
-        # E 档 — 热点早期突破(右侧·小仓试错): 板块是资金持续净流入主线 + 个股主力净流入大(>1亿)
-        #        + 当日放量上涨(量比>1.5)。板块共振盖过"个股贪婪过热"，许可跟随主线。
+    elif res['sector_hot'] and chg>0 and _vol_up and (inf>E_INFLOW_MIN or (inflow_reversal and inf>0)):
+        # E 档 — 热点早期突破(右侧·小仓试错): 板块是资金持续净流入主线 + 当日放量上涨(量比>1.5)
+        #        + (个股主力净流入>1亿  OR  主力净流入由负转正且今日转正)。
+        #        "由负转正"是用户强调的最强早期信号：资金从撤离转为进场，拐点确认(豁免绝对值门槛)。
         # 豁免 L1 贪婪过热: 板块轮动初期主线个股贪婪常>65, 但板块资金主线给出"跟随"许可(本质追强)。
         # 小仓试错: conv 比 M 更低(见 base_trade_plan)、严格止损 8%、持有期更短, 兜住"追涨 Alpha 有限"的回测结论。
         res['template']='E'
         sec=res.get('sector',''); net=res.get('sector_net',0)
         dp=res.get('darkpool')
         dp_note='；明暗双线(主力+暗盘同流入)' if (dp is not None and dp>0) else ''
+        rev_note='；主力净流入🔄由负转正(昨%.2f亿→今%.2f亿)，资金拐点确认'%(res.get('inflow_yest',0)/1e8, inf/1e8) if inflow_reversal else ''
         vr=(_lastvol/_avgvol) if _avgvol else 0
         res['stop']=round(price*(1-E_STOP),3) if price else 0
         res['target']=round(price*(1+E_TP),3) if price else 0
-        res['suggestion']=('热点早期突破(右侧·小仓试错): 所属板块【%s】资金持续净流入%.1f亿为当前主线，个股主力净流入%.2f亿+放量上涨(量比×%.1f)%s → 小仓位跟随主线，严格止损%d%%、目标%d%%，不恋战。'
-            %(sec, net, inf/1e8, vr, dp_note, int(E_STOP*100), int(E_TP*100)))
+        res['suggestion']=('热点早期突破(右侧·小仓试错): 所属板块【%s】资金持续净流入%.1f亿为当前主线，个股主力净流入%.2f亿+放量上涨(量比×%.1f)%s%s → 小仓位跟随主线，严格止损%d%%、目标%d%%，不恋战。'
+            %(sec, net, inf/1e8, vr, dp_note, rev_note, int(E_STOP*100), int(E_TP*100)))
     elif l1[0]=='fail': res['template']='C'; res['suggestion']='贪婪过热，禁止新开仓，持仓逢高逐步兑现。'
     elif res['l2']['status']=='fail': res['template']='D'; res['suggestion']='主跌阶段，观望，规避下跌风险。'
     elif l1[0]=='pass' and l3status=='pass':
@@ -938,8 +976,10 @@ def main():
     leaders=build_leaders(ind_map)
     n_lead=sum(1 for v in leaders.values() if v['is_leader'])
     print('      [行业龙头] 覆盖 %d 个行业，标记龙头股 %d 只'%(len({v['industry'] for v in leaders.values()}), n_lead))
+    hist=load_inflow_hist(); today=time.strftime('%Y-%m-%d')
     for c in cand:
         c['darkpool']=dp_map.get(c['code'])
+        c['inflow_yest']=inflow_yesterday(hist, c['code'], today)
         info=ind_map.get(c['code'])
         c['sector']=info.get('ind','') if isinstance(info,dict) else ''
         c['mcap']=info.get('mcap',0) if isinstance(info,dict) else 0
@@ -966,6 +1006,13 @@ def main():
             r=f.result(); results.append(r)
             if done%10==0 or done==len(cand):
                 print('      [%d/%d] %s %s -> %s'%(done,len(cand),r['code'],r['name'],r['template']))
+    # 更新资金流快照(供"由负转正"跨日判定)：把当日真实主力净流入落盘，跨日累积
+    for r in results:
+        code=r['code']; rec=hist.setdefault(code, {})
+        rec[today]=r.get('inflow',0) or 0
+        if len(rec) > INFLOW_HIST_KEEP:
+            for d in sorted(rec)[:len(rec)-INFLOW_HIST_KEEP]: del rec[d]
+    save_inflow_hist(hist)
     # 板块热度标注：个股行业命中资金持续流入的板块 → sector_hot
     for r in results:
         sec=r.get('sector',''); info=sec_flow.get(sec) if sec else None
@@ -992,7 +1039,7 @@ def main():
     M=[r for r in results if r['template']=='M']
     M.sort(key=lambda r:(0 if r.get('sector_hot') else 1, -(r.get('sector_net') or 0), -(r.get('darkpool') or 0), -(r.get('l5',{}).get('score',0))))
     E=[r for r in results if r['template']=='E']
-    E.sort(key=lambda r:(0 if r.get('is_leader') else 1, -(r.get('sector_net') or 0), -(r.get('inflow',0) or 0), -(r.get('l5',{}).get('score',0))))
+    E.sort(key=lambda r:(0 if r.get('inflow_reversal') else 1, 0 if r.get('is_leader') else 1, -(r.get('sector_net') or 0), -(r.get('inflow',0) or 0), -(r.get('l5',{}).get('score',0))))
     A.sort(key=lambda r:(0 if r.get('sector_hot') else 1, 0 if r.get('fund',{}).get('good',False) else 1, r['l1']['greed'], -r.get('inflow',0)))
     B.sort(key=lambda r:(r['l1']['greed'], -r.get('inflow',0)))
     # 大市环境调制开仓信号（best-effort 读 李大霄温度 + 情绪）
@@ -1022,9 +1069,10 @@ def main():
     # 输出
     wolf2A=[r for r in A if r.get('wolf2',{}).get('pass')]
     goodA=[r for r in A if r.get('fund',{}).get('good',False)]
+    E_REV=sum(1 for r in E if r.get('inflow_reversal'))
     print('\n========== 小狼策略 · A股自动扫描结果 ==========')
-    print('候选 %d 只 | 🚀M强势顺势 %d | 🔥E早期突破 %d | 🏆热点龙头 %d | A建议买入 %d (★小狼2.0 %d·好公司 %d) | B观察 %d | C禁止 %d | D观望 %d'%(
-        len(results),len(M),len(E),len(LEAD),len(A),len(wolf2A),len(goodA),len(B),len(C),len(D)))
+    print('候选 %d 只 | 🚀M强势顺势 %d | 🔥E早期突破 %d(🔄由负转正 %d) | 🏆热点龙头 %d | A建议买入 %d (★小狼2.0 %d·好公司 %d) | B观察 %d | C禁止 %d | D观望 %d'%(
+        len(results),len(M),len(E),E_REV,len(LEAD),len(A),len(wolf2A),len(goodA),len(B),len(C),len(D)))
     if any(r['l3'].get('proxy') for r in results):
         print('⚠️ 注：本扫描环境取不到15分钟K线，第3层"技术共振"改用日线代理(布林支撑/站上MA20/放量/日线底背离)。')
         print('   网页端(wolf-screener3.0.html)以真实15分钟MACD复核可得严格结论，两者第1/2/4层完全一致。')
@@ -1042,7 +1090,7 @@ def main():
         for r in M[:30]: print(' '+line(r)+('  [板块]%s%s'%(r.get('sector',''),'·🔥热点' if r.get('sector_hot') else ''))+'\n    '+r['suggestion'])
     if E:
         print('\n--- 🔥 E 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随） ---')
-        for r in E[:30]: print(' '+line(r)+('  [板块]%s%s%s'%(r.get('sector',''),'·🔥热点' if r.get('sector_hot') else '','·🏆龙头' if r.get('is_leader') else ''))+'\n    '+r['suggestion'])
+        for r in E[:30]: print(' '+line(r)+('  [板块]%s%s%s%s'%(r.get('sector',''),'·🔥热点' if r.get('sector_hot') else '','·🏆龙头' if r.get('is_leader') else '','·🔄由负转正' if r.get('inflow_reversal') else ''))+'\n    '+r['suggestion'])
     print('\n--- 🟡 B 纳入观察池 ---')
     for r in B[:30]: print(' '+line(r))
     if LEAD:
@@ -1058,7 +1106,7 @@ def main():
         print('\n--- ⚪ D 主跌观望 ---')
         for r in D[:10]: print(' '+line(r))
     # 保存
-    out={'generated':time.strftime('%Y-%m-%d %H:%M'),'summary':{'cand':len(results),'M':len(M),'E':len(E),'leaders':len(LEAD),'leaders_wait':len(LEADW),'A':len(A),'B':len(B),'C':len(C),'D':len(D)},
+    out={'generated':time.strftime('%Y-%m-%d %H:%M'),'summary':{'cand':len(results),'M':len(M),'E':len(E),'E_REV':E_REV,'leaders':len(LEAD),'leaders_wait':len(LEADW),'A':len(A),'B':len(B),'C':len(C),'D':len(D)},
          'market':get_market_regime(),'leaders':LEAD,'leaders_wait':LEADW,'M':M,'E':E,'A':A,'B':B,'C':C,'D':D}
     # 浏览器 JSON.parse 不接受 NaN/Infinity，写盘前先清洗成 null
     def _clean(o):

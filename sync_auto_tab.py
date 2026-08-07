@@ -164,6 +164,12 @@ def leader_chip(r):
     return ''
 
 
+def reversal_chip(r):
+    if r.get('inflow_reversal'):
+        return f'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#ff704322;color:#e0561f;border:1px solid #ff704355">🔄由负转正</span>'
+    return ''
+
+
 # ---------------- 自动选股 ----------------
 def a_cards(items):
     out = ''
@@ -183,7 +189,7 @@ def a_cards(items):
         </div>
       </div>
       <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        {tier_tag(r)} {greed_badge(l1.get('greed'))} <span>主力 <b style="color:var(--green2)">{money(r.get('inflow'))}</b></span> {sector_chip(r)} {dark_chip(r)} {leader_chip(r)}
+        {tier_tag(r)} {greed_badge(l1.get('greed'))} <span>主力 <b style="color:var(--green2)">{money(r.get('inflow'))}</b></span> {sector_chip(r)} {dark_chip(r)} {leader_chip(r)} {reversal_chip(r)}
       </div>
       <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
         {layer_pill('①情绪', l1.get('status'))}
@@ -292,7 +298,7 @@ def build_auto(d):
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <div><h3>🤖 自动选股 · 全A四层扫描</h3>
     <div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 快照 {d['generated']}</div></div>
-    <div style="font-size:12px;color:var(--t2)">候选 <b>{s['cand']}</b> · 🚀M <b>{s.get('M',0)}</b> · 🔥E <b>{s.get('E',0)}</b> · 🏆龙头 <b>{s.get('leaders',0)}</b> · 🟢A <b>{s['A']}</b> · 🔵B <b>{s['B']}</b> · 🔴C <b>{s['C']}</b> · ⚪D <b>{s['D']}</b></div>
+    <div style="font-size:12px;color:var(--t2)">候选 <b>{s['cand']}</b> · 🚀M <b>{s.get('M',0)}</b> · 🔥E <b>{s.get('E',0)}</b>(<b style="color:#e0561f">🔄{s.get('E_REV',0)}</b>) · 🏆龙头 <b>{s.get('leaders',0)}</b> · 🟢A <b>{s['A']}</b> · 🔵B <b>{s['B']}</b> · 🔴C <b>{s['C']}</b> · ⚪D <b>{s['D']}</b></div>
   </div>
 </div>
 <div class="panel" style="border-left:3px solid #d4a017">
@@ -305,7 +311,7 @@ def build_auto(d):
   {a_cards(d.get('M', []))}
 </div>
 <div class="panel" style="border-left:3px solid #ff7043">
-  <h3 style="margin-bottom:6px">🔥 E · 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随 · {s.get('E',0)}只）</h3>
+  <h3 style="margin-bottom:6px">🔥 E · 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随 · {s.get('E',0)}只 · 其中🔄由负转正 {s.get('E_REV',0)}只）</h3>
   {a_cards(d.get('E', [])) if d.get('E') else '<div style="font-size:12px;color:var(--t3)">今日无热点早期突破标的（板块资金主线内暂无放量长阳个股越过1亿净流入门槛）。</div>'}
 </div>
 <div class="panel">

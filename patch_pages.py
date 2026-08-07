@@ -206,6 +206,12 @@ SCRIPT = JS_START + r'''
     }
     return '';
   }
+  function reversalChip(r){
+    if(r.inflow_reversal){
+      return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#ff704322;color:#e0561f;border:1px solid #ff704355">🔄由负转正</span>';
+    }
+    return '';
+  }
   function autoCard(r){
     var l1=r.l1||{}, l2=r.l2||{}, l3=r.l3||{}, l4=r.l4||{};
     var cc=colorOf(r.change||0);
@@ -217,7 +223,7 @@ SCRIPT = JS_START + r'''
       + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(r.price)+'</div>'
       + '<div style="font-size:12px;color:'+cc+'">'+chg(r.change)+'</div></div></div>'
       + '<div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
-      + tierTag(r) + greedBadge(l1.greed) + ' <span>主力 <b style="color:var(--green2)">'+money(r.inflow)+'</b></span>' + sectorChip(r) + darkChip(r) + leaderChip(r) + '</div>'
+      + tierTag(r) + greedBadge(l1.greed) + ' <span>主力 <b style="color:var(--green2)">'+money(r.inflow)+'</b></span>' + sectorChip(r) + darkChip(r) + leaderChip(r) + reversalChip(r) + '</div>'
       + '<div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">'
       + pill('①情绪',l1.status) + pill('②浪型',l2.status) + pill('③技术'+l3t,l3.status) + pill('④资金',l4.status) + '</div>'
       + '<div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>'+num(r.stop,3)+'</b> · 目标 <b>'+num(r.target,3)+'</b></div>'
@@ -266,13 +272,13 @@ SCRIPT = JS_START + r'''
       var s=d.summary||{};
       var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
         + '<div><h3>🤖 自动选股 · 全A四层扫描</h3><div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 生成于 '+esc(d.generated)+'</div></div>'
-        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🚀M <b>'+(s.M||0)+'</b> · 🔥E <b>'+(s.E||0)+'</b> · 🏆龙头 <b>'+(s.leaders||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div></div>';
+        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🚀M <b>'+(s.M||0)+'</b> · 🔥E <b>'+(s.E||0)+'</b>(<b style="color:#e0561f">🔄'+(s.E_REV||0)+'</b>) · 🏆龙头 <b>'+(s.leaders||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div></div>';
       h+='<div class="panel" style="border-left:3px solid #d4a017"><h3 style="margin-bottom:6px">🏆 热点板块龙头（板块资金净流入 + 行业龙头 + 顺势时机 三重确认 · '+(s.leaders||0)+'只）</h3>'
         + ((d.leaders||[]).length? (d.leaders||[]).map(autoCard).join('') : '<div style="font-size:12px;color:var(--t3)">今日无三重确认标的（资金主线板块内暂无龙头出现买点），不硬凑。</div>')
         + waitList(d.leaders_wait) + '</div>';
       h+='<div class="panel"><h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段 · '+(s.M||0)+'只）</h3>'+ (d.M||[]).map(autoCard).join('') +'</div>';
       if((d.E||[]).length){
-        h+='<div class="panel" style="border-left:3px solid #ff7043"><h3 style="margin-bottom:6px">🔥 E · 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随 · '+(s.E||0)+'只）</h3>'+ (d.E||[]).map(autoCard).join('') +'</div>';
+        h+='<div class="panel" style="border-left:3px solid #ff7043"><h3 style="margin-bottom:6px">🔥 E · 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随 · '+(s.E||0)+'只 · 其中🔄由负转正 '+(s.E_REV||0)+'只）</h3>'+ (d.E||[]).map(autoCard).join('') +'</div>';
       }
       h+='<div class="panel"><h3 style="margin-bottom:6px">🟢 A · 建议低吸（四层全过 '+(s.A||0)+'只）</h3>'+ (d.A||[]).map(autoCard).join('') +'</div>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔵 B · 观察（'+(s.B||0)+'只）</summary>'+ autoTable(d.B) +'</details>';
