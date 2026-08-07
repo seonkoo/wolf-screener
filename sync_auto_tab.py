@@ -288,11 +288,36 @@ def wait_list(arr):
     return ('<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--t3)">'
             f'⏸ 资金主线龙头 · 当前不可买（过热/未共振，{len(arr)}只，点开看回踩条件）</summary>{rows}</details>')
 
+def regime_bar(m):
+    """大盘方向闸门条（与 auto_screener.regime_gate / patch_pages.regimeBar 保持一致）。"""
+    m = m or {}
+    cfg = {
+        'down':    ('#e5393522', '#c62828', '#e5393555', '🔴 大盘下行 · 顺势闸门已关闭',
+                    'M/E 顺势与热点单全部降级为观察——下跌趋势中追强易接飞刀（回测 S2/S3 无 Alpha）。今日只做 🟢A 左侧低吸（买恐慌策略在下行期反而更有效），务必小仓+ATR动态止损。'),
+        'neutral': ('#f9a82522', '#b8860b', '#f9a82555', '🟡 大盘震荡 · 顺势单小仓试探',
+                    '年线附近方向未明：M/E 可小仓试探并严格止损；A 低位低吸按计划分批。'),
+        'up':      ('#43a04722', '#2e7d32', '#43a04755', '🟢 大盘上行 · 正常出手',
+                    '沪深300 站上年线，M/A/E 均可按各自计划执行。'),
+    }.get(m.get('trend'))
+    if not cfg:
+        return ''
+    dev = '（沪深300 年线偏离 %s%%）' % m['dev_pct'] if m.get('dev_pct') is not None else ''
+    return ('<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:%s;border:1px solid %s;'
+            'font-size:12px;line-height:1.6"><b style="color:%s">%s</b> <span style="color:var(--t4)">%s</span>'
+            '<div style="color:var(--t2);margin-top:2px">%s</div></div>') % (cfg[0], cfg[2], cfg[1], cfg[3], dev, cfg[4])
+
+
 def build_auto(d):
     s = d['summary']
     leaders = d.get('leaders', [])
     bt = build_backtest_bake()
     wl = wait_list(d.get('leaders_wait', []))
+    rb = regime_bar(d.get('market'))
+    e_note = ('<div style="font-size:12px;color:var(--t2);background:var(--bg2);border-radius:8px;padding:8px 10px;'
+              'margin-bottom:8px;line-height:1.6">⚠️ <b>仓位纪律</b>：回测显示“追涨”超额收益有限（S2顺势20日仅+0.45%，'
+              'S3龙头顺势甚至落后基线），E 档只作<b>侦察仓</b>——单只≤总仓位 15%，同时最多 '
+              + str(s.get('E', 0)) + '/3 只，持有 15 日，严格止损 8%，不加仓不摊平。'
+              '真正的 Alpha 仍在 🟢A 低位低吸（20日超额 +2.20%）。</div>')
     return f'''
 <div class="panel">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
@@ -300,6 +325,7 @@ def build_auto(d):
     <div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 快照 {d['generated']}</div></div>
     <div style="font-size:12px;color:var(--t2)">候选 <b>{s['cand']}</b> · 🚀M <b>{s.get('M',0)}</b> · 🔥E <b>{s.get('E',0)}</b>(<b style="color:#e0561f">🔄{s.get('E_REV',0)}</b>) · 🏆龙头 <b>{s.get('leaders',0)}</b> · 🟢A <b>{s['A']}</b> · 🔵B <b>{s['B']}</b> · 🔴C <b>{s['C']}</b> · ⚪D <b>{s['D']}</b></div>
   </div>
+  {rb}
 </div>
 <div class="panel" style="border-left:3px solid #d4a017">
   <h3 style="margin-bottom:6px">🏆 热点板块龙头（板块资金净流入 + 行业龙头 + 顺势时机 三重确认 · {s.get('leaders',0)}只）</h3>
@@ -311,7 +337,8 @@ def build_auto(d):
   {a_cards(d.get('M', []))}
 </div>
 <div class="panel" style="border-left:3px solid #ff7043">
-  <h3 style="margin-bottom:6px">🔥 E · 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随 · {s.get('E',0)}只 · 其中🔄由负转正 {s.get('E_REV',0)}只）</h3>
+  <h3 style="margin-bottom:6px">🔥 E · 热点早期突破 <span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#ff704322;color:#e0561f;border:1px solid #ff704355">侦察仓</span>（板块资金主线+个股放量长阳 · {s.get('E',0)}只 · 其中🔄由负转正 {s.get('E_REV',0)}只）</h3>
+  {e_note}
   {a_cards(d.get('E', [])) if d.get('E') else '<div style="font-size:12px;color:var(--t3)">今日无热点早期突破标的（板块资金主线内暂无放量长阳个股越过1亿净流入门槛）。</div>'}
 </div>
 <div class="panel">

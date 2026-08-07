@@ -33,6 +33,7 @@ GREED_PASS = 40
 HOLD_DAYS  = 40
 STOP_PCT   = 0.08
 TP_PCT     = 0.15
+COST_PCT   = 0.0025   # 单边往返交易成本（佣金+印花税+滑点，约0.25%），使回测收益=实盘可实现口径（仅扣成本，不改变策略优劣对比）
 
 # ---- 复用 auto_screener 的好公司判定（as-of 防未来函数）----
 _spec=importlib.util.spec_from_file_location('auto_screener', os.path.join(os.path.dirname(os.path.abspath(__file__)),'auto_screener.py'))
@@ -107,17 +108,17 @@ def entry_signal(kd, idx, require_uptrend=False):
 
 def simulate(kd, cp, hold=HOLD_DAYS, stop=STOP_PCT, tp=TP_PCT):
     """从 cp 收盘买入，逐日向前走 hold 天，触发止盈/止损/到期结算。
-    返回 ('win'/'loss', 实际收益率, 出场天数)。"""
+    返回 ('win'/'loss', 实际收益率(已扣交易成本 COST_PCT), 出场天数)。"""
     try: entry=float(kd[cp][2])
     except Exception: return None
     if entry<=0 or cp+hold>=len(kd): return None
     for i in range(1,hold+1):
         try: c=float(kd[cp+i][2])
         except Exception: break
-        ret=c/entry-1
-        if ret>=tp: return ('win',tp,i)
-        if ret<=-stop: return ('loss',-stop,i)
-    last=float(kd[cp+hold][2]); r=last/entry-1
+        gross=c/entry-1
+        if gross>=tp: return ('win', tp-COST_PCT, i)
+        if gross<=-stop: return ('loss', -stop-COST_PCT, i)
+    last=float(kd[cp+hold][2]); r=last/entry-1-COST_PCT
     return ('win' if r>0 else 'loss', r, hold)
 
 # ---------- 大盘方向（沪深300 MA120）----------
@@ -296,7 +297,7 @@ def main():
                         'win':row[best]['win'],'avg':row[best]['avg'],
                         'excess':round(ex,4),'edge':bool(ex>0.005)})
     out={'generated':__import__('time').strftime('%Y-%m-%d %H:%M'),
-         'params':{'greed_pass':GREED_PASS,'holds':HOLDS,'stop':STOP_PCT,'tp':TP_PCT,
+         'params':{'greed_pass':GREED_PASS,'holds':HOLDS,'stop':STOP_PCT,'tp':TP_PCT,'cost':COST_PCT,
                    'pool':len(kdata),'checkpoints':len(cps),
                    'range':'%s ~ %s'%(sample[cps[0]][0],sample[cps[-1]][0])},
          'note':'S2/S3 的"主力净流入"用K线代理(均线多头+放量+当日上涨)近似，历史逐日 f62 资金流不可回溯，结论偏保守。',

@@ -96,26 +96,41 @@ def pick_daily(items, auto, today, meta):
         tier_rank = {'M': 0, 'E': 1, 'A': 2}.get(tier, 1)
         return (w2, tier_rank, good, -conv)
     cands.sort(key=sc)
-    r, tier = cands[0]
-    code = str(r.get('code', ''))
-    try:
-        price = float(r.get('price') or 0)
-    except Exception:
-        price = 0.0
-    tp = (r.get('trade_plan') or {})
-    item = {
-        'code': code, 'name': str(r.get('name', '')), 'template': tier,
-        'entry_date': today, 'entry_price': price,
-        'last_date': '', 'last_price': None, 'return': None,
-        'hold_days': 0, 'status': '持有中', 'expectation': '待观察',
-        'plan_exit_days': EXIT_DAYS,   # 冻结入池时的结算期，日后调参不追溯污染样本
-        'is_leader': bool(r.get('is_leader')), 'sector': str(r.get('sector', '')),
-        'target_pct': (tp.get('target_pct', 0) or 0),
-        'side': (tp.get('side', '') or ''),
-        'note': '',
-    }
-    items.append(item)
-    return item
+    # 集中度控制：单板块≤30%(≤6/20)；E 档侦察仓≤15%(≤3只)。超限候选顺延到下一只。
+    active = [it for it in items if it.get('status') == '持有中']
+    sec_cnt = {}
+    for it in active:
+        s = it.get('sector', '')
+        if s:
+            sec_cnt[s] = sec_cnt.get(s, 0) + 1
+    e_cnt = sum(1 for it in active if (it.get('template') or 'A') == 'E')
+    SECTOR_CAP, E_SCOUT_MAX = 6, 3
+    for r, tier in cands:
+        sec = r.get('sector', '')
+        if tier == 'E' and e_cnt >= E_SCOUT_MAX:
+            continue
+        if sec and sec_cnt.get(sec, 0) >= SECTOR_CAP:
+            continue
+        code = str(r.get('code', ''))
+        try:
+            price = float(r.get('price') or 0)
+        except Exception:
+            price = 0.0
+        tp = (r.get('trade_plan') or {})
+        item = {
+            'code': code, 'name': str(r.get('name', '')), 'template': tier,
+            'entry_date': today, 'entry_price': price,
+            'last_date': '', 'last_price': None, 'return': None,
+            'hold_days': 0, 'status': '持有中', 'expectation': '待观察',
+            'plan_exit_days': EXIT_DAYS,   # 冻结入池时的结算期，日后调参不追溯污染样本
+            'is_leader': bool(r.get('is_leader')), 'sector': str(r.get('sector', '')),
+            'target_pct': (tp.get('target_pct', 0) or 0),
+            'side': (tp.get('side', '') or ''),
+            'note': ('侦察仓≤15%' if tier == 'E' else ''),
+        }
+        items.append(item)
+        return item
+    return None
 
 def track(items):
     """更新所有在池标的的现价/至今累计收益/持有天数。

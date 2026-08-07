@@ -49,6 +49,7 @@ RIGHT_HOLD = 30     # 顺势单基础持有 30 日；主升浪(3浪)拉长到 60
 E_STOP = 0.08      # 严格止损 8%（不放松：早期突破假突破概率高，错了快走）
 E_TP   = 0.15      # 止盈 15%
 E_HOLD = 15        # 早期突破试错持有期更短（板块轮动快，不长期恋战）
+E_SCOUT_MAX = 3    # 侦察仓上限：E 档同时最多 3 只进可操作面板/观察池(占总池≤15%)
 E_INFLOW_MIN = 1e8 # 个股主力净流入下限 1 亿（确认资金真在涌向该标的，而非随板块微涨；用户定稿 1 亿门槛）
 
 
@@ -247,9 +248,31 @@ def inflow_yesterday(hist, code, today):
     prev = sorted(d for d in rec if d < today)
     return rec[prev[-1]] if prev else None
 
+def calc_atr(kd, n=14):
+    """真实波动幅度(TR)均值 ATR，返回 ATR 占最新收盘价的比例(atr/close)，样本不足返回 None。
+    用于 A 档动态止损：波动越大止损越宽（与"止损是胜率杀手、越宽越好"的回测结论自洽）。"""
+    if not kd or len(kd) < n+1:
+        return None
+    trs=[]
+    for i in range(1, n+1):
+        h=kd[-i]['high']; l=kd[-i]['low']; pc=kd[-i-1]['close']
+        tr=max(h-l, abs(h-pc), abs(l-pc))
+        trs.append(tr)
+    atr=sum(trs)/len(trs); c=kd[-1]['close']
+    return (atr/c) if c>0 else None
+
+def inflow_yesterday2(hist, code, today):
+    """返回 code 在 today 之前最近两个交易日的主力净流入(元)列表（升序，最后一个是最近一日），不足则更短。
+    供"由负转正"2日确认：前日<0 且 昨日<0 且 今日>0 才算拐点，过滤单日噪音。"""
+    rec = hist.get(code)
+    if not rec:
+        return []
+    prev = sorted(d for d in rec if d < today)
+    return [rec[d] for d in prev[-2:]] if prev else []
+
 # ---------- 大盘方向门控（沪深300 年线/120日线）----------
-# 这是我们回测发现胜率的最大开关：大盘下行期低吸胜率仅~18%，上行期~40%。
-# 故把"大盘下行禁止开仓"写进实盘，避免接飞刀。
+# 下行期：封杀顺势(M)/热点(E)（趋势策略在下跌中必输——S2/S3 横评无 Alpha，且接飞刀风险大），保留逆势低吸(A)。
+# 这是回测结论的最直接落地：顺势追强只在大盘向上时做，下行期只做"买恐慌"的 A 档。
 _market_cache={}
 def get_market_regime():
     """返回沪深300 趋势：up(收盘在年线/120线上方) / neutral(年线附近) / down(跌破年线)。"""
@@ -272,15 +295,21 @@ def get_market_regime():
     return _market_cache
 
 def regime_gate(template, regime):
-    """大盘方向门控（仅作提示，不硬删信号）。
-    重要：回测显示本策略是"买恐慌"均值回归，下行/恐慌期胜率反而更高(46% vs 上行34%)，
-    故下行期绝不禁止开仓，只提示控仓；真正该禁止的是贪婪过热(已在 L1 处理)。"""
+    """大盘方向门控（下行期封杀顺势/热点，保留逆势低吸）。
+    回测结论：本策略是"买恐慌"均值回归，下行/恐慌期低吸(A)胜率反而更高；
+    但顺势(M)/热点(E)在下跌趋势中必输（S2/S3 横评无 Alpha、且趋势反转风险大），故下行期转观望。
+    真正该封杀贪婪过热的是 L1（已在 run_screening 处理）。"""
     t=regime.get('trend','na')
+    if template in ('M','E'):
+        if t=='down':
+            return 'B', '大盘处下行/恐慌区——顺势追强(M)/热点突破(E)在下跌趋势中胜率骤降、易接飞刀，转为观望；只做左侧低吸(A)。'
+        if t=='neutral':
+            return template, '大盘震荡（年线附近），M/E 顺势单可小仓试探，严格止损%d%%。'%(int(STOP_PCT*100))
     if template=='A':
         if t=='down':
-            return 'A', '大盘处下行/恐慌区——本策略正是"买恐慌"策略，此处低吸信号反而更有效；但波动大，务必小仓、严格止损%d%%。'%(int(STOP_PCT*100))
+            return 'A', '大盘处下行/恐慌区——本策略正是"买恐慌"策略，此处低吸信号反而更有效；但波动大，务必小仓、严格执行本卡的ATR动态止损。'
         if t=='neutral':
-            return 'A', '大盘震荡（年线附近），可小仓试探，严格止损%d%%。'%(int(STOP_PCT*100))
+            return 'A', '大盘震荡（年线附近），可小仓试探，严格执行本卡的ATR动态止损。'
         if t=='up':
             return 'A', '大盘上行（沪深300在年线上方），可正常按计划低吸。'
     return template, ''
@@ -421,7 +450,14 @@ def base_trade_plan(res):
     elif l5.get('pass'):
         stop_pct, target_pct = -RIGHT_STOP, RIGHT_TP
     else:
-        stop_pct, target_pct = -STOP_PCT, TP_PCT
+        a_stop = res.get('atr_stop_pct') or STOP_PCT
+        stop_pct, target_pct = -a_stop, TP_PCT
+    # 统一按最终 stop_pct/target_pct 反算价位并回写 res，避免"卡片价位"与"交易计划百分比"打架
+    # （旧 bug: A 档若走右侧分支 stop_pct=-6% 但 res['stop'] 仍是 ATR 价，两者对不上）
+    _px = res.get('price') or 0
+    if _px:
+        res['stop'] = round(_px * (1 + stop_pct), 3)
+        res['target'] = round(_px * (1 + target_pct), 3)
     # —— 确定性评分（用于排序，0-100）——
     conv = {'A': 70, 'B': 45, 'C': 20, 'D': 10, 'M': 60, 'E': 40}.get(template, 10)  # E 小仓试错，确定性低于 M
     if w2.get('pass'):
@@ -474,6 +510,7 @@ def base_trade_plan(res):
         'conviction': conv,
         'rationale': rationale,
         'lidaxiao_pick': bool(res.get('lidaxiao_pick')),
+        'scout': (template == 'E'), 'max_pct': (0.15 if template == 'E' else None),
     }
 
 # ---------- 四层判定（复刻 runScreening） ----------
@@ -496,6 +533,8 @@ def run_screening(stock):
         res['l3']={'status':'wait','detail':'K线数据不足'}; res['l4']={'status':'wait','detail':'资金流数据不足'}
         return res
     day_closes=[k['close'] for k in kd]
+    atr_pct = calc_atr(kd) or 0.0
+    res['atr_pct']=round(atr_pct,4)
     # Layer 1
     greed=calc_greed(day_closes)
     if greed<GREED_PASS: l1=('pass',greed,'低位/恐慌区间，入观察池')
@@ -597,9 +636,11 @@ def run_screening(stock):
     # —— 由负转正(资金拐点)：这是最强的早期突破确认 ——
     # 用跨日快照 inflow_history.json 中"昨日主力净流入"(真实 clist f62，非 K线估算)判断：昨日净流出、今日净流入。
     # 快照由每次扫描写入并跨日累积(本地工作区持久化；CI 由 workflow commit 回去)，故可稳定判定；
+    # 由负转正(2日确认)：前日<0 且 昨日<0 且 今日>0 —— 连续两日撤离后拐点，过滤单日噪音。
     # 无历史时此信号为空(不误触发)。用户定稿：突破信号=个股主力净流入>1亿，特别是"由负转正"的那一刻。
-    _rev_yest = stock.get('inflow_yest')
-    inflow_reversal = bool(_rev_yest is not None and _rev_yest < 0 and inf > 0)
+    rev_prev2 = stock.get('inflow_yest2') or []
+    _rev_yest = rev_prev2[-1] if rev_prev2 else None
+    inflow_reversal = bool(len(rev_prev2)>=2 and rev_prev2[-2]<0 and rev_prev2[-1]<0 and inf > 0)
     res['inflow_reversal'] = inflow_reversal
     res['inflow_yest'] = _rev_yest  # 元；suggestion/Note 展示用
     if w2:
@@ -642,14 +683,17 @@ def run_screening(stock):
         # 进入 A：低位 + 技术共振(1.0)。好公司仅作"优先级"(回测显示好公司过滤不增Alpha，
         # 但会丢弃93%信号)，故不再硬降级为B，而是好公司排前、非好公司轻仓/观察。
         res['template']='A'
+        a_stop=max(STOP_PCT, 2*atr_pct)   # ATR 动态止损：波动越大止损越宽(与"止损是胜率杀手"结论自洽)，但≥8%底线
+        res['atr_stop_pct']=round(a_stop,4)
+        res['stop']=round(price*(1-a_stop),3) if price else 0
         if good_company:
-            res['suggestion']='好公司+低位共振(1.0)：小仓位分批低吸，持有约%d日做均值回归，止损%d%%目标%d%%，反弹属急跌修复，不长期持有。'%(
-                HOLD_DAYS, int(STOP_PCT*100), int(TP_PCT*100))
+            res['suggestion']='好公司+低位共振(1.0)：小仓位分批低吸，持有约%d日做均值回归，ATR动态止损%.0f%%目标%d%%，反弹属急跌修复，不长期持有。'%(
+                HOLD_DAYS, a_stop*100, int(TP_PCT*100))
         else:
-            res['suggestion']='低位+技术共振(1.0,非好公司)：仅轻仓或观察，若参与同样止损%d%%目标%d%%；好公司优先级更低。'%(
-                int(STOP_PCT*100), int(TP_PCT*100))
+            res['suggestion']='低位+技术共振(1.0,非好公司)：仅轻仓或观察；若参与，ATR动态止损%.0f%%、目标%d%%，排序优先级低于好公司。'%(
+                a_stop*100, int(TP_PCT*100))
     else: res['template']='B'; res['suggestion']='纳入观察池，等待信号共振，暂不入场。'
-    # 大盘方向门控：下行趋势禁止低吸接飞刀（回测显示下行期胜率仅~18%）
+    # 大盘方向门控：下行期封杀顺势(M)/热点(E)，保留左侧低吸(A)——见 regime_gate 注释
     gated, gnote = regime_gate(res['template'], res['market'])
     if gated != res['template']:
         res['template']=gated
@@ -752,38 +796,27 @@ def load_macro_best_effort():
         sd = None
     return ld, sd
 
-def apply_macro(res, lidaxiao, sentiment):
-    """用大市环境(李大霄温度 + 情绪指数)调制 per-pick 的 open 信号。
-    李大霄原旨：底部温度只对【优质/蓝筹】构成"买"信号；其他标的底部仅作参考，不可生搬硬套（抄底劣质股=接飞刀）。"""
+def apply_macro(res, sentiment):
+    """用情绪指数调制 per-pick 的 open 信号（李大霄温度已舍弃，不参与决策）。
+    情绪=恐慌→逆向买点(可升级 watch→open)；情绪=狂热→逆向卖、控仓(可降级 open→watch)。"""
     tp = res.get('trade_plan')
     if not tp:
         return
     notes = []
     macro_open = None
-    tier = ((lidaxiao or {}).get('sz50', {}) or {}).get('tier')
     sidx = (sentiment or {}).get('index')
-    is_ld = bool(res.get('lidaxiao_pick'))
-    qtxt = '（李大霄体系·优质蓝筹）' if is_ld else ''
-    if tier in ('极致底部', '温和底部'):
-        if is_ld:
-            macro_open = 'open'; notes.append('李大霄温度=%s%s（估值底部，可重点配置优质蓝筹）' % (tier, qtxt))
-        else:
-            notes.append('李大霄温度=%s（底部区域，但本标的非蓝筹，底部信号仅供参考，以技术面为主）' % tier)
-    elif tier == '接近底部':
-        notes.append('李大霄温度=接近底部（下行空间收敛，可小仓优质蓝筹）')
     if isinstance(sidx, (int, float)):
         if sidx < 25:
-            if is_ld:
-                macro_open = 'open' if macro_open != 'no' else macro_open
-            notes.append('情绪=恐慌(%.0f)%s，逆向买点' % (sidx, qtxt))
+            notes.append('情绪=恐慌(%.0f)，逆向买点' % sidx)
+            macro_open = 'open'
         elif sidx > 75:
             macro_open = 'no'; notes.append('情绪=狂热(%.0f)，逆向卖、控仓' % sidx)
     if macro_open == 'open' and tp['open'] == 'watch':
         tp['open'] = 'open'
-        tp['open_reason'] = ('底层信号观望，但大市环境（%s）支持分批低吸' % '；'.join(notes)) + ('' if is_ld else '（注：非李大霄体系标的，仅技术面参考）')
+        tp['open_reason'] = ('底层信号观望，但大市情绪（%s）支持分批低吸' % '；'.join(notes))
     elif macro_open == 'no' and tp['open'] == 'open':
         tp['open'] = 'watch'
-        tp['open_reason'] = '个股信号可开仓，但大市环境（%s）提示控仓，降为观察' % '；'.join(notes)
+        tp['open_reason'] = '个股信号可开仓，但大市情绪（%s）提示控仓，降为观察' % '；'.join(notes)
     if notes:
         tp['macro_note'] = '；'.join(notes)
         if 'rationale' in tp:
@@ -980,6 +1013,7 @@ def main():
     for c in cand:
         c['darkpool']=dp_map.get(c['code'])
         c['inflow_yest']=inflow_yesterday(hist, c['code'], today)
+        c['inflow_yest2']=inflow_yesterday2(hist, c['code'], today)
         info=ind_map.get(c['code'])
         c['sector']=info.get('ind','') if isinstance(info,dict) else ''
         c['mcap']=info.get('mcap',0) if isinstance(info,dict) else 0
@@ -1038,19 +1072,20 @@ def main():
     D=[r for r in results if r['template']=='D']
     M=[r for r in results if r['template']=='M']
     M.sort(key=lambda r:(0 if r.get('sector_hot') else 1, -(r.get('sector_net') or 0), -(r.get('darkpool') or 0), -(r.get('l5',{}).get('score',0))))
+    E_ALL=sum(1 for r in results if r['template']=='E')
     E=[r for r in results if r['template']=='E']
     E.sort(key=lambda r:(0 if r.get('inflow_reversal') else 1, 0 if r.get('is_leader') else 1, -(r.get('sector_net') or 0), -(r.get('inflow',0) or 0), -(r.get('l5',{}).get('score',0))))
+    E = E[:E_SCOUT_MAX]   # 侦察仓上限：E 档仅保留前 3 只，占总池≤15%（其余降为观察，不进可操作面板）
     A.sort(key=lambda r:(0 if r.get('sector_hot') else 1, 0 if r.get('fund',{}).get('good',False) else 1, r['l1']['greed'], -r.get('inflow',0)))
     B.sort(key=lambda r:(r['l1']['greed'], -r.get('inflow',0)))
-    # 大市环境调制开仓信号（best-effort 读 李大霄温度 + 情绪）
-    ld, sd = load_macro_best_effort()
-    if ld or sd:
-        qset = load_quality_set()   # 李大霄体系优质蓝筹集：底部温度只对它们构成"买"信号
+    # 大市环境调制开仓信号：仅用情绪指数。
+    # ⚠️ 李大霄温度已舍弃——其历史回测从未验证（便宜区 60 日 +0.8%≈全样本），不构成可靠买点，
+    #   故不再让其温度驱动"买"信号；仅保留情绪指数作为逆向参考。
+    _, sd = load_macro_best_effort()
+    if sd:
         for r in results:
-            r['lidaxiao_pick'] = r['code'] in qset
-            apply_macro(r, ld, sd)
-        print('      大市环境调制：李大霄=%s 情绪=%s' % (
-            ((ld or {}).get('sz50', {}) or {}).get('tier'), (sd or {}).get('index')))
+            apply_macro(r, sd)
+        print('      大市环境调制：情绪=%s（李大霄温度已舍弃，不参与决策）' % ((sd or {}).get('index')))
     # 热点板块龙头（资金净流入主线 + 行业龙头 + 顺势时机 三重确认）= 用户要的"捕捉市场动态"核心标的
     for r in results:
         r['hot_leader']=bool(r.get('is_leader') and r.get('sector_hot'))
@@ -1069,10 +1104,10 @@ def main():
     # 输出
     wolf2A=[r for r in A if r.get('wolf2',{}).get('pass')]
     goodA=[r for r in A if r.get('fund',{}).get('good',False)]
-    E_REV=sum(1 for r in E if r.get('inflow_reversal'))
+    E_REV=sum(1 for r in results if r.get('inflow_reversal'))
     print('\n========== 小狼策略 · A股自动扫描结果 ==========')
-    print('候选 %d 只 | 🚀M强势顺势 %d | 🔥E早期突破 %d(🔄由负转正 %d) | 🏆热点龙头 %d | A建议买入 %d (★小狼2.0 %d·好公司 %d) | B观察 %d | C禁止 %d | D观望 %d'%(
-        len(results),len(M),len(E),E_REV,len(LEAD),len(A),len(wolf2A),len(goodA),len(B),len(C),len(D)))
+    print('候选 %d 只 | 🚀M强势顺势 %d | 🔥E早期突破 %d(🔄由负转正 %d, 仅展示前%d只侦察仓) | 🏆热点龙头 %d | A建议买入 %d (★小狼2.0 %d·好公司 %d) | B观察 %d | C禁止 %d | D观望 %d'%(
+        len(results),len(M),E_ALL,E_REV,E_SCOUT_MAX,len(LEAD),len(A),len(wolf2A),len(goodA),len(B),len(C),len(D)))
     if any(r['l3'].get('proxy') for r in results):
         print('⚠️ 注：本扫描环境取不到15分钟K线，第3层"技术共振"改用日线代理(布林支撑/站上MA20/放量/日线底背离)。')
         print('   网页端(wolf-screener3.0.html)以真实15分钟MACD复核可得严格结论，两者第1/2/4层完全一致。')

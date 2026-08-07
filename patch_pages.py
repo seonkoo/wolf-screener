@@ -267,18 +267,34 @@ SCRIPT = JS_START + r'''
     });
     return h+'</details>';
   }
+  function regimeBar(m){
+    // 大盘方向闸门：下行期封杀顺势(M)/热点(E)，只保留左侧低吸(A)——与 auto_screener.regime_gate 一致
+    m = m || {};
+    var t = m.trend, dev = (m.dev_pct!=null? '（沪深300 年线偏离 '+m.dev_pct+'%）' : '');
+    var cfg = {
+      down:    ['#e5393522','#c62828','#e5393555','🔴 大盘下行 · 顺势闸门已关闭','M/E 顺势与热点单全部降级为观察——下跌趋势中追强易接飞刀（回测 S2/S3 无 Alpha）。今日只做 🟢A 左侧低吸（买恐慌策略在下行期反而更有效），务必小仓+ATR动态止损。'],
+      neutral: ['#f9a82522','#b8860b','#f9a82555','🟡 大盘震荡 · 顺势单小仓试探','年线附近方向未明：M/E 可小仓试探并严格止损；A 低位低吸按计划分批。'],
+      up:      ['#43a04722','#2e7d32','#43a04755','🟢 大盘上行 · 正常出手','沪深300 站上年线，M/A/E 均可按各自计划执行。']
+    }[t];
+    if(!cfg) return '';
+    return '<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:'+cfg[0]+';border:1px solid '+cfg[2]+';font-size:12px;line-height:1.6">'
+      + '<b style="color:'+cfg[1]+'">'+cfg[3]+'</b> <span style="color:var(--t4)">'+dev+'</span><div style="color:var(--t2);margin-top:2px">'+cfg[4]+'</div></div>';
+  }
   function loadAuto(){
     loadJSON('auto_screen_result.json').then(function(d){
       var s=d.summary||{};
       var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
         + '<div><h3>🤖 自动选股 · 全A四层扫描</h3><div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 生成于 '+esc(d.generated)+'</div></div>'
-        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🚀M <b>'+(s.M||0)+'</b> · 🔥E <b>'+(s.E||0)+'</b>(<b style="color:#e0561f">🔄'+(s.E_REV||0)+'</b>) · 🏆龙头 <b>'+(s.leaders||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div></div>';
+        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🚀M <b>'+(s.M||0)+'</b> · 🔥E <b>'+(s.E||0)+'</b>(<b style="color:#e0561f">🔄'+(s.E_REV||0)+'</b>) · 🏆龙头 <b>'+(s.leaders||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div>'
+        + regimeBar(d.market) + '</div>';
       h+='<div class="panel" style="border-left:3px solid #d4a017"><h3 style="margin-bottom:6px">🏆 热点板块龙头（板块资金净流入 + 行业龙头 + 顺势时机 三重确认 · '+(s.leaders||0)+'只）</h3>'
         + ((d.leaders||[]).length? (d.leaders||[]).map(autoCard).join('') : '<div style="font-size:12px;color:var(--t3)">今日无三重确认标的（资金主线板块内暂无龙头出现买点），不硬凑。</div>')
         + waitList(d.leaders_wait) + '</div>';
       h+='<div class="panel"><h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段 · '+(s.M||0)+'只）</h3>'+ (d.M||[]).map(autoCard).join('') +'</div>';
       if((d.E||[]).length){
-        h+='<div class="panel" style="border-left:3px solid #ff7043"><h3 style="margin-bottom:6px">🔥 E · 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随 · '+(s.E||0)+'只 · 其中🔄由负转正 '+(s.E_REV||0)+'只）</h3>'+ (d.E||[]).map(autoCard).join('') +'</div>';
+        h+='<div class="panel" style="border-left:3px solid #ff7043"><h3 style="margin-bottom:6px">🔥 E · 热点早期突破 <span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#ff704322;color:#e0561f;border:1px solid #ff704355">侦察仓</span>（板块资金主线+个股放量长阳 · '+(s.E||0)+'只 · 其中🔄由负转正 '+(s.E_REV||0)+'只）</h3>'
+          +'<div style="font-size:12px;color:var(--t2);background:var(--bg2);border-radius:8px;padding:8px 10px;margin-bottom:8px;line-height:1.6">⚠️ <b>仓位纪律</b>：回测显示"追涨"超额收益有限（S2顺势20日仅+0.45%，S3龙头顺势甚至落后基线），E 档只作<b>侦察仓</b>——单只≤总仓位 15%，同时最多 '+(s.E||0)+'/3 只，持有 15 日，严格止损 8%，不加仓不摊平。真正的 Alpha 仍在 🟢A 低位低吸（20日超额 +2.20%）。</div>'
+          + (d.E||[]).map(autoCard).join('') +'</div>';
       }
       h+='<div class="panel"><h3 style="margin-bottom:6px">🟢 A · 建议低吸（四层全过 '+(s.A||0)+'只）</h3>'+ (d.A||[]).map(autoCard).join('') +'</div>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔵 B · 观察（'+(s.B||0)+'只）</summary>'+ autoTable(d.B) +'</details>';
