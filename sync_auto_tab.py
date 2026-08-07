@@ -38,7 +38,9 @@ SE_START, SE_END = '<!--SECTORFLOW_START-->', '<!--SECTORFLOW_END-->'
 TT_START, TT_END = '<!--TRADETIME_START-->', '<!--TRADETIME_END-->'
 TB_START, TB_END = '<!--TTBANNER_START-->', '<!--TTBANNER_END-->'
 ET_START, ET_END = '<!--ETFTIME_START-->', '<!--ETFTIME_END-->'
+RD_START, RD_END = '<!--RADAR_START-->', '<!--RADAR_END-->'
 ETF_DATA = os.path.join(HERE, 'etf_result.json')
+RADAR = os.path.join(HERE, 'greed_flow_radar.json')
 
 
 def esc(x):
@@ -395,6 +397,189 @@ def build_sector_flow(d):
     h += _sector_group('⚪ 短期回调（等企稳）', pullback, 'var(--t3)')
     h += _sector_group('🔴 持续流出（回避）', outflow, 'var(--red2)')
     h += '</div>'
+    return h
+
+
+def _radar_card(r, col, tag):
+    """⚠️ 必须与 patch_pages.py 的 radarCard() 保持一致（在线/离线双路径铁律）"""
+    sigs = ' '.join(
+        '<span style="font-size:10px;padding:1px 6px;border-radius:10px;background:var(--bg2);color:'
+        + col + ';border:1px solid ' + col + '">' + esc(x) + '</span>'
+        for x in (r.get('signals') or []))
+    up = (r.get('change') or 0) >= 0
+    pc = 'var(--red2)' if up else 'var(--green2)'
+    return (
+        '<div class="panel" style="border-left:4px solid ' + col + ';margin-top:6px">'
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">'
+        '<div style="font-weight:700;color:var(--t1)">' + tag + ' ' + esc(r.get('name'))
+        + ' <span style="font-size:11px;color:var(--t3)">' + esc(r.get('code')) + '</span>'
+        + ' <span style="font-size:11px;color:' + pc + '">' + num(r.get('price'), 2) + ' '
+        + ('+' if up else '') + num(r.get('change'), 2) + '%</span></div>'
+        '<div style="font-size:11px;color:var(--t2)">贪婪 <b style="color:' + col + '">'
+        + num(r.get('greed'), 1) + '%</b> · ' + esc(r.get('ind')) + '</div></div>'
+        '<div style="margin-top:4px">' + sigs + '</div>'
+        '<div style="margin-top:5px;font-size:11px;color:var(--t2);line-height:1.6">📝 '
+        + esc(r.get('reason')) + '</div>'
+        '<div style="margin-top:5px;font-size:11px;color:var(--t3)">🎯 参考：止损 '
+        + num(r.get('stop'), 2) + '（-' + num((r.get('stop_pct') or 0) * 100, 1)
+        + '%，含2×ATR）· 目标 ' + num(r.get('target'), 2) + '（+15%）· 持有 '
+        + str(r.get('hold_days') or 20) + '个交易日</div></div>')
+
+
+def build_radar(d):
+    """低位资金雷达离线烘焙。
+    ⚠️ 与 patch_pages.py 的 renderRadar() 是同一份 UI 的两条路径，改一处必须改另一处，
+       否则 file:// 打开的快照和线上 fetch 出来的内容会不一致。
+    ⚠️ 本函数内禁止用 % 格式化拼含中文全角标点的字符串（会报 unsupported format character），
+       统一用字符串拼接 / f-string。
+    """
+    if not d:
+        return ''
+    s = d.get('summary') or {}
+    bt = d.get('backtest') or {}
+    rg = d.get('regime') or {}
+    h = ''
+    warn = d.get('regime_warn')
+    if warn:
+        wc = '#d99e00' if rg.get('trend') == 'side' else (
+            'var(--red2)' if rg.get('trend') == 'down' else 'var(--green2)')
+        h += ('<div class="panel" style="border-left:4px solid ' + wc + ';background:var(--bg2);'
+              'font-size:12px;color:var(--t1);line-height:1.6">' + esc(warn) + '</div>')
+    h += ('<div class="panel" style="border-left:4px solid var(--blue)">'
+          '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+          '<div><h3>🚨 今日低位资金雷达</h3><div class="panel-sub" style="margin-bottom:0">生成于 '
+          + esc(d.get('generated')) + ' · 全A ' + str(s.get('universe', 0)) + ' 只，扫描 '
+          + str(s.get('scanned', 0)) + ' 只，贪婪&lt;35 的低位股 ' + str(s.get('low_total', 0))
+          + ' 只</div></div></div>'
+          '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:12px">'
+          '<span style="padding:3px 10px;border-radius:14px;border:1px solid var(--red2);color:var(--red2)">🔴 核心提醒 <b>'
+          + str(s.get('core', 0)) + '</b></span>'
+          '<span style="padding:3px 10px;border-radius:14px;border:1px solid #e8833a;color:#e8833a">🟠 强烈提醒 <b>'
+          + str(s.get('strong', 0)) + '</b></span>'
+          '<span style="padding:3px 10px;border-radius:14px;border:1px solid #d99e00;color:#d99e00">🟡 关注 <b>'
+          + str(s.get('watch', 0)) + '</b></span>'
+          '<span style="padding:3px 10px;border-radius:14px;border:1px solid var(--t3);color:var(--t3)">⚪ 无人问津 <b>'
+          + str(s.get('quiet', 0)) + '</b></span></div>'
+          '<div style="margin-top:6px;font-size:11px;color:var(--t3)">下列榜单已做行业限流（同一行业最多2只），'
+          '避免全部押在同一个板块上；完整数量见上方计数。</div></div>')
+
+    def group(title, arr, col, tag, sub):
+        if not arr:
+            return ('<div class="panel" style="font-size:12px;color:var(--t3)">' + title
+                    + '：今日无符合条件的标的。</div>')
+        return ('<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;color:' + col
+                + '">' + title + '（' + str(len(arr)) + '）</div>'
+                '<div style="font-size:11px;color:var(--t3);margin-top:2px">' + sub + '</div>'
+                + ''.join(_radar_card(r, col, tag) for r in arr) + '</div>')
+
+    h += group('🔴 核心提醒 · 回测胜率 59.0% / 20日超额 +3.34%', d.get('core'), 'var(--red2)', '🔴',
+               '贪婪&lt;10（极冷）+ 个股资金信号≥2 + 同业&gt;80%同步进钱 + 板块真实净流入进全市场前100')
+    h += group('🟠 强烈提醒 · 回测胜率 56.2% / 超额 +1.77%', d.get('strong'), '#e8833a', '🟠',
+               '贪婪&lt;35 + 个股资金信号≥2 + 同业&gt;50%同步进钱 + 板块真实净流入为正')
+    h += group('🟡 关注 · 回测胜率 51.5% / 超额 +0.97%', d.get('watch'), '#d99e00', '🟡',
+               '个股有资金进场，但板块尚未共振 —— 等板块跟上再动手')
+
+    q = d.get('quiet') or []
+    if q:
+        h += ('<details class="panel" style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;'
+              'color:var(--t1)">⚪ 无人问津（' + str(s.get('quiet', 0)) + ' 只，展示前' + str(len(q))
+              + '）—— 贪婪极低但一分钱没进，回测胜率仅48.9%≈基线</summary>'
+              '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">'
+              + ''.join('<span style="font-size:11px;padding:2px 8px;border-radius:14px;border:1px solid '
+                        'var(--t3);color:var(--t3)">' + esc(r.get('name')) + ' <span style="opacity:.7">贪婪'
+                        + num(r.get('greed'), 1) + '%</span></span>' for r in q)
+              + '</div><div style="font-size:11px;color:var(--t3);margin-top:6px">💡 这一档是本页最重要的反面教材：'
+                '便宜本身不是买入理由，没有资金接力的低位可以低很久。</div></details>')
+
+    secs = d.get('sectors') or []
+    if secs:
+        rows = ''
+        for x in secs:
+            hot = (x.get('ratio') or 0) > 0.5 and (x.get('net') or 0) > 0
+            nc = 'var(--red2)' if (x.get('net') or 0) >= 0 else 'var(--green2)'
+            rows += ('<tr style="border-top:1px solid var(--bg2);color:'
+                     + ('var(--t1)' if hot else 'var(--t3)') + '">'
+                     '<td style="padding:3px 0"><b>' + esc(x.get('ind')) + '</b></td><td>'
+                     + str(x.get('low_count', 0)) + '</td><td>' + str(x.get('flow_count', 0)) + '（'
+                     + num((x.get('ratio') or 0) * 100, 0) + '%）</td>'
+                     '<td style="color:' + nc + '">'
+                     + (num(x.get('net'), 1) + '亿' if x.get('net') is not None else '-') + '</td><td>'
+                     + (num(x.get('net5'), 1) + '亿' if x.get('net5') is not None else '-') + '</td><td>'
+                     + ('第' + str(x.get('rank')) if x.get('rank') is not None else '-') + '</td><td>'
+                     + esc(x.get('state')) + '</td></tr>')
+        h += ('<div class="panel" style="margin-top:10px"><h3>🧭 板块共振热力（低位票同步进钱比例 × 真实净流入）</h3>'
+              '<div style="overflow-x:auto"><table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:4px">'
+              '<tr style="color:var(--t3);text-align:left"><th>板块</th><th>低位票</th><th>同步进钱</th>'
+              '<th>今日净流入</th><th>5日</th><th>全市场排名</th><th>状态</th></tr>' + rows + '</table></div></div>')
+
+    if bt.get('rows'):
+        rows = ''
+        for x in bt['rows']:
+            ex = x.get('ex') or 0
+            rows += ('<tr style="border-top:1px solid var(--bg2)"><td style="padding:3px 0">' + esc(x.get('k'))
+                     + '</td><td>' + str(x.get('n', 0)) + '</td><td>' + num(x.get('win'), 1) + '%</td><td>'
+                     + num(x.get('ret'), 2) + '%</td><td style="color:'
+                     + ('var(--red2)' if ex > 0 else 'var(--t3)') + '">' + ('+' if ex > 0 else '')
+                     + num(ex, 2) + '%</td></tr>')
+        h += ('<details class="panel" style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;'
+              'color:var(--t1)">📊 回测证据（' + esc(bt.get('window')) + '，' + str(bt.get('stocks', 0))
+              + '只 / ' + str(bt.get('checkpoints', 0)) + '个检查点，持有' + esc(bt.get('hold'))
+              + '，已扣' + esc(bt.get('cost')) + '成本）</summary>'
+              '<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:6px">'
+              '<tr style="color:var(--t3);text-align:left"><th>组别</th><th>样本</th><th>胜率</th>'
+              '<th>20日均收</th><th>超额</th></tr>' + rows + '</table>')
+        if bt.get('by_regime'):
+            rr = ''
+            for x in bt['by_regime']:
+                weak = (x.get('ex') or 0) < (x.get('se') or 0)
+                rr += ('<tr style="border-top:1px solid var(--bg2);color:'
+                       + ('#d99e00' if weak else 'var(--t1)') + '"><td style="padding:3px 0">'
+                       + esc(x.get('k')) + (' ⚠️' if weak else '') + '</td><td>' + str(x.get('n', 0))
+                       + '</td><td>' + num(x.get('win'), 1) + '%</td><td>'
+                       + ('+' if (x.get('ex') or 0) > 0 else '') + num(x.get('ex'), 2) + '%</td><td>±'
+                       + num(x.get('se'), 2) + '%</td></tr>')
+            h += ('<div style="font-size:12px;font-weight:600;color:var(--t1);margin-top:10px">'
+                  '🔴核心档在不同大盘环境下的表现</div>'
+                  '<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:4px">'
+                  '<tr style="color:var(--t3);text-align:left"><th>环境</th><th>样本</th><th>胜率</th>'
+                  '<th>超额</th><th>±1se</th></tr>' + rr + '</table>'
+                  '<div style="font-size:11px;color:var(--t3);margin-top:4px">⚠️ 标黄行表示超额小于1倍标准误'
+                  ' —— 统计上不能认为有优势。震荡市就是这种情况，别在震荡市迷信这套信号。</div>')
+        if bt.get('monotonic'):
+            chips = ''
+            for x in bt['monotonic']:
+                c = 'var(--green2)' if x.get('ok') else 'var(--red2)'
+                chips += ('<span style="font-size:11px;padding:2px 8px;border-radius:14px;border:1px solid '
+                          + c + ';color:' + c + '">' + ('✅ ' if x.get('ok') else '❌ ') + esc(x.get('k'))
+                          + ' ' + num(x.get('win'), 1) + '%</span>')
+            h += ('<div style="font-size:12px;font-weight:600;color:var(--t1);margin-top:10px">'
+                  '🔬 加严维度有效性检验（哪些条件加了真有用）</div>'
+                  '<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">' + chips + '</div>'
+                  '<div style="font-size:11px;color:var(--t3);margin-top:4px">结论：只有「板块共振强度」和'
+                  '「贪婪深度」两个维度加严有效；堆信号数量、追大放量反而变差，因此本页坚决不加这两条。</div>')
+        h += '</details>'
+
+    v = d.get('voice') or {}
+    posts = v.get('posts') or []
+    if posts:
+        mood_txt = {'bull': '偏多', 'bear': '偏空', 'neutral': '中性'}.get(v.get('mood'), '中性')
+        h += ('<details class="panel" style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;'
+              'color:var(--t1)">🐺 狼大近期发言（' + str(len(posts)) + '条，整体' + mood_txt
+              + '）—— 仅供参考，不参与买卖打分</summary>')
+        if v.get('hot_tags'):
+            h += ('<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">'
+                  + ''.join('<span style="font-size:11px;padding:2px 8px;border-radius:14px;'
+                            'background:var(--bg2);color:var(--t2)">' + esc(t[0]) + ' ×' + str(t[1])
+                            + '</span>' for t in v['hot_tags']) + '</div>')
+        for p in posts:
+            mc = ('var(--red2)' if p.get('mood') == 'bull'
+                  else ('var(--green2)' if p.get('mood') == 'bear' else 'var(--t3)'))
+            h += ('<div style="margin-top:6px;padding-left:8px;border-left:2px solid ' + mc + '">'
+                  '<div style="font-size:10px;color:var(--t3)">' + esc(p.get('date')) + '</div>'
+                  '<div style="font-size:12px;color:var(--t2);line-height:1.6;white-space:pre-wrap">'
+                  + esc((p.get('text') or '')[:220]) + '</div></div>')
+        h += ('<div style="font-size:11px;color:var(--t3);margin-top:8px">'
+              + esc(v.get('note') or '参考信息，不参与买卖打分。') + '</div></details>')
     return h
 
 
@@ -822,7 +1007,8 @@ def main():
     wd = load(WATCH)
     ld = load(LIDAXIAO)
     se = load(SECTOR)
-    if not (d or gd or t or sd or ov or wd or ld or se):
+    rd = load(RADAR)
+    if not (d or gd or t or sd or ov or wd or ld or se or rd):
         print('没有可用数据，退出')
         return
     auto_block = build_auto(d) if d else None
@@ -833,6 +1019,7 @@ def main():
     wd_block = build_watch(wd) if wd else None
     ld_block = build_lidaxiao(ld) if ld else None
     sector_block = build_sector_flow(se) if se else None
+    radar_block = build_radar(rd) if rd else None
     banner_block = build_tt_banner(d, ld, sd) if d else None
     tt_block = build_tradetime(d) if d else None
     etf_block = build_etftime(ed) if ed else None
@@ -868,6 +1055,9 @@ def main():
         if sector_block:
             s, m = inject(s, sector_block, SE_START, SE_END, 'sectorMount')
             notes.append('sector:' + (m or 'FAIL'))
+        if radar_block:
+            s, m = inject(s, radar_block, RD_START, RD_END, 'radarMount')
+            notes.append('radar:' + (m or 'FAIL'))
         if banner_block:
             s, m = inject(s, banner_block, TB_START, TB_END, 'ttBanner')
             notes.append('ttbanner:' + (m or 'FAIL'))

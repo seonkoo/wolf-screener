@@ -29,6 +29,16 @@ sector_flow.json
 industry_map.json
 practical_strategy.json
 backtest_winrate.json
+greed_flow_radar.json
+wolf_voice.json
+
+# 可行性验证脚本的大K线缓存(合计24MB，脚本可重建，不入库)
+# ⚠️ 注意：inflow_history.json 是【跨日快照账本】，必须入库持久化，绝不能加到这里
+_bt_klines.json
+_bt_klines_long.json
+_feasibility_result.json
+_feasibility_v2.json
+_feasibility_v3.json
 
 # 策略实验室大缓存(由 strategy_lab.py 生成，可重建，不入库)
 lab_feat.npz

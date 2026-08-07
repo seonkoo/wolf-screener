@@ -31,6 +31,10 @@ jobs:
         run: python blue_chip_screener.py
       - name: 生成板块资金流向(行业/概念板块主力净流入·市场动态主线，供 auto_screener 板块加成)
         run: python sector_flow.py
+      - name: 抓取狼大NGA发言(参考信息，不参与买卖打分；NGA不可达时跳过，不影响后续)
+        run: python wolf_voice.py || true
+      - name: 低位资金雷达(贪婪<35+资金进场+板块共振；依赖 sector_flow.json，必须排在其后)
+        run: python greed_flow_radar.py
       - name: 运行实战策略(波浪阶段+资金板块+仓位止损·最高指引v2 主引擎)
         run: python practical_strategy.py
       - name: 运行自动选股扫描(宽扫描+顺势池，不按净流入预筛)

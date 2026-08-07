@@ -43,9 +43,9 @@ MARKET_TAB_BTN = '  <button class="tab" data-tab="market">📊 市场研判</but
 WATCH_TAB_BTN = '  <button class="tab" data-tab="watch">📈 观察池</button>'
 
 # ---- Tab 顺序（操作层在前，阅读层在后）----
-# prs 实战策略(主入口) → auto 自动选股 → watch 观察池 → tradetime 交易时机
+# prs 实战策略(主入口) → radar 低位资金雷达 → auto 自动选股 → watch 观察池 → tradetime 交易时机
 # 后面才是环境阅读类：今日看板/市场研判/选股雷达/资金流/ETF/风控
-TAB_ORDER = ['prs', 'auto', 'watch', 'tradetime', 'overview',
+TAB_ORDER = ['prs', 'radar', 'auto', 'watch', 'tradetime', 'overview',
              'market', 'screener', 'flow', 'etf', 'risk']
 TRADETIME_TAB_BTN = '  <button class="tab" data-tab="tradetime">⏱️ 交易时机</button>'
 LOADING_TRADETIME = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
@@ -58,6 +58,18 @@ LOADING_PRS = ('<div class="panel"><div class="loading"><div class="spinner"></d
 PRS_PANE = '''<section class="pane" id="pane-prs">
   <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">🎯 实战策略（最高指引 v2）：①艾略特波浪阶段判操作 ②资金判板块+板块内最强个股 ③入手/仓位/止盈止损 ④概率优先(R:R≥1.5 且 概率≥45% 才入选)。旧 M/E/A/B/C/D 仅作阅读信息。非投资建议。</div>
   <div id="prsMount"><!--PRS_START-->''' + LOADING_PRS + '''<!--PRS_END--></div>
+</section>'''
+
+# ---- 低位资金雷达（贪婪指数低 + 资金开始进场 = 强烈提醒）----
+# 命题来自用户，已用 5年/291只/63002检查点回测验证；分档胜率见 greed_flow_radar.py 文件头。
+RADAR_TAB_BTN = '  <button class="tab" data-tab="radar">🚨 低位资金雷达</button>'
+LOADING_RADAR = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
+                 '<div style="margin-top:8px">正在加载低位资金雷达…</div></div></div>')
+RADAR_PANE = '''<section class="pane" id="pane-radar">
+  <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.6">🚨 <b>低位资金雷达</b>：只做一件事 —— 找「贪婪指数已经很低、但资金刚开始进场」的票。<br>
+  核心判断：<b>低位 + 有钱进 = 值得提醒</b>；<b>低位 + 没钱进 = 无人问津</b>（回测胜率48.9%，约等于全市场基线，不值得动）。<br>
+  三个资金信号（MFI回升 / 放量&gt;1.3倍 / OBV上行）三选二为「有资金」；再叠加同业低位票的同步进钱比例 + 该板块真实净流入排名 = 板块共振。<span style="color:var(--t3)">非投资建议。</span></div>
+  <div id="radarMount"><!--RADAR_START-->''' + LOADING_RADAR + '''<!--RADAR_END--></div>
 </section>'''
 
 # ---- 市场研判（综合研判 + 全球市场 + 重大事件 + 国家队资金 + 情绪指数 合并为一个 Tab）----
@@ -946,6 +958,133 @@ SCRIPT = JS_START + r'''
       + arr.map(function(s){ return '<span style="font-size:11px;padding:2px 8px;border-radius:14px;border:1px solid '+col+';color:'+col+'">'+esc(s.name)+' <span style="opacity:.7">'+(s.net5!=null?num(s.net5,1):'-')+'亿</span></span>'; }).join('')
       +'</div></div>';
   }
+  // ---------------- 低位资金雷达 ----------------
+  // 用户命题: 贪婪指数低 + 资金开始流入 → 强烈提醒; 低位但无资金 = 无人问津。
+  // 已回测验证(5年/291只/63002检查点)，各档胜率写死在 JSON 的 backtest 字段里，页面如实展示。
+  function loadRadar(){
+    loadJSON('greed_flow_radar.json').then(renderRadar).catch(function(e){
+      var el=document.getElementById('radarMount');
+      if(el) el.insertAdjacentHTML('afterbegin','<div class="panel" style="font-size:11px;color:var(--t3)">📴 未能实时拉取低位资金雷达（'+esc(e.message)+'），以下为本地烘焙快照。</div>');
+    });
+  }
+  function radarCard(r, col, tag){
+    var sigs=(r.signals||[]).map(function(s){ return '<span style="font-size:10px;padding:1px 6px;border-radius:10px;background:var(--bg2);color:'+col+';border:1px solid '+col+'">'+esc(s)+'</span>'; }).join(' ');
+    var up=(r.change||0)>=0;
+    return '<div class="panel" style="border-left:4px solid '+col+';margin-top:6px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px">'
+      +'<div style="font-weight:700;color:var(--t1)">'+tag+' '+esc(r.name)+' <span style="font-size:11px;color:var(--t3)">'+esc(r.code)+'</span>'
+      +' <span style="font-size:11px;color:'+(up?'var(--red2)':'var(--green2)')+'">'+num(r.price,2)+' '+(up?'+':'')+num(r.change,2)+'%</span></div>'
+      +'<div style="font-size:11px;color:var(--t2)">贪婪 <b style="color:'+col+'">'+num(r.greed,1)+'%</b> · '+esc(r.ind||'')+'</div></div>'
+      +'<div style="margin-top:4px">'+sigs+'</div>'
+      +'<div style="margin-top:5px;font-size:11px;color:var(--t2);line-height:1.6">📝 '+esc(r.reason||'')+'</div>'
+      +'<div style="margin-top:5px;font-size:11px;color:var(--t3)">🎯 参考：止损 '+num(r.stop,2)+'（-'+num((r.stop_pct||0)*100,1)+'%，含2×ATR）· 目标 '+num(r.target,2)+'（+15%）· 持有 '+(r.hold_days||20)+'个交易日</div>'
+      +'</div>';
+  }
+  function renderRadar(d){
+    if(!d) return;
+    var s=d.summary||{}, bt=d.backtest||{}, rg=d.regime||{};
+    var h='';
+    // 0) 大盘环境警示 —— 好坏消息都要报
+    if(d.regime_warn){
+      var wc = rg.trend==='side' ? '#d99e00' : (rg.trend==='down' ? 'var(--red2)' : 'var(--green2)');
+      h+='<div class="panel" style="border-left:4px solid '+wc+';background:var(--bg2);font-size:12px;color:var(--t1);line-height:1.6">'+esc(d.regime_warn)+'</div>';
+    }
+    // 1) 今日分档计数
+    h+='<div class="panel" style="border-left:4px solid var(--blue)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
+      +'<div><h3>🚨 今日低位资金雷达</h3><div class="panel-sub" style="margin-bottom:0">生成于 '+esc(d.generated||'')+' · 全A '+(s.universe||0)+' 只，扫描 '+(s.scanned||0)+' 只，贪婪&lt;35 的低位股 '+(s.low_total||0)+' 只</div></div></div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:12px">'
+      +'<span style="padding:3px 10px;border-radius:14px;border:1px solid var(--red2);color:var(--red2)">🔴 核心提醒 <b>'+(s.core||0)+'</b></span>'
+      +'<span style="padding:3px 10px;border-radius:14px;border:1px solid #e8833a;color:#e8833a">🟠 强烈提醒 <b>'+(s.strong||0)+'</b></span>'
+      +'<span style="padding:3px 10px;border-radius:14px;border:1px solid #d99e00;color:#d99e00">🟡 关注 <b>'+(s.watch||0)+'</b></span>'
+      +'<span style="padding:3px 10px;border-radius:14px;border:1px solid var(--t3);color:var(--t3)">⚪ 无人问津 <b>'+(s.quiet||0)+'</b></span></div>'
+      +'<div style="margin-top:6px;font-size:11px;color:var(--t3)">下列榜单已做行业限流（同一行业最多2只），避免全部押在同一个板块上；完整数量见上方计数。</div></div>';
+    // 2) 三档榜单
+    function group(title, arr, col, tag, sub){
+      if(!arr||!arr.length) return '<div class="panel" style="font-size:12px;color:var(--t3)">'+title+'：今日无符合条件的标的。</div>';
+      return '<div style="margin-top:10px"><div style="font-size:13px;font-weight:700;color:'+col+'">'+title+'（'+arr.length+'）</div>'
+        +'<div style="font-size:11px;color:var(--t3);margin-top:2px">'+sub+'</div>'
+        + arr.map(function(r){ return radarCard(r,col,tag); }).join('')+'</div>';
+    }
+    h+=group('🔴 核心提醒 · 回测胜率 59.0% / 20日超额 +3.34%', d.core, 'var(--red2)', '🔴',
+             '贪婪&lt;10（极冷）+ 个股资金信号≥2 + 同业&gt;80%同步进钱 + 板块真实净流入进全市场前100');
+    h+=group('🟠 强烈提醒 · 回测胜率 56.2% / 超额 +1.77%', d.strong, '#e8833a', '🟠',
+             '贪婪&lt;35 + 个股资金信号≥2 + 同业&gt;50%同步进钱 + 板块真实净流入为正');
+    h+=group('🟡 关注 · 回测胜率 51.5% / 超额 +0.97%', d.watch, '#d99e00', '🟡',
+             '个股有资金进场，但板块尚未共振 —— 等板块跟上再动手');
+    // 3) 无人问津
+    if(d.quiet&&d.quiet.length){
+      h+='<details class="panel" style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">⚪ 无人问津（'+(s.quiet||0)+' 只，展示前'+d.quiet.length+'）—— 贪婪极低但一分钱没进，回测胜率仅48.9%≈基线</summary>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">'
+        + d.quiet.map(function(r){ return '<span style="font-size:11px;padding:2px 8px;border-radius:14px;border:1px solid var(--t3);color:var(--t3)">'+esc(r.name)+' <span style="opacity:.7">贪婪'+num(r.greed,1)+'%</span></span>'; }).join('')
+        +'</div><div style="font-size:11px;color:var(--t3);margin-top:6px">💡 这一档是本页最重要的反面教材：便宜本身不是买入理由，没有资金接力的低位可以低很久。</div></details>';
+    }
+    // 4) 板块热力
+    if(d.sectors&&d.sectors.length){
+      h+='<div class="panel" style="margin-top:10px"><h3>🧭 板块共振热力（低位票同步进钱比例 × 真实净流入）</h3>'
+        +'<div style="overflow-x:auto"><table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:4px">'
+        +'<tr style="color:var(--t3);text-align:left"><th>板块</th><th>低位票</th><th>同步进钱</th><th>今日净流入</th><th>5日</th><th>全市场排名</th><th>状态</th></tr>'
+        + d.sectors.map(function(x){
+            var hot=(x.ratio||0)>0.5 && (x.net||0)>0;
+            return '<tr style="border-top:1px solid var(--bg2);color:'+(hot?'var(--t1)':'var(--t3)')+'">'
+              +'<td style="padding:3px 0"><b>'+esc(x.ind)+'</b></td><td>'+(x.low_count||0)+'</td>'
+              +'<td>'+(x.flow_count||0)+'（'+num((x.ratio||0)*100,0)+'%）</td>'
+              +'<td style="color:'+((x.net||0)>=0?'var(--red2)':'var(--green2)')+'">'+(x.net!=null?num(x.net,1)+'亿':'-')+'</td>'
+              +'<td>'+(x.net5!=null?num(x.net5,1)+'亿':'-')+'</td><td>'+(x.rank!=null?('第'+x.rank):'-')+'</td><td>'+esc(x.state||'')+'</td></tr>';
+          }).join('')
+        +'</table></div></div>';
+    }
+    // 5) 回测证据
+    if(bt.rows&&bt.rows.length){
+      h+='<details class="panel" style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">📊 回测证据（'+esc(bt.window||'')+'，'+(bt.stocks||0)+'只 / '+(bt.checkpoints||0)+'个检查点，持有'+esc(bt.hold||'')+'，已扣'+esc(bt.cost||'')+'成本）</summary>'
+        +'<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:6px">'
+        +'<tr style="color:var(--t3);text-align:left"><th>组别</th><th>样本</th><th>胜率</th><th>20日均收</th><th>超额</th></tr>'
+        + bt.rows.map(function(x){
+            return '<tr style="border-top:1px solid var(--bg2)"><td style="padding:3px 0">'+esc(x.k)+'</td><td>'+(x.n||0)+'</td>'
+              +'<td>'+num(x.win,1)+'%</td><td>'+num(x.ret,2)+'%</td>'
+              +'<td style="color:'+((x.ex||0)>0?'var(--red2)':'var(--t3)')+'">'+(x.ex>0?'+':'')+num(x.ex,2)+'%</td></tr>';
+          }).join('')+'</table>';
+      if(bt.by_regime&&bt.by_regime.length){
+        h+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-top:10px">🔴核心档在不同大盘环境下的表现</div>'
+          +'<table style="width:100%;font-size:11px;border-collapse:collapse;margin-top:4px">'
+          +'<tr style="color:var(--t3);text-align:left"><th>环境</th><th>样本</th><th>胜率</th><th>超额</th><th>±1se</th></tr>'
+          + bt.by_regime.map(function(x){
+              var weak=(x.ex||0)<(x.se||0);
+              return '<tr style="border-top:1px solid var(--bg2);color:'+(weak?'#d99e00':'var(--t1)')+'"><td style="padding:3px 0">'+esc(x.k)+(weak?' ⚠️':'')+'</td><td>'+(x.n||0)+'</td>'
+                +'<td>'+num(x.win,1)+'%</td><td>'+(x.ex>0?'+':'')+num(x.ex,2)+'%</td><td>±'+num(x.se,2)+'%</td></tr>';
+            }).join('')+'</table>'
+          +'<div style="font-size:11px;color:var(--t3);margin-top:4px">⚠️ 标黄行表示超额小于1倍标准误 —— 统计上不能认为有优势。震荡市就是这种情况，别在震荡市迷信这套信号。</div>';
+      }
+      if(bt.monotonic&&bt.monotonic.length){
+        h+='<div style="font-size:12px;font-weight:600;color:var(--t1);margin-top:10px">🔬 加严维度有效性检验（哪些条件加了真有用）</div>'
+          +'<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">'
+          + bt.monotonic.map(function(x){
+              var c=x.ok?'var(--green2)':'var(--red2)';
+              return '<span style="font-size:11px;padding:2px 8px;border-radius:14px;border:1px solid '+c+';color:'+c+'">'+(x.ok?'✅':'❌')+' '+esc(x.k)+' '+num(x.win,1)+'%</span>';
+            }).join('')
+          +'</div><div style="font-size:11px;color:var(--t3);margin-top:4px">结论：只有「板块共振强度」和「贪婪深度」两个维度加严有效；堆信号数量、追大放量反而变差，因此本页坚决不加这两条。</div>';
+      }
+      h+='</details>';
+    }
+    // 6) 狼大发言（参考信息，不参与打分）
+    var v=d.voice||{};
+    if(v.posts&&v.posts.length){
+      var moodTxt={bull:'偏多',bear:'偏空',neutral:'中性'}[v.mood]||'中性';
+      h+='<details class="panel" style="margin-top:10px"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🐺 狼大近期发言（'+v.posts.length+'条，整体'+esc(moodTxt)+'）—— 仅供参考，不参与买卖打分</summary>';
+      if(v.hot_tags&&v.hot_tags.length){
+        h+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">'
+          + v.hot_tags.map(function(t){ return '<span style="font-size:11px;padding:2px 8px;border-radius:14px;background:var(--bg2);color:var(--t2)">'+esc(t[0])+' ×'+t[1]+'</span>'; }).join('')+'</div>';
+      }
+      h+= v.posts.map(function(p){
+            var mc=p.mood==='bull'?'var(--red2)':(p.mood==='bear'?'var(--green2)':'var(--t3)');
+            return '<div style="margin-top:6px;padding-left:8px;border-left:2px solid '+mc+'">'
+              +'<div style="font-size:10px;color:var(--t3)">'+esc(p.date||'')+'</div>'
+              +'<div style="font-size:12px;color:var(--t2);line-height:1.6;white-space:pre-wrap">'+esc((p.text||'').slice(0,220))+'</div></div>';
+          }).join('');
+      h+='<div style="font-size:11px;color:var(--t3);margin-top:8px">'+esc(v.note||'参考信息，不参与买卖打分。')+'</div></details>';
+    }
+    var el=document.getElementById('radarMount'); if(el) el.innerHTML=h;
+  }
   // 解析个股所属行业板块（东方财富 stock/get），再在已加载的 sector_flow 中定位其资金状态
   function fetchIndustry(code){
     return new Promise(function(resolve){
@@ -1145,7 +1284,7 @@ SCRIPT = JS_START + r'''
         +'</div>';
     }).catch(function(e){ el.innerHTML='<div style="font-size:11px;color:var(--t3)">🌊 波浪计算失败</div>'; });
   }
-  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadSynthesis(); loadAuto(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); loadTradeTime(); loadETFTime(); loadPRS(); applyHash(); }
+  function boot(){ loadLiDaxiao(); loadSectorFlow(); loadRadar(); loadSynthesis(); loadAuto(); loadGuard(); loadTeam(); loadSent(); loadWatch(); loadElliott(); loadTradeTime(); loadETFTime(); loadPRS(); applyHash(); }
   if(document.readyState!=='loading'){ boot(); }
   else { document.addEventListener('DOMContentLoaded', boot); }
 })();
@@ -1244,6 +1383,16 @@ def patch(fn):
         else:
             print('  ! 未找到首个 tab 按钮')
 
+    # 1c2) 低位资金雷达：插到首个 button 之前；最终位置由 TAB_ORDER 统一重排决定
+    if 'data-tab="radar"' not in s:
+        nav_start = s.find('<nav')
+        first_btn = s.find('<button', nav_start) if nav_start >= 0 else s.find('<button')
+        if first_btn >= 0:
+            s = s[:first_btn] + RADAR_TAB_BTN + '\n' + s[first_btn:]
+            print('  + tab按钮: radar')
+        else:
+            print('  ! 未找到首个 tab 按钮')
+
     # 1d) 实战策略（最高指引 v2）：同样插到首个 button 之前，成为最左 tab（主入口）
     if 'data-tab="prs"' not in s:
         nav_start = s.find('<nav')
@@ -1280,6 +1429,25 @@ def patch(fn):
         s = s.replace('<!--PRS_START-->' + LOADING_PRS + '<!--PRS_END-->',
                       '<!--PRS_START-->' + baked_prs + '<!--PRS_END-->', 1)
         print('    · 保留原离线快照(实战策略)')
+
+    # 2a2) 低位资金雷达 pane
+    m = re.search(r'<!--RADAR_START-->(.*?)<!--RADAR_END-->', s, re.S)
+    baked_radar = m.group(1) if m else None
+    s, ok = replace_section(s, 'pane-radar', RADAR_PANE)
+    if not ok:
+        ins = s.find('</section>', s.find('<section class="pane" id="pane-auto">'))
+        if ins >= 0:
+            ins += len('</section>')
+            s = s[:ins] + '\n' + RADAR_PANE + s[ins:]
+            print('  + 低位资金雷达pane（新建）')
+        else:
+            print('  ! 无法定位低位资金雷达pane插入点')
+    else:
+        print('  ~ 低位资金雷达pane已刷新')
+    if baked_radar and '正在加载' not in baked_radar:
+        s = s.replace('<!--RADAR_START-->' + LOADING_RADAR + '<!--RADAR_END-->',
+                      '<!--RADAR_START-->' + baked_radar + '<!--RADAR_END-->', 1)
+        print('    · 保留原离线快照(低位资金雷达)')
 
     # 2b) 交易时机 pane（默认主入口）
     # 先归一化默认激活态的 class（避免 replace_section 因 "pane active" 匹配不到）
