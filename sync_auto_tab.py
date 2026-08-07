@@ -145,7 +145,9 @@ def sector_chip(r):
     if not sec:
         return ''
     col = 'var(--red2)' if r.get('sector_hot') else '#888'
-    hot = ' 🔥热点' if r.get('sector_hot') else ''
+    # sector_net 单位已是「亿元」，勿再除 1e8
+    net = r.get('sector_net') or 0
+    hot = (f' 🔥+{net:.0f}亿' + (f'/第{r["sector_rank"]}' if r.get('sector_rank') else '')) if (r.get('sector_hot') and net) else (' 🔥热点' if r.get('sector_hot') else '')
     return f'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:{col}18;color:{col};border:1px solid {col}55">板块:{esc(sec)}{hot}</span>'
 
 
@@ -154,6 +156,12 @@ def dark_chip(r):
     if dp is None or dp <= 0:
         return ''
     return f'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#7b3fa022;color:#7b3fa0;border:1px solid #7b3fa055">暗盘+{num(dp,1)}亿</span>'
+
+
+def leader_chip(r):
+    if r.get('is_leader') and r.get('industry_rank'):
+        return f'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#d4a01722;color:#b8860b;border:1px solid #d4a01755">🏆龙头(行业第{r["industry_rank"]}/{r["industry_count"]})</span>'
+    return ''
 
 
 # ---------------- 自动选股 ----------------
@@ -175,7 +183,7 @@ def a_cards(items):
         </div>
       </div>
       <div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        {tier_tag(r)} {greed_badge(l1.get('greed'))} <span>主力 <b style="color:var(--green2)">{money(r.get('inflow'))}</b></span> {sector_chip(r)} {dark_chip(r)}
+        {tier_tag(r)} {greed_badge(l1.get('greed'))} <span>主力 <b style="color:var(--green2)">{money(r.get('inflow'))}</b></span> {sector_chip(r)} {dark_chip(r)} {leader_chip(r)}
       </div>
       <div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">
         {layer_pill('①情绪', l1.get('status'))}
@@ -206,18 +214,94 @@ def compact_table(items):
     return h + '</table></div>'
 
 
+def build_backtest_bake():
+    """读取 backtest_winrate.json（backtest_screener.py 生成）烘焙多策略×多持有期对比表；缺失则留空。"""
+    try:
+        b = json.load(open('backtest_winrate.json', encoding='utf-8'))
+    except Exception:
+        return ''
+    mx = b.get('matrix') or {}
+    strs = list(mx.keys())
+    if not strs:
+        return ''
+    pa = b.get('params') or {}
+    h = '<div class="panel"><h3 style="margin-bottom:6px">📊 多策略回测对比（持股 10/20/30/40 日 · 胜率%/均值%）</h3>'
+    h += (f'<div class="panel-sub" style="margin-bottom:6px">{esc(pa.get("range",""))} · 股票池{pa.get("pool",0)}只 · '
+          f'检查点{pa.get("checkpoints",0)}个 · 止损{round((pa.get("stop") or .08)*100)}%/止盈{round((pa.get("tp") or .15)*100)}%（先触发先执行）</div>')
+    h += ('<table style="width:100%;border-collapse:collapse;font-size:12px">'
+          '<tr style="color:var(--t4)"><th style="padding:4px;text-align:left">策略</th><th style="padding:4px">样本</th>'
+          '<th style="padding:4px">10日</th><th style="padding:4px">20日</th>'
+          '<th style="padding:4px">30日</th><th style="padding:4px">40日</th></tr>')
+    for sname in strs:
+        row = mx[sname]; cells = ''; nn = 0; best_h = None; best_v = -9
+        for hd in (10, 20, 30, 40):
+            c = row.get(str(hd)) or row.get(hd) or {}     # JSON 反序列化后键是字符串，两种都兜住
+            if c.get('n'):
+                nn = c['n']
+                if (c.get('avg') or -9) > best_v:
+                    best_v = c.get('avg') or -9; best_h = hd
+        for hd in (10, 20, 30, 40):
+            c = row.get(str(hd)) or row.get(hd) or {}
+            if c.get('n'):
+                avg = (c.get('avg') or 0) * 100
+                hi = ';background:rgba(212,160,23,.14);border-radius:4px' if hd == best_h else ''
+                cells += (f'<td style="padding:4px;text-align:center;color:var(--t2){hi}">胜{c.get("win",0):.1f}%<br>'
+                          f'<span style="color:{color_of(avg)}">{"+" if avg>=0 else ""}{avg:.2f}%</span></td>')
+            else:
+                cells += '<td style="padding:4px;text-align:center;color:var(--t4)">—</td>'
+        h += (f'<tr style="border-top:1px solid var(--line)"><td style="padding:4px;color:var(--t1)">{esc(sname)}</td>'
+              f'<td style="padding:4px;text-align:center;color:var(--t4)">{nn}</td>{cells}</tr>')
+    h += '</table>'
+    vd = b.get('verdict') or []
+    if vd:
+        h += '<div style="margin-top:8px;font-size:12px;color:var(--t2);line-height:1.7">'
+        for v in vd:
+            ex = v.get('excess') or 0
+            h += (f'<div>{"✅" if v.get("edge") else "⚠️"} <b>{esc(v.get("strategy",""))}</b>：最优持有 '
+                  f'<b>{v.get("best_hold")}日</b>，胜率 {v.get("win",0):.1f}%、均值 {(v.get("avg") or 0)*100:.2f}%，'
+                  f'相对纯持有基线 {"超额 +" if ex>0 else "落后 "}{ex*100:.2f}%'
+                  f'{"（有 Alpha）" if v.get("edge") else "（无显著 Alpha，慎用）"}</div>')
+        h += '</div>'
+    if b.get('note'):
+        h += f'<div style="margin-top:6px;font-size:11px;color:var(--t4);line-height:1.5">⚠️ {esc(b["note"])}</div>'
+    h += '</div>'
+    return h
+
+
+def wait_list(arr):
+    """资金主线龙头但当前不可买（过热/未共振）：登记 + 明确回踩条件，不追高。"""
+    arr = arr or []
+    if not arr: return ''
+    rows = ''.join(
+        f'<div style="border-top:1px solid var(--line);padding:6px 2px;font-size:12px">'
+        f'<b style="color:var(--t1)">{esc(r.get("name",""))}</b> '
+        f'<span style="color:var(--t4);font-size:10px">{esc(r.get("code",""))}</span> '
+        f'<span style="color:{color_of(r.get("change",0))}">{chg(r.get("change"))}</span>'
+        f'<div style="color:var(--t3);line-height:1.5;margin-top:2px">{esc(r.get("watch_note",""))}</div></div>'
+        for r in arr)
+    return ('<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--t3)">'
+            f'⏸ 资金主线龙头 · 当前不可买（过热/未共振，{len(arr)}只，点开看回踩条件）</summary>{rows}</details>')
+
 def build_auto(d):
     s = d['summary']
+    leaders = d.get('leaders', [])
+    bt = build_backtest_bake()
+    wl = wait_list(d.get('leaders_wait', []))
     return f'''
 <div class="panel">
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <div><h3>🤖 自动选股 · 全A四层扫描</h3>
     <div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 快照 {d['generated']}</div></div>
-    <div style="font-size:12px;color:var(--t2)">候选 <b>{s['cand']}</b> · 🚀M <b>{s.get('M',0)}</b> · 🟢A <b>{s['A']}</b> · 🔵B <b>{s['B']}</b> · 🔴C <b>{s['C']}</b> · ⚪D <b>{s['D']}</b></div>
+    <div style="font-size:12px;color:var(--t2)">候选 <b>{s['cand']}</b> · 🚀M <b>{s.get('M',0)}</b> · 🏆龙头 <b>{s.get('leaders',0)}</b> · 🟢A <b>{s['A']}</b> · 🔵B <b>{s['B']}</b> · 🔴C <b>{s['C']}</b> · ⚪D <b>{s['D']}</b></div>
   </div>
 </div>
+<div class="panel" style="border-left:3px solid #d4a017">
+  <h3 style="margin-bottom:6px">🏆 热点板块龙头（板块资金净流入 + 行业龙头 + 顺势时机 三重确认 · {s.get('leaders',0)}只）</h3>
+  {a_cards(leaders) if leaders else '<div style="font-size:12px;color:var(--t3)">今日无三重确认标的（资金主线板块内暂无龙头出现买点），不硬凑。</div>'}
+  {wl}
+</div>
 <div class="panel">
-  <h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段） {s.get('M',0)}只）</h3>
+  <h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段 · {s.get('M',0)}只）</h3>
   {a_cards(d.get('M', []))}
 </div>
 <div class="panel">
@@ -233,6 +317,7 @@ def build_auto(d):
 <details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">⚪ D · 观望（{s['D']}只）</summary>
 {compact_table(d['D'])}
 </details>
+{bt}
 '''
 
 
@@ -460,6 +545,14 @@ def build_watch(d):
     avg_txt = f'{("+" if (s.get("avg_return") or 0) >= 0 else "")}{(s.get("avg_return") or 0)*100:.2f}%' if s.get('avg_return') is not None else '—'
     pick_txt = (f'今日已选 {esc(s.get("last_pick_name",""))}' if s.get('today_picked')
                 else '今日未选（已满格/无候选）')
+    # 分档对比(已清出样本)：M(强势顺势) vs A(低位低吸)，保留之前策略、相互对比盈亏
+    def _fmt_tier(t):
+        st = (s.get('by_tier') or {}).get(t) or {}
+        if not st.get('n'): return '样本不足'
+        return '命中率%.1f%% / 均值%+.2f%% (n=%d)' % (st['win_rate'] * 100, st['avg_return'] * 100, st['n'])
+    tier_html = ('<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">'
+                 '🏁 <b>策略对比(已清出样本)</b> ｜ 🚀M强势顺势：' + _fmt_tier('M')
+                 + ' ｜ 🟢A低位低吸：' + _fmt_tier('A') + '</div>')
 
     def arow(it):
         col = color_of(it.get('return'))
@@ -508,6 +601,7 @@ def build_watch(d):
   持仓 <b>{s.get('active',0)}</b>/{pm} ｜ 已清出 <b>{s.get('cleared',0)}</b> ｜ {pick_txt}
   ｜ 均值 <b>{avg_txt}</b> ｜ <b style="color:{wrcol}">{esc(vs)}</b>
 </div>
+{tier_html}
 <div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">
   📌 规则：每天入选「策略盈利率最高」的 <b>1 只</b>，持有 <b>{hd}</b> 日、第 <b>{exd}</b> 日清出，始终保持 {pm} 只·<b>一进一出</b>。清出后<b>仍追踪现价</b>，可对比「按纪律出场」与「一直持有」的差距。
 </div>

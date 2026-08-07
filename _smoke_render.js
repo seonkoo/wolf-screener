@@ -18,7 +18,15 @@ const htmlFile = isHtml ? arg2 : process.argv[4];
 
 const els = {};
 function el(id) {
-  if (!els[id]) els[id] = { id, innerHTML: '', insertAdjacentHTML(pos, h) { this.innerHTML = h + this.innerHTML; } };
+  // insertAdjacentHTML 必须区分 afterbegin/beforeend：否则「追加到末尾」的渲染分支
+  // （如回测对比表用 beforeend）会被当成前插，掩盖真实的顺序/结构问题
+  if (!els[id]) els[id] = {
+    id, innerHTML: '',
+    insertAdjacentHTML(pos, h) {
+      if (pos === 'beforeend' || pos === 'afterend') this.innerHTML = this.innerHTML + h;
+      else this.innerHTML = h + this.innerHTML;
+    }
+  };
   return els[id];
 }
 // 离线模式：把 HTML 里烘焙的快照预填进挂载点，模拟 file:// 打开

@@ -32,11 +32,14 @@ HDR = {'User-Agent': 'Mozilla/5.0', 'Referer': 'https://quote.eastmoney.com/'}
 
 TP = 0.15      # 止盈阈值（仅作信息性标注：持有期间是否触止盈）
 STOP = -0.08   # 止损阈值（仅作信息性标注：持有期间是否触止损）
-POOL_MAX = 10      # 动态池格数：始终保持最多 10 只在场
-HOLD_DAYS = 10     # 计划持有天数
-EXIT_DAYS = 11     # 达到该持有天数即清出（第 11 天出局）→ 维持一进一出
-BASE_WIN = 0.655   # 回测基线胜率
-BASE_AVG = 0.059   # 回测基线均值
+# 2026-08-07 依多持有期网格回测校准：10 日是最差持有期(胜52.9%/均+1.47%)，20 日才是峰值
+# (胜61.5%/均+4.11%)。原来第 11 天结算 = 一直在策略最弱的点上量它，必然长期"低于回测"。
+# 改为 20 日持有 / 第 21 天结算；池格同步扩到 20，维持"每日 1 进 1 出"的稳态。
+POOL_MAX = 20      # 动态池格数：始终保持最多 20 只在场（=每日1只 × 20日持有）
+HOLD_DAYS = 20     # 计划持有天数（回测最优）
+EXIT_DAYS = 21     # 达到该持有天数即清出（第 21 天出局）→ 维持一进一出
+BASE_WIN = 0.615   # 回测基线胜率（S1 小狼逆向 · 20日持有 · n=174）
+BASE_AVG = 0.0411  # 回测基线均值（同上）
 
 def log(*a):
     print('[观察池]', *a); sys.stdout.flush()
@@ -66,7 +69,8 @@ def load_pool():
         return {'items': [], 'updated': ''}
 
 def pick_daily(items, auto, today, meta):
-    """每天(按日期去重)从 A 名单挑「策略排序最靠前的 1 只」补入动态池。
+    """每天(按日期去重)从 M(强势顺势) + A(低位低吸) 名单挑「策略排序最靠前的 1 只」补入动态池。
+    同时纳入两档，使观察池能自然积累 M vs A 的真实盈亏，供「不同策略相互对比」之用。
     仅当活跃格 < POOL_MAX 才补；返回入选的 item 或 None。"""
     if meta.get('last_pick_date') == today:
         return None  # 今天已经选过，防同日重复选
@@ -74,22 +78,25 @@ def pick_daily(items, auto, today, meta):
     if len(active_codes) >= POOL_MAX:
         return None  # 满格，等清出腾位
     cands = []
-    for r in auto.get('A', []):
-        code = str(r.get('code', ''))
-        if not code or code in active_codes:
-            continue
-        cands.append(r)
+    for tier in ('M', 'A'):
+        for r in auto.get(tier, []):
+            code = str(r.get('code', ''))
+            if not code or code in active_codes:
+                continue
+            cands.append((r, tier))
     if not cands:
         return None
-    # 策略首选排序：wolf2强化 / 好公司 > 目标盈利率高 > 贪婪更低(更低位) > 主力净流入高
-    cands.sort(key=lambda r: (
-        0 if (r.get('wolf2') or {}).get('pass') else 1,
-        0 if (r.get('fund') or {}).get('good', False) else 1,
-        -((r.get('trade_plan') or {}).get('target_pct', 0) or 0),
-        (r.get('l1') or {}).get('greed', 100),
-        -(r.get('inflow', 0) or 0),
-    ))
-    r = cands[0]
+    # 排序：wolf2强化 > 档位(M优先于A) > 好公司 > 确定性conviction高
+    def sc(x):
+        r, tier = x
+        tp = r.get('trade_plan') or {}
+        conv = tp.get('conviction', 0) or 0
+        w2 = 0 if (r.get('wolf2') or {}).get('pass') else 1
+        good = 0 if (r.get('fund') or {}).get('good', False) else 1
+        tier_rank = 0 if tier == 'M' else 1
+        return (w2, tier_rank, good, -conv)
+    cands.sort(key=sc)
+    r, tier = cands[0]
     code = str(r.get('code', ''))
     try:
         price = float(r.get('price') or 0)
@@ -97,10 +104,12 @@ def pick_daily(items, auto, today, meta):
         price = 0.0
     tp = (r.get('trade_plan') or {})
     item = {
-        'code': code, 'name': str(r.get('name', '')),
+        'code': code, 'name': str(r.get('name', '')), 'template': tier,
         'entry_date': today, 'entry_price': price,
         'last_date': '', 'last_price': None, 'return': None,
         'hold_days': 0, 'status': '持有中', 'expectation': '待观察',
+        'plan_exit_days': EXIT_DAYS,   # 冻结入池时的结算期，日后调参不追溯污染样本
+        'is_leader': bool(r.get('is_leader')), 'sector': str(r.get('sector', '')),
         'target_pct': (tp.get('target_pct', 0) or 0),
         'side': (tp.get('side', '') or ''),
         'note': '',
@@ -132,9 +141,12 @@ def track(items):
             it['hold_days'] = 0
         ret = it.get('return')
         if it.get('status') == '持有中':
-            if it['hold_days'] >= EXIT_DAYS:
+            # 每条记录带自己的结算期：改全局常量不会追溯改写在途样本（老样本仍按入池时的 11 天结算）
+            exit_at = it.get('plan_exit_days') or EXIT_DAYS
+            if it['hold_days'] >= exit_at:
                 # 时间到期清出：以当前收益为结算点（动态池的「出场」=满持有期）
                 it['exit_date'] = it['last_date']; it['exit_return'] = ret
+                it['exit_at_days'] = exit_at
                 it['status'] = '已清出'; it['expectation'] = '已清出'
             else:
                 # 信息性标注（不提前出场，保持一进一出节奏）
@@ -172,11 +184,24 @@ def aggregate(items, meta):
             vs = '接近回测'
     else:
         vs = '样本不足'
+    # 分档对比：M(强势顺势) vs A(低位低吸) —— 保留之前策略、相互对比盈亏
+    def _tier_stats(sub):
+        n2 = len(sub)
+        if not n2:
+            return {'n': 0, 'win_rate': None, 'avg_return': None}
+        w = sum(1 for it in sub if (it.get('exit_return') or 0) > 0)
+        rr = [it['exit_return'] for it in sub if isinstance(it.get('exit_return'), (int, float))]
+        return {'n': n2, 'win_rate': round(w / n2, 3),
+                'avg_return': round(sum(rr) / len(rr), 4) if rr else None}
+    m_sub = [it for it in cleared if (it.get('template') or 'A') == 'M']
+    a_sub = [it for it in cleared if (it.get('template') or 'A') == 'A']
+    by_tier = {'M': _tier_stats(m_sub), 'A': _tier_stats(a_sub)}
     return {
         'total': n, 'active': na, 'cleared': nc, 'win': wins,
         'win_rate': round(win_rate, 3) if win_rate is not None else None,
         'avg_return': round(avg_ret, 4) if avg_ret is not None else None,
         'vs_backtest': vs,
+        'by_tier': by_tier,
         'pool_max': POOL_MAX, 'hold_days': HOLD_DAYS, 'exit_days': EXIT_DAYS,
         'today_picked': bool(meta.get('today_picked')),
         'last_pick_date': meta.get('last_pick_date', ''),

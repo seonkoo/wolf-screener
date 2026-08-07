@@ -174,16 +174,51 @@ def fetch_kline(code, bars):
     return None
 
 # ---------- 主流程 ----------
+def momentum_score(kd, idx):
+    """K线代理的"强势顺势"信号(L5≥2 的历史近似)：均线多头(ma5>ma10>ma20)+当日上涨+量价齐升(放量×1.5) 三选二。
+    注：历史逐日主力净流入(f62)不可得，用"量价齐升+当日上涨"近似 L4 主力净流入>0；用于 S2/S3 回测。"""
+    if idx<25: return 0
+    closes=[float(k[2]) for k in kd[:idx+1]]
+    if len(closes)<25: return 0
+    ma5=sum(closes[-5:])/5; ma10=sum(closes[-10:])/10; ma20=sum(closes[-20:])/20
+    if ma20<=0: return 0
+    score=0
+    if ma5>ma10>ma20: score+=1                      # 均线多头
+    if closes[-1] > float(kd[idx-1][2]): score+=1    # 当日上涨(chg>0)
+    try:
+        vols=[float(k[5]) for k in kd[max(0,idx-19):idx+1]]; av=sum(vols)/len(vols); lastv=float(kd[idx][5])
+        if av>0 and lastv>1.5*av: score+=1          # 量价齐升(放量)
+    except Exception: pass
+    return score
+
+def features(kd, idx):
+    """一次算出 greed / tech(L1+L3 日线代理) / momentum_score，供多策略复用，避免重复计算指标。"""
+    cl=[float(k[2]) for k in kd[:idx+1]]
+    greed=calc_greed(cl)
+    tech=0
+    if len(cl)>=30:
+        b=calc_boll_pos(cl)
+        if b and b in ('下轨支撑','中轨附近'): tech+=1
+        ma20=sum(cl[-20:])/20
+        if cl[-1]>=ma20: tech+=1
+        vols=[float(k[5]) for k in kd[max(0,idx-19):idx+1]]; lastv=float(kd[idx][5]); av=sum(vols)/len(vols) if vols else 0
+        if av>0 and lastv>1.5*av: tech+=1
+        md=calc_macd(cl)
+        if md and check_macd_divergence(cl,md['dif']): tech+=1
+    return greed, tech, momentum_score(kd, idx)
+
 def main():
-    N=int(sys.argv[1]) if len(sys.argv)>1 else 1000
-    BARS=int(sys.argv[2]) if len(sys.argv)>2 else 750
+    N=int(sys.argv[1]) if len(sys.argv)>1 else 600
+    BARS=int(sys.argv[2]) if len(sys.argv)>2 else 600
     global TP_PCT, STOP_PCT
     TP_PCT=float(sys.argv[3]) if len(sys.argv)>3 else TP_PCT
     STOP_PCT=float(sys.argv[4]) if len(sys.argv)>4 else STOP_PCT
-    REQ_UT=len(sys.argv)>5 and sys.argv[5] in ('1','ut','uptrend')
+    HOLDS=[10,20,30,40]
+    STRATS=['S0 纯持有基线','S1 小狼逆向(A)','S2 强势顺势(M)','S3 龙头顺势(M+龙头)']
     print('='*70)
-    print('小狼策略 · walk-forward 回测（宽扫描 + 40日止损止盈 + 市场门控）')
-    print('  参数: 贪婪<%d  持有%d日  止损%.0f%%  止盈%.0f%%'%(GREED_PASS,HOLD_DAYS,STOP_PCT*100,TP_PCT*100))
+    print('小狼策略 · 多策略 × 多持有期 walk-forward 回测')
+    print('  参数: 贪婪<%d  止损%.0f%%  止盈%.0f%%  持有期=%s'%(GREED_PASS,STOP_PCT*100,TP_PCT*100,HOLDS))
+    print('  S0纯持有基线 | S1小狼逆向(L1<40+L3) | S2强势顺势(均线多头+量价齐升) | S3龙头顺势(S2+行业龙头)')
     print('='*70)
     # 大盘方向
     print('[0] 拉取沪深300 判断大盘方向...')
@@ -204,78 +239,91 @@ def main():
     for t in ts: t.start()
     for t in ts: t.join()
     print('[2] 有效K线:',len(kdata))
-    # 检查点：每 8 个交易日重放一次（覆盖牛熊）
-    sample=list(kdata.values())[0][1]
-    L=len(sample)
-    cps=list(range(L-700, L-12, 8))
-    cps=[c for c in cps if c>30]
-    print('[3] 历史检查点:',len(cps),' 区间',sample[cps[0]][0],'~',sample[cps[-1]][0])
-    sig=[]
-    for cp in cps:
-        cp_date=sample[cp][0]
-        rg=regime.get(cp_date,'na')
-        for code,(name,kd) in kdata.items():
-            if cp>=len(kd)-HOLD_DAYS-1: continue
-            e=entry_signal(kd,cp,REQ_UT)
-            if not e: continue
-            sim=simulate(kd,cp)
-            if not sim: continue
-            try: settle=float(kd[cp+HOLD_DAYS][2])/float(kd[cp][2])-1
-            except Exception: settle=None
-            sig.append((cp_date,code,name,e[0],e[1],sim[0],sim[1],rg,settle))
-    print('[4] 命中入场信号:',len(sig))
-    if not sig:
-        print('  无信号，退出'); return
-    def stats(sub,label):
-        if not sub:
-            print('  %-26s 信号%4d | 无数据'%(label,0)); return
-        wins=sum(1 for s in sub if s[5]=='win'); rets=[s[6] for s in sub]
-        avg=sum(rets)/len(rets); med=statistics.median(rets)
-        print('  %-26s 信号%4d | 严格胜率 %5.1f%% | 平均 %+6.2f%% | 中位 %+6.2f%%'%(
-            label,len(sub),wins/len(sub)*100,avg*100,med*100))
-    print('\n=== 回测结果（持有%d日，止损%d%%/止盈%d%%，宽扫描不过滤净流入）==='%(HOLD_DAYS,int(STOP_PCT*100),int(TP_PCT*100)))
-    stats(sig,'[全样本]')
-    up=[s for s in sig if s[7]=='up']; dn=[s for s in sig if s[7]=='down']; na=[s for s in sig if s[7]=='na']
-    stats(up,'[仅大盘上行期]')
-    stats(dn,'[仅大盘下行期]')
-    stats(na,'[无大盘数据]')
-    # 好公司过滤对照（as-of，失败不影响主结论）
+    # 行业龙头集合（用于 S3 龙头顺势）
+    leader_set=set()
     try:
-        rep_dates=sorted({('%s'%s[0][:4]+('0331' if 5<=int(s[0][5:7])<=8 else '0630' if 9<=int(s[0][5:7])<=10 else '0930' if int(s[0][5:7])>=11 else '1231')) for s in sig})
-        for rd in rep_dates[:6]:
-            try: load_yj_map(rd)
-            except Exception: pass
-        good=[]
-        for s in sig:
-            code=s[1]; cp_date=s[0]
-            rd='%s%s'%(cp_date[:4], '0331' if 5<=int(cp_date[5:7])<=8 else '0630' if 9<=int(cp_date[5:7])<=10 else '0930' if int(cp_date[5:7])>=11 else '1231')
-            row=YJ_SNAPS.get(rd,{}).get(code)
-            try:
-                g,_=get_fundamentals(code,yj_row=row,asof=cp_date,annual=rd.endswith('1231'))
-                if g: good.append(s)
-            except Exception: pass
-        stats(good,'[全样本+好公司]')
+        im=AS.load_industry_map(); ld=AS.build_leaders(im)
+        leader_set={c for c,v in ld.items() if v.get('is_leader')}
+        print('[3] 行业龙头股 %d 只（用于 S3 龙头顺势策略）'%len(leader_set))
     except Exception as e:
-        print('  [warn] 好公司对照跳过:',e)
-    # 保存摘要供页面展示
+        print('  [warn] 龙头集构建失败，S3 退化为 S2:',e)
+    # 检查点：每 12 个交易日重放一次（覆盖牛熊）
+    sample=list(kdata.values())[0][1]; L=len(sample)
+    cps=list(range(L-600, L-12, 12))
+    cps=[c for c in cps if c>30]
+    print('[4] 历史检查点:',len(cps),' 区间',sample[cps[0]][0],'~',sample[cps[-1]][0])
+    # 聚合容器
+    agg={s:{h:{'n':0,'w':0,'rets':[]} for h in HOLDS} for s in STRATS}
+    for ci,cp in enumerate(cps):
+        for code,(name,kd) in kdata.items():
+            if cp>=len(kd)-max(HOLDS)-1: continue
+            g,tech,mom=features(kd,cp)
+            trig={'S0 纯持有基线':True,
+                  'S1 小狼逆向(A)':(g<GREED_PASS and tech>=2),
+                  'S2 强势顺势(M)':(mom>=2),
+                  'S3 龙头顺势(M+龙头)':(mom>=2 and code in leader_set)}
+            if not any(trig.values()): continue
+            sims={h:simulate(kd,cp,hold=h) for h in HOLDS}   # 同一 (股票,时点) 只模拟一次，四策略共用
+            for sname,on in trig.items():
+                if not on: continue
+                for h in HOLDS:
+                    sim=sims.get(h)
+                    if not sim: continue
+                    win,ret,_=sim
+                    a=agg[sname][h]; a['n']+=1; a['w']+=(1 if win=='win' else 0); a['rets'].append(ret)
+        if (ci+1)%10==0:
+            print('      检查点 %d/%d 完成'%(ci+1,len(cps)))
+    print('[5] 回放完成')
+    # 汇总矩阵
+    matrix={}
+    for sname in STRATS:
+        matrix[sname]={}
+        for h in HOLDS:
+            a=agg[sname][h]; n=a['n']
+            if n==0: matrix[sname][h]={'n':0,'win':0.0,'avg':None,'med':None}; continue
+            rets=a['rets']; avg=sum(rets)/n; med=statistics.median(rets)
+            matrix[sname][h]={'n':n,'win':round(a['w']/n*100,1),'avg':round(avg,4),'med':round(med,4)}
+    # 结论：每个策略的最优持有期 + 相对基线超额（写进 JSON，前端直接展示，不让用户自己算）
+    base=matrix['S0 纯持有基线']
+    verdict=[]
+    for sname in STRATS[1:]:
+        row=matrix[sname]
+        ok=[h for h in HOLDS if row[h]['n']]
+        if not ok: continue
+        best=max(ok, key=lambda h:(row[h]['avg'] or -9))
+        ex=(row[best]['avg'] or 0)-(base[best]['avg'] or 0)
+        verdict.append({'strategy':sname,'best_hold':best,'n':row[best]['n'],
+                        'win':row[best]['win'],'avg':row[best]['avg'],
+                        'excess':round(ex,4),'edge':bool(ex>0.005)})
     out={'generated':__import__('time').strftime('%Y-%m-%d %H:%M'),
-         'params':{'greed_pass':GREED_PASS,'hold_days':HOLD_DAYS,'stop':STOP_PCT,'tp':TP_PCT},
-         'all':{'n':len(sig),'win':round(sum(1 for s in sig if s[5]=='win')/len(sig)*100,1)},
-         'up_only':{'n':len(up),'win':round(sum(1 for s in up if s[5]=='win')/len(up)*100,1) if up else 0},
-         'down_only':{'n':len(dn),'win':round(sum(1 for s in dn if s[5]=='win')/len(dn)*100,1) if dn else 0},
-         'good':{'n':len(good),'win':round(sum(1 for s in good if s[5]=='win')/len(good)*100,1) if good else 0}}
+         'params':{'greed_pass':GREED_PASS,'holds':HOLDS,'stop':STOP_PCT,'tp':TP_PCT,
+                   'pool':len(kdata),'checkpoints':len(cps),
+                   'range':'%s ~ %s'%(sample[cps[0]][0],sample[cps[-1]][0])},
+         'note':'S2/S3 的"主力净流入"用K线代理(均线多头+放量+当日上涨)近似，历史逐日 f62 资金流不可回溯，结论偏保守。',
+         'strategies':STRATS,'matrix':matrix,'verdict':verdict}
     json.dump(out, open('backtest_winrate.json','w',encoding='utf-8'), ensure_ascii=False, indent=1)
-    print('\n✅ 已保存 backtest_winrate.json')
-    print('\n结论速读：')
-    print('  · 全样本胜率 %.1f%% ；仅大盘上行期 %.1f%% ；仅下行期 %.1f%%'%(out['all']['win'],out['up_only']['win'],out['down_only']['win']))
-    print('  · ⚠️ 下行期胜率(%.1f%%) > 上行期(%.1f%%)：本策略是"买恐慌"均值回归，恐慌市反而更有效，'%(out['down_only']['win'],out['up_only']['win']))
-    print('    故"大盘下行禁止开仓"是错误门控，会删掉最好的信号。')
-    # 基线：纯持有40日不止损止盈，收益>0 算赢（看策略本身有没有正向偏移）
-    base=[s[8] for s in sig if s[8] is not None]
-    if base:
-        bw=sum(1 for r in base if r>0)/len(base)
-        print('  · 基线(纯持有40日不止损)：胜率 %.1f%% | 中位 %+6.2f%% （若此值仍低，说明入场本身无正向偏移，需收紧筛选）'%(
-            bw*100, statistics.median(base)*100))
+    # 打印对比表
+    print('\n=== 多策略 × 多持有期 回测对比（胜率% / 均值%） ===')
+    print('%-22s'%'策略' + ''.join('%14s'%('%d日'%h) for h in HOLDS))
+    for sname in STRATS:
+        row='%-22s'%sname
+        for h in HOLDS:
+            c=matrix[sname][h]
+            row += ('%13s'%('胜%.1f/均%.2f'%(c['win'],(c['avg'] or 0)*100))) if c['n'] else ('%13s'%'-')
+        print(row)
+    print('\n✅ 已保存 backtest_winrate.json（前端自动渲染对比表）')
+    # 结论：S1/S2/S3 相对 S0 基线是否有超额
+    print('\n结论速读（相对 S0 纯持有基线）：')
+    for sname in STRATS[1:]:
+        row=matrix[sname]
+        base=matrix['S0 纯持有基线']
+        line='  · %s: '%sname
+        for h in HOLDS:
+            cs=row[h]; cb=base[h]
+            if cs['n'] and cb['n']:
+                ex=(cs['avg'] or 0)-(cb['avg'] or 0)
+                line+='  %d日[胜%.1f%% vs 基线%.1f%% · 收益%s%+.2f%%]'%(h, cs['win'], cb['win'], '超额' if ex>0 else '落后', ex*100)
+        print(line)
 
 if __name__=='__main__':
     main()

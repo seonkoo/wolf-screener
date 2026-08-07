@@ -192,11 +192,19 @@ SCRIPT = JS_START + r'''
   function sectorChip(r){
     if(!r.sector) return '';
     var col=r.sector_hot?'var(--red2)':'#888';
-    return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:'+col+'18;color:'+col+';border:1px solid '+col+'55">板块:'+esc(r.sector)+(r.sector_hot?' 🔥热点':'')+'</span>';
+    // sector_net 单位已是「亿元」，勿再除 1e8
+    var amt=(r.sector_hot&&r.sector_net)?(' 🔥+'+Number(r.sector_net).toFixed(0)+'亿'+(r.sector_rank?'/第'+r.sector_rank:'')):'';
+    return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:'+col+'18;color:'+col+';border:1px solid '+col+'55">板块:'+esc(r.sector)+amt+'</span>';
   }
   function darkChip(r){
     if(r.darkpool==null||r.darkpool<=0) return '';
     return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#7b3fa022;color:#7b3fa0;border:1px solid #7b3fa055">暗盘+'+Number(r.darkpool).toFixed(1)+'亿</span>';
+  }
+  function leaderChip(r){
+    if(r.is_leader && r.industry_rank){
+      return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:#d4a01722;color:#b8860b;border:1px solid #d4a01755">🏆龙头(行业第'+r.industry_rank+'/'+r.industry_count+')</span>';
+    }
+    return '';
   }
   function autoCard(r){
     var l1=r.l1||{}, l2=r.l2||{}, l3=r.l3||{}, l4=r.l4||{};
@@ -209,7 +217,7 @@ SCRIPT = JS_START + r'''
       + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(r.price)+'</div>'
       + '<div style="font-size:12px;color:'+cc+'">'+chg(r.change)+'</div></div></div>'
       + '<div style="margin-top:6px;font-size:12px;color:var(--t2);display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
-      + tierTag(r) + greedBadge(l1.greed) + ' <span>主力 <b style="color:var(--green2)">'+money(r.inflow)+'</b></span>' + sectorChip(r) + darkChip(r) + '</div>'
+      + tierTag(r) + greedBadge(l1.greed) + ' <span>主力 <b style="color:var(--green2)">'+money(r.inflow)+'</b></span>' + sectorChip(r) + darkChip(r) + leaderChip(r) + '</div>'
       + '<div style="margin-top:5px;font-size:11px;color:var(--t3);display:flex;gap:5px;flex-wrap:wrap">'
       + pill('①情绪',l1.status) + pill('②浪型',l2.status) + pill('③技术'+l3t,l3.status) + pill('④资金',l4.status) + '</div>'
       + '<div style="margin-top:5px;font-size:11px;color:var(--t3)">止损 <b>'+num(r.stop,3)+'</b> · 目标 <b>'+num(r.target,3)+'</b></div>'
@@ -241,21 +249,74 @@ SCRIPT = JS_START + r'''
     if(baked){ el.insertAdjacentHTML('afterbegin', tip); }
     else { el.innerHTML = tip; }
   }
+  // 资金主线龙头但当前不可买（过热/未共振）：只登记不追高，明确给出"等回踩"的卖买建议
+  function waitList(arr){
+    arr=arr||[]; if(!arr.length) return '';
+    var h='<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12px;color:var(--t3)">⏸ 资金主线龙头 · 当前不可买（过热/未共振，'+arr.length+'只，点开看回踩条件）</summary>';
+    arr.forEach(function(r){
+      h+='<div style="border-top:1px solid var(--line);padding:6px 2px;font-size:12px">'
+        +'<b style="color:var(--t1)">'+esc(r.name)+'</b> <span style="color:var(--t4);font-size:10px">'+esc(r.code)+'</span> '
+        +'<span style="color:'+colorOf(r.change||0)+'">'+chg(r.change)+'</span>'
+        +'<div style="color:var(--t3);line-height:1.5;margin-top:2px">'+esc(r.watch_note||'')+'</div></div>';
+    });
+    return h+'</details>';
+  }
   function loadAuto(){
     loadJSON('auto_screen_result.json').then(function(d){
       var s=d.summary||{};
       var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
         + '<div><h3>🤖 自动选股 · 全A四层扫描</h3><div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 生成于 '+esc(d.generated)+'</div></div>'
-        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🚀M <b>'+(s.M||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div></div>';
-      h+='<div class="panel"><h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段） '+(s.M||0)+'只）</h3>'+ (d.M||[]).map(autoCard).join('') +'</div>';
+        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🚀M <b>'+(s.M||0)+'</b> · 🏆龙头 <b>'+(s.leaders||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div></div>';
+      h+='<div class="panel" style="border-left:3px solid #d4a017"><h3 style="margin-bottom:6px">🏆 热点板块龙头（板块资金净流入 + 行业龙头 + 顺势时机 三重确认 · '+(s.leaders||0)+'只）</h3>'
+        + ((d.leaders||[]).length? (d.leaders||[]).map(autoCard).join('') : '<div style="font-size:12px;color:var(--t3)">今日无三重确认标的（资金主线板块内暂无龙头出现买点），不硬凑。</div>')
+        + waitList(d.leaders_wait) + '</div>';
+      h+='<div class="panel"><h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段 · '+(s.M||0)+'只）</h3>'+ (d.M||[]).map(autoCard).join('') +'</div>';
       h+='<div class="panel"><h3 style="margin-bottom:6px">🟢 A · 建议低吸（四层全过 '+(s.A||0)+'只）</h3>'+ (d.A||[]).map(autoCard).join('') +'</div>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔵 B · 观察（'+(s.B||0)+'只）</summary>'+ autoTable(d.B) +'</details>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔴 C · 禁止（'+(s.C||0)+'只）</summary>'+ autoTable(d.C) +'</details>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">⚪ D · 观望（'+(s.D||0)+'只）</summary>'+ autoTable(d.D) +'</details>';
       var el=document.getElementById('autoMount'); if(el) el.innerHTML=h;
+      loadBacktest();
     }).catch(function(e){
       fallback('autoMount','📴 未能实时拉取 auto_screen_result.json（'+esc(e.message)+'），以下为本地烘焙快照。要看每日最新，请访问 <a href="https://seonkoo.github.io/wolf-screener/" style="color:var(--blue)">seonkoo.github.io/wolf-screener</a>。');
     });
+  }
+  function loadBacktest(){
+    loadJSON('backtest_winrate.json').then(function(b){
+      var el=document.getElementById('autoMount'); if(!el) return;
+      var h='<div class="panel"><h3 style="margin-bottom:6px">📊 多策略回测对比（持股 10/20/30/40 日 · 胜率%/均值%）</h3>';
+      var mx=b.matrix||{}; var strs=Object.keys(mx); var pa=b.params||{};
+      if(strs.length){
+        h+='<div class="panel-sub" style="margin-bottom:6px">'+esc(pa.range||'')+' · 股票池'+(pa.pool||0)+'只 · 检查点'+(pa.checkpoints||0)+'个 · 止损'+Math.round((pa.stop||0.08)*100)+'%/止盈'+Math.round((pa.tp||0.15)*100)+'%（先触发先执行）</div>';
+        h+='<table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="color:var(--t4)">'
+          +'<th style="padding:4px;text-align:left">策略</th><th style="padding:4px">样本</th><th style="padding:4px">10日</th><th style="padding:4px">20日</th><th style="padding:4px">30日</th><th style="padding:4px">40日</th></tr>';
+        strs.forEach(function(s){
+          var row=mx[s]; var cells=''; var nn=0; var bestH=null, bestV=-9;
+          [10,20,30,40].forEach(function(hd){ var c=row[hd]||{}; if(c.n){ nn=c.n; if((c.avg||-9)>bestV){bestV=c.avg||-9;bestH=hd;} } });
+          [10,20,30,40].forEach(function(hd){
+            var c=row[hd]||{};
+            if(c.n){
+              var av=(c.avg!=null)?c.avg*100:0;
+              var hi=(hd===bestH)?';background:rgba(212,160,23,.14);border-radius:4px':'';
+              cells+='<td style="padding:4px;text-align:center;color:var(--t2)'+hi+'">胜'+(c.win||0).toFixed(1)+'%<br><span style="color:'+colorOf(av)+'">'+(av>=0?'+':'')+av.toFixed(2)+'%</span></td>';
+            } else cells+='<td style="padding:4px;text-align:center;color:var(--t4)">—</td>';
+          });
+          h+='<tr style="border-top:1px solid var(--line)"><td style="padding:4px;color:var(--t1)">'+esc(s)+'</td><td style="padding:4px;text-align:center;color:var(--t4)">'+nn+'</td>'+cells+'</tr>';
+        });
+        h+='</table>';
+        var vd=b.verdict||[];
+        if(vd.length){
+          h+='<div style="margin-top:8px;font-size:12px;color:var(--t2);line-height:1.7">';
+          vd.forEach(function(v){
+            h+='<div>'+(v.edge?'✅':'⚠️')+' <b>'+esc(v.strategy)+'</b>：最优持有 <b>'+v.best_hold+'日</b>，胜率 '+v.win.toFixed(1)+'%、均值 '+((v.avg||0)*100).toFixed(2)+'%，相对纯持有基线 '+(v.excess>0?'超额 +':'落后 ')+((v.excess||0)*100).toFixed(2)+'%'+(v.edge?'（有 Alpha）':'（无显著 Alpha，慎用）')+'</div>';
+          });
+          h+='</div>';
+        }
+        if(b.note) h+='<div style="margin-top:6px;font-size:11px;color:var(--t4);line-height:1.5">⚠️ '+esc(b.note)+'</div>';
+      } else { h+='<div style="font-size:12px;color:var(--t3)">暂无回测数据（运行 backtest_screener.py 后生成）。</div>'; }
+      h+='</div>';
+      el.insertAdjacentHTML('beforeend', h);
+    }).catch(function(e){ /* 回测数据为可选项，静默 */ });
   }
   function loadGuard(){
     loadJSON('strategy_guard.json').then(function(g){
@@ -432,6 +493,8 @@ SCRIPT = JS_START + r'''
       h+='<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">'
         + '持仓 <b>'+((s.active||0))+'</b>/'+pm+' ｜ 已清出 <b>'+((s.cleared||0))+'</b> ｜ '+pickTxt
         + ' ｜ 均值 <b>'+avg_txt+'</b> ｜ <b style="color:'+wrcol+'">'+esc(vs)+'</b></div>';
+      function fmtTier(t){ var st=(s.by_tier&&s.by_tier[t])||{}; if(!st.n) return '样本不足'; return '命中率'+(st.win_rate*100).toFixed(1)+'% / 均值'+chg(st.avg_return*100)+' (n='+st.n+')'; }
+      h+='<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">🏁 <b>策略对比(已清出样本)</b> ｜ 🚀M强势顺势：'+fmtTier('M')+' ｜ 🟢A低位低吸：'+fmtTier('A')+'</div>';
       h+='<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📌 规则：每天入选「策略盈利率最高」的 <b>1 只</b>，持有 <b>'+hd+'</b> 日、第 <b>'+exd+'</b> 日清出，始终保持 '+pm+' 只·<b>一进一出</b>。清出后<b>仍追踪现价</b>，可对比「按纪律出场」与「一直持有」的差距。</div>';
       h+='<div class="panel"><h3 style="margin-bottom:6px">🔵 持仓中（动态池 · 一进一出）</h3><div style="max-height:38vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
         +'<tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入选日</th><th style="padding:4px">持有</th><th style="padding:4px">入场价</th><th style="padding:4px">现价</th><th style="padding:4px">至今收益</th><th style="padding:4px">状态</th></tr>'

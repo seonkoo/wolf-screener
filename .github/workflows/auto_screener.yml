@@ -51,6 +51,8 @@ jobs:
         run: python overview.py
       - name: 李大霄温度历史回测验证(低估值后中期收益是否更优)
         run: python backtest_lidaxiao.py
+      - name: 多策略×多持有期回测(逆向A/强势顺势M/龙头顺势M+龙头 · 持股10/20/30/40日胜率均值对比)
+        run: python backtest_screener.py 600 600 > backtest_run.log 2>&1 || true
       - name: 烘焙快照进两个完整页面(离线兜底，联网时仍按 fetch 取最新)
         run: python sync_auto_tab.py
       - name: 部署前渲染冒烟校验(失败则终止部署)
