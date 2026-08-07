@@ -134,7 +134,7 @@ def layer_pill(label, st):
 
 
 def tier_tag(r):
-    m = {'M': ('#1e88e5', '🚀强势顺势'), 'A': ('var(--green2)', '🟢低位低吸'),
+    m = {'M': ('#1e88e5', '🚀强势顺势'), 'E': ('#ff7043', '🔥早期突破'), 'A': ('var(--green2)', '🟢低位低吸'),
          'B': ('#d99e00', '🔵观察'), 'C': ('var(--red2)', '🔴过热禁止'), 'D': ('#888', '⚪观望')}
     col, txt = m.get(r.get('template'), ('#d99e00', '?'))
     return f'<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:{col}22;color:{col};border:1px solid {col}55">{txt}</span>'
@@ -172,7 +172,7 @@ def a_cards(items):
         chgcol = color_of(r.get('change'))
         l3txt = '⚠代理' if l3.get('proxy') else ''
         fund = ' ★好公司' if (r.get('fund') or {}).get('good') else ''
-        border = 'var(--blue)' if r.get('template') == 'M' else 'var(--green2)'
+        border = 'var(--blue)' if r.get('template') == 'M' else ('#ff7043' if r.get('template') == 'E' else 'var(--green2)')
         out += f'''
     <div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid {border}">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -292,7 +292,7 @@ def build_auto(d):
   <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
     <div><h3>🤖 自动选股 · 全A四层扫描</h3>
     <div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 快照 {d['generated']}</div></div>
-    <div style="font-size:12px;color:var(--t2)">候选 <b>{s['cand']}</b> · 🚀M <b>{s.get('M',0)}</b> · 🏆龙头 <b>{s.get('leaders',0)}</b> · 🟢A <b>{s['A']}</b> · 🔵B <b>{s['B']}</b> · 🔴C <b>{s['C']}</b> · ⚪D <b>{s['D']}</b></div>
+    <div style="font-size:12px;color:var(--t2)">候选 <b>{s['cand']}</b> · 🚀M <b>{s.get('M',0)}</b> · 🔥E <b>{s.get('E',0)}</b> · 🏆龙头 <b>{s.get('leaders',0)}</b> · 🟢A <b>{s['A']}</b> · 🔵B <b>{s['B']}</b> · 🔴C <b>{s['C']}</b> · ⚪D <b>{s['D']}</b></div>
   </div>
 </div>
 <div class="panel" style="border-left:3px solid #d4a017">
@@ -303,6 +303,10 @@ def build_auto(d):
 <div class="panel">
   <h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段 · {s.get('M',0)}只）</h3>
   {a_cards(d.get('M', []))}
+</div>
+<div class="panel" style="border-left:3px solid #ff7043">
+  <h3 style="margin-bottom:6px">🔥 E · 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随 · {s.get('E',0)}只）</h3>
+  {a_cards(d.get('E', [])) if d.get('E') else '<div style="font-size:12px;color:var(--t3)">今日无热点早期突破标的（板块资金主线内暂无放量长阳个股越过1亿净流入门槛）。</div>'}
 </div>
 <div class="panel">
   <h3 style="margin-bottom:6px">🟢 A · 建议低吸（四层全过 {s['A']}只）</h3>
@@ -552,6 +556,7 @@ def build_watch(d):
         return '命中率%.1f%% / 均值%+.2f%% (n=%d)' % (st['win_rate'] * 100, st['avg_return'] * 100, st['n'])
     tier_html = ('<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">'
                  '🏁 <b>策略对比(已清出样本)</b> ｜ 🚀M强势顺势：' + _fmt_tier('M')
+                 + ' ｜ 🔥E早期突破：' + _fmt_tier('E')
                  + ' ｜ 🟢A低位低吸：' + _fmt_tier('A') + '</div>')
 
     def arow(it):

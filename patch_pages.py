@@ -185,7 +185,7 @@ SCRIPT = JS_START + r'''
     return '<span class="badge '+c+'">'+label+' '+t+'</span>';
   }
   function tierTag(r){
-    var m={M:['#1e88e5','🚀强势顺势'],A:['var(--green2)','🟢低位低吸'],B:['#d99e00','🔵观察'],C:['var(--red2)','🔴过热禁止'],D:['#888','⚪观望']};
+    var m={M:['#1e88e5','🚀强势顺势'],E:['#ff7043','🔥早期突破'],A:['var(--green2)','🟢低位低吸'],B:['#d99e00','🔵观察'],C:['var(--red2)','🔴过热禁止'],D:['#888','⚪观望']};
     var t=m[r.template]||['#d99e00','?'];
     return '<span style="font-size:11px;padding:1px 6px;border-radius:6px;background:'+t[0]+'22;color:'+t[0]+';border:1px solid '+t[0]+'55">'+t[1]+'</span>';
   }
@@ -211,7 +211,7 @@ SCRIPT = JS_START + r'''
     var cc=colorOf(r.change||0);
     var l3t = l3.proxy? '⚠代理':'';
     var fund = r.fund && r.fund.good ? ' ★好公司' : '';
-    return '<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid '+(r.template==='M'?'var(--blue)':'var(--green2)')+'">'
+    return '<div style="padding:10px;margin-bottom:8px;background:var(--bg2);border-radius:10px;border-left:3px solid '+(r.template==='M'?'var(--blue)':(r.template==='E'?'#ff7043':'var(--green2)'))+'">'
       + '<div style="display:flex;justify-content:space-between;align-items:baseline">'
       + '<div style="font-weight:700;color:var(--t1)">'+esc(r.name)+' <span style="color:var(--t3);font-weight:400;font-size:12px">'+esc(r.code)+fund+'</span></div>'
       + '<div style="text-align:right"><div style="color:var(--t1);font-weight:700">'+num(r.price)+'</div>'
@@ -266,11 +266,14 @@ SCRIPT = JS_START + r'''
       var s=d.summary||{};
       var h='<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">'
         + '<div><h3>🤖 自动选股 · 全A四层扫描</h3><div class="panel-sub" style="margin-bottom:0">小狼策略自动筛选 · 生成于 '+esc(d.generated)+'</div></div>'
-        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🚀M <b>'+(s.M||0)+'</b> · 🏆龙头 <b>'+(s.leaders||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div></div>';
+        + '<div style="font-size:12px;color:var(--t2)">候选 <b>'+(s.cand||0)+'</b> · 🚀M <b>'+(s.M||0)+'</b> · 🔥E <b>'+(s.E||0)+'</b> · 🏆龙头 <b>'+(s.leaders||0)+'</b> · 🟢A <b>'+(s.A||0)+'</b> · 🔵B <b>'+(s.B||0)+'</b> · 🔴C <b>'+(s.C||0)+'</b> · ⚪D <b>'+(s.D||0)+'</b></div></div></div>';
       h+='<div class="panel" style="border-left:3px solid #d4a017"><h3 style="margin-bottom:6px">🏆 热点板块龙头（板块资金净流入 + 行业龙头 + 顺势时机 三重确认 · '+(s.leaders||0)+'只）</h3>'
         + ((d.leaders||[]).length? (d.leaders||[]).map(autoCard).join('') : '<div style="font-size:12px;color:var(--t3)">今日无三重确认标的（资金主线板块内暂无龙头出现买点），不硬凑。</div>')
         + waitList(d.leaders_wait) + '</div>';
       h+='<div class="panel"><h3 style="margin-bottom:6px">🚀 M · 强势顺势（右侧·跟主力，捕捉上涨阶段 · '+(s.M||0)+'只）</h3>'+ (d.M||[]).map(autoCard).join('') +'</div>';
+      if((d.E||[]).length){
+        h+='<div class="panel" style="border-left:3px solid #ff7043"><h3 style="margin-bottom:6px">🔥 E · 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随 · '+(s.E||0)+'只）</h3>'+ (d.E||[]).map(autoCard).join('') +'</div>';
+      }
       h+='<div class="panel"><h3 style="margin-bottom:6px">🟢 A · 建议低吸（四层全过 '+(s.A||0)+'只）</h3>'+ (d.A||[]).map(autoCard).join('') +'</div>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔵 B · 观察（'+(s.B||0)+'只）</summary>'+ autoTable(d.B) +'</details>';
       h+='<details class="panel"><summary style="cursor:pointer;font-weight:600;color:var(--t1)">🔴 C · 禁止（'+(s.C||0)+'只）</summary>'+ autoTable(d.C) +'</details>';
@@ -494,7 +497,7 @@ SCRIPT = JS_START + r'''
         + '持仓 <b>'+((s.active||0))+'</b>/'+pm+' ｜ 已清出 <b>'+((s.cleared||0))+'</b> ｜ '+pickTxt
         + ' ｜ 均值 <b>'+avg_txt+'</b> ｜ <b style="color:'+wrcol+'">'+esc(vs)+'</b></div>';
       function fmtTier(t){ var st=(s.by_tier&&s.by_tier[t])||{}; if(!st.n) return '样本不足'; return '命中率'+(st.win_rate*100).toFixed(1)+'% / 均值'+chg(st.avg_return*100)+' (n='+st.n+')'; }
-      h+='<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">🏁 <b>策略对比(已清出样本)</b> ｜ 🚀M强势顺势：'+fmtTier('M')+' ｜ 🟢A低位低吸：'+fmtTier('A')+'</div>';
+      h+='<div class="panel" style="font-size:12px;color:var(--t2);line-height:1.6">🏁 <b>策略对比(已清出样本)</b> ｜ 🚀M强势顺势：'+fmtTier('M')+' ｜ 🔥E早期突破：'+fmtTier('E')+' ｜ 🟢A低位低吸：'+fmtTier('A')+'</div>';
       h+='<div class="panel" style="font-size:11px;color:var(--t3);line-height:1.5">📌 规则：每天入选「策略盈利率最高」的 <b>1 只</b>，持有 <b>'+hd+'</b> 日、第 <b>'+exd+'</b> 日清出，始终保持 '+pm+' 只·<b>一进一出</b>。清出后<b>仍追踪现价</b>，可对比「按纪律出场」与「一直持有」的差距。</div>';
       h+='<div class="panel"><h3 style="margin-bottom:6px">🔵 持仓中（动态池 · 一进一出）</h3><div style="max-height:38vh;overflow-y:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">'
         +'<tr style="color:var(--t4);text-align:left"><th style="padding:4px">标的</th><th style="padding:4px">入选日</th><th style="padding:4px">持有</th><th style="padding:4px">入场价</th><th style="padding:4px">现价</th><th style="padding:4px">至今收益</th><th style="padding:4px">状态</th></tr>'

@@ -69,8 +69,8 @@ def load_pool():
         return {'items': [], 'updated': ''}
 
 def pick_daily(items, auto, today, meta):
-    """每天(按日期去重)从 M(强势顺势) + A(低位低吸) 名单挑「策略排序最靠前的 1 只」补入动态池。
-    同时纳入两档，使观察池能自然积累 M vs A 的真实盈亏，供「不同策略相互对比」之用。
+    """每天(按日期去重)从 M(强势顺势) + E(热点早期突破) + A(低位低吸) 名单挑「策略排序最靠前的 1 只」补入动态池。
+    同时纳入三档，使观察池能自然积累 M vs E vs A 的真实盈亏，供「不同策略相互对比」之用。
     仅当活跃格 < POOL_MAX 才补；返回入选的 item 或 None。"""
     if meta.get('last_pick_date') == today:
         return None  # 今天已经选过，防同日重复选
@@ -78,7 +78,7 @@ def pick_daily(items, auto, today, meta):
     if len(active_codes) >= POOL_MAX:
         return None  # 满格，等清出腾位
     cands = []
-    for tier in ('M', 'A'):
+    for tier in ('M', 'E', 'A'):
         for r in auto.get(tier, []):
             code = str(r.get('code', ''))
             if not code or code in active_codes:
@@ -93,7 +93,7 @@ def pick_daily(items, auto, today, meta):
         conv = tp.get('conviction', 0) or 0
         w2 = 0 if (r.get('wolf2') or {}).get('pass') else 1
         good = 0 if (r.get('fund') or {}).get('good', False) else 1
-        tier_rank = 0 if tier == 'M' else 1
+        tier_rank = {'M': 0, 'E': 1, 'A': 2}.get(tier, 1)
         return (w2, tier_rank, good, -conv)
     cands.sort(key=sc)
     r, tier = cands[0]
@@ -194,8 +194,9 @@ def aggregate(items, meta):
         return {'n': n2, 'win_rate': round(w / n2, 3),
                 'avg_return': round(sum(rr) / len(rr), 4) if rr else None}
     m_sub = [it for it in cleared if (it.get('template') or 'A') == 'M']
+    e_sub = [it for it in cleared if (it.get('template') or 'A') == 'E']
     a_sub = [it for it in cleared if (it.get('template') or 'A') == 'A']
-    by_tier = {'M': _tier_stats(m_sub), 'A': _tier_stats(a_sub)}
+    by_tier = {'M': _tier_stats(m_sub), 'E': _tier_stats(e_sub), 'A': _tier_stats(a_sub)}
     return {
         'total': n, 'active': na, 'cleared': nc, 'win': wins,
         'win_rate': round(win_rate, 3) if win_rate is not None else None,

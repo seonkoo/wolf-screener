@@ -42,6 +42,16 @@ RIGHT_STOP = 0.06   # 顺势单止损 6%（比左侧 8% 更紧：趋势单错了
 RIGHT_TP   = 0.15   # 顺势单止盈 15%
 RIGHT_HOLD = 30     # 顺势单基础持有 30 日；主升浪(3浪)拉长到 60，末升浪(5)缩到 15
 
+# ---- E 档：热点早期突破（右侧·小仓试错）----
+# 解决"资金主线轮动初期，板块已持续净流入、个股放量长阳，却被 L1 贪婪过热一刀切禁买"的病根。
+# 触发：板块是资金主线(sector_hot) + 个股主力净流入>1亿 + 当日放量上涨(量比>1.5)。
+# 豁免 L1 贪婪过热(板块共振盖过个股过热)；但用小仓(conv 低于 M)、严格止损 8%、持有期更短来兜"追涨 Alpha 有限"的回测结论。
+E_STOP = 0.08      # 严格止损 8%（不放松：早期突破假突破概率高，错了快走）
+E_TP   = 0.15      # 止盈 15%
+E_HOLD = 15        # 早期突破试错持有期更短（板块轮动快，不长期恋战）
+E_INFLOW_MIN = 1e8 # 个股主力净流入下限 1 亿（确认资金真在涌向该标的，而非随板块微涨；用户定稿 1 亿门槛）
+
+
 def get(u):
     req = urllib.request.Request(u, headers=HDR)
     return urllib.request.urlopen(req, timeout=20).read().decode('utf-8','ignore')
@@ -327,10 +337,12 @@ def base_trade_plan(res):
     w2 = res.get('wolf2', {}) or {}
     template = res.get('template', '')
     market = res.get('market', {}) or {}
-    side = 'right' if l5.get('pass') else 'left'
+    side = 'right' if (l5.get('pass') or template == 'E') else 'left'
     # —— 开仓信号（大市环境是否适合开仓，个股层）——
     if w2.get('pass'):
         open_sig, open_reason = 'open', '小狼2.0恐慌底部（回测胜率74.2%），买恐慌策略生效'
+    elif template == 'E':
+        open_sig, open_reason = 'open', '热点早期突破（板块资金主线+个股放量长阳），小仓试错跟随，严格止损'
     elif l5.get('pass'):
         if l2.get('status') == 'fail':
             open_sig, open_reason = 'watch', '右侧趋势雏形但MACD仍死叉，等短期企稳再顺势跟进'
@@ -352,6 +364,8 @@ def base_trade_plan(res):
     # —— 买入时机 ——
     if w2.get('pass'):
         buy_trigger, buy_detail = '小狼2.0恐慌底部', ' / '.join(w2.get('reasons', [])) or '多因子共振'
+    elif template == 'E':
+        buy_trigger, buy_detail = '热点早期突破', '板块资金持续净流入主线 + 个股主力净流入>1亿 + 放量上涨(量比>1.5)'
     elif l5.get('pass'):
         buy_trigger, buy_detail = '右侧趋势突破', l5.get('detail', '')
     elif l1.get('status') == 'pass' and l3.get('status') == 'pass':
@@ -365,6 +379,8 @@ def base_trade_plan(res):
     # —— 持股时间 ——
     if w2.get('pass'):
         hold_days = WOLF2_HOLD
+    elif template == 'E':
+        hold_days = E_HOLD
     elif l5.get('pass'):
         hold_days = wave.get('hold') or RIGHT_HOLD
     else:
@@ -372,12 +388,14 @@ def base_trade_plan(res):
     # —— 止盈止损 ——
     if w2.get('pass'):
         stop_pct, target_pct = -WOLF2_STOP, WOLF2_TP
+    elif template == 'E':
+        stop_pct, target_pct = -E_STOP, E_TP
     elif l5.get('pass'):
         stop_pct, target_pct = -RIGHT_STOP, RIGHT_TP
     else:
         stop_pct, target_pct = -STOP_PCT, TP_PCT
     # —— 确定性评分（用于排序，0-100）——
-    conv = {'A': 70, 'B': 45, 'C': 20, 'D': 10, 'M': 60}.get(template, 10)
+    conv = {'A': 70, 'B': 45, 'C': 20, 'D': 10, 'M': 60, 'E': 40}.get(template, 10)  # E 小仓试错，确定性低于 M
     if w2.get('pass'):
         conv += 20
     if l5.get('pass'):
@@ -435,7 +453,7 @@ def run_screening(stock):
     code=stock['code']; name=stock['name']; price=stock.get('price',0); chg=stock.get('change',0)
     res={'code':code,'name':name,'price':price,'change':chg,'inflow':stock.get('inflow',0),
          'darkpool':stock.get('darkpool'),'sector':stock.get('sector',''),
-         'sector_hot':False,'sector_net':0,'sector_rank':None,
+         'sector_hot':stock.get('sector_hot',False),'sector_net':stock.get('sector_net',0),'sector_rank':None,
          'mcap':stock.get('mcap',0),'is_leader':bool(stock.get('is_leader',False)),
          'industry_rank':stock.get('industry_rank'),'industry_count':stock.get('industry_count'),
          'hot_leader':False,
@@ -539,6 +557,11 @@ def run_screening(stock):
             except Exception as e:
                 good_company=True; fund_detail='基本面校验异常:%s，技术信号保留'%e
     res['fund']={'good':good_company,'detail':fund_detail}
+    # 热点早期突破(E 档)判定用：当日是否放量（量比>1.5）。板块轮动初期主线个股常"放量长阳"，
+    # 是资金真进场的直接证据；与 L3 代理里的放量判据保持一致口径。
+    _lastvol = kd[-1]['volume'] if kd else 0
+    _avgvol = sum(k['volume'] for k in kd[-20:]) / 20 if (kd and len(kd) >= 20) else 0
+    _vol_up = _avgvol > 0 and _lastvol > 1.5 * _avgvol
     # Template —— 小狼 2.0 为最高优先级独立信号（回测 74.2%，不依赖四层 L1/L3 共振）
     # 恐慌急跌底部常表现为 L2 死叉/L3 无量，四层法会误杀；WOLF2 单独捕获这类均值回归买点。
     w2 = res['wolf2'].get('pass')
@@ -561,6 +584,20 @@ def run_screening(stock):
         dp=res.get('darkpool')
         dp_note='；明暗双线(主力+暗盘同流入)' if (dp is not None and dp>0) else ''
         res['suggestion']='强势顺势(右侧·跟主力): %s+主力净流入%.2f亿%s，沿5/10/20日线持有，止损%d%%、目标%d%%。'%(opp, inf/1e8, dp_note, int(STOP_PCT*100), int(TP_PCT*100))
+    elif res['sector_hot'] and inf>E_INFLOW_MIN and chg>0 and _vol_up:
+        # E 档 — 热点早期突破(右侧·小仓试错): 板块是资金持续净流入主线 + 个股主力净流入大(>1亿)
+        #        + 当日放量上涨(量比>1.5)。板块共振盖过"个股贪婪过热"，许可跟随主线。
+        # 豁免 L1 贪婪过热: 板块轮动初期主线个股贪婪常>65, 但板块资金主线给出"跟随"许可(本质追强)。
+        # 小仓试错: conv 比 M 更低(见 base_trade_plan)、严格止损 8%、持有期更短, 兜住"追涨 Alpha 有限"的回测结论。
+        res['template']='E'
+        sec=res.get('sector',''); net=res.get('sector_net',0)
+        dp=res.get('darkpool')
+        dp_note='；明暗双线(主力+暗盘同流入)' if (dp is not None and dp>0) else ''
+        vr=(_lastvol/_avgvol) if _avgvol else 0
+        res['stop']=round(price*(1-E_STOP),3) if price else 0
+        res['target']=round(price*(1+E_TP),3) if price else 0
+        res['suggestion']=('热点早期突破(右侧·小仓试错): 所属板块【%s】资金持续净流入%.1f亿为当前主线，个股主力净流入%.2f亿+放量上涨(量比×%.1f)%s → 小仓位跟随主线，严格止损%d%%、目标%d%%，不恋战。'
+            %(sec, net, inf/1e8, vr, dp_note, int(E_STOP*100), int(E_TP*100)))
     elif l1[0]=='fail': res['template']='C'; res['suggestion']='贪婪过热，禁止新开仓，持仓逢高逐步兑现。'
     elif res['l2']['status']=='fail': res['template']='D'; res['suggestion']='主跌阶段，观望，规避下跌风险。'
     elif l1[0]=='pass' and l3status=='pass':
@@ -910,6 +947,11 @@ def main():
         c['is_leader']=bool(ld['is_leader']) if ld else False
         c['industry_rank']=ld.get('industry_rank') if ld else None
         c['industry_count']=ld.get('industry_count') if ld else None
+        # 板块热点标记：供 run_screening 判定 E 档(热点早期突破)使用，避免 run_screening 阶段
+        # sector_hot 尚未知的顺序陷阱（与下方 main 统一回填逻辑保持一致）。
+        sif=sec_flow.get(c['sector']) if c.get('sector') else None
+        c['sector_hot']=bool(sif and sif.get('net1',0)>0 and sif.get('state') in ('持续流入','短线回流')) if sif else False
+        c['sector_net']=sif.get('net1',0) if sif else 0
     print('      候选 %d 只（低位池 %d + 顺势池 %d，去重后 %d），开始四层判定...'%(n_dec+n_mom, n_dec, n_mom, len(cand)))
     print('[2/3] 载入最新业绩报表(好公司过滤用)...')
     load_yj_map()
@@ -932,13 +974,14 @@ def main():
             r['sector_net']=info.get('net1',0); r['sector_rank']=info.get('rank')
         else:
             r['sector_hot']=False; r['sector_net']=0; r['sector_rank']=None
-    # M 档建议补全「板块主线 + 行业龙头」备注（此时 sector_hot 已回填，修复此前为空的顺序陷阱）
+    # M / E 档建议补全「板块主线 + 行业龙头」备注（此时 sector_hot 已回填，修复此前为空的顺序陷阱）
     for r in results:
-        if r.get('template')!='M': continue
+        if r.get('template') not in ('M','E'): continue
         sec=r.get('sector',''); hot=r.get('sector_hot')
         lead=r.get('is_leader'); ir=r.get('industry_rank'); ic=r.get('industry_count')
         add=''
-        if hot: add+='；所属板块【%s】资金持续流入，市场动态主线'%(sec)
+        # E 档建议已自带「板块资金净流入N亿为当前主线」，不再重复；只补龙头属性
+        if hot and r.get('template')!='E': add+='；所属板块【%s】资金持续流入，市场动态主线'%(sec)
         if lead: add+='；行业龙头(市值第%d/%d，基本面确定性高)'%(ir,ic)
         else: add+='；非龙头(行业第%d/%d)'%(ir,ic) if ir else ''
         if add: r['suggestion']=r['suggestion'].rstrip('。')+add+'。'
@@ -948,6 +991,8 @@ def main():
     D=[r for r in results if r['template']=='D']
     M=[r for r in results if r['template']=='M']
     M.sort(key=lambda r:(0 if r.get('sector_hot') else 1, -(r.get('sector_net') or 0), -(r.get('darkpool') or 0), -(r.get('l5',{}).get('score',0))))
+    E=[r for r in results if r['template']=='E']
+    E.sort(key=lambda r:(0 if r.get('is_leader') else 1, -(r.get('sector_net') or 0), -(r.get('inflow',0) or 0), -(r.get('l5',{}).get('score',0))))
     A.sort(key=lambda r:(0 if r.get('sector_hot') else 1, 0 if r.get('fund',{}).get('good',False) else 1, r['l1']['greed'], -r.get('inflow',0)))
     B.sort(key=lambda r:(r['l1']['greed'], -r.get('inflow',0)))
     # 大市环境调制开仓信号（best-effort 读 李大霄温度 + 情绪）
@@ -978,8 +1023,8 @@ def main():
     wolf2A=[r for r in A if r.get('wolf2',{}).get('pass')]
     goodA=[r for r in A if r.get('fund',{}).get('good',False)]
     print('\n========== 小狼策略 · A股自动扫描结果 ==========')
-    print('候选 %d 只 | 🚀M强势顺势 %d | 🏆热点龙头 %d | A建议买入 %d (★小狼2.0 %d·好公司 %d) | B观察 %d | C禁止 %d | D观望 %d'%(
-        len(results),len(M),len(LEAD),len(A),len(wolf2A),len(goodA),len(B),len(C),len(D)))
+    print('候选 %d 只 | 🚀M强势顺势 %d | 🔥E早期突破 %d | 🏆热点龙头 %d | A建议买入 %d (★小狼2.0 %d·好公司 %d) | B观察 %d | C禁止 %d | D观望 %d'%(
+        len(results),len(M),len(E),len(LEAD),len(A),len(wolf2A),len(goodA),len(B),len(C),len(D)))
     if any(r['l3'].get('proxy') for r in results):
         print('⚠️ 注：本扫描环境取不到15分钟K线，第3层"技术共振"改用日线代理(布林支撑/站上MA20/放量/日线底背离)。')
         print('   网页端(wolf-screener3.0.html)以真实15分钟MACD复核可得严格结论，两者第1/2/4层完全一致。')
@@ -995,6 +1040,9 @@ def main():
     if M:
         print('\n--- 🚀 M 强势顺势（右侧·跟主力，捕捉上涨阶段/市场动态主线） ---')
         for r in M[:30]: print(' '+line(r)+('  [板块]%s%s'%(r.get('sector',''),'·🔥热点' if r.get('sector_hot') else ''))+'\n    '+r['suggestion'])
+    if E:
+        print('\n--- 🔥 E 热点早期突破（板块资金主线+个股放量长阳，小仓试错跟随） ---')
+        for r in E[:30]: print(' '+line(r)+('  [板块]%s%s%s'%(r.get('sector',''),'·🔥热点' if r.get('sector_hot') else '','·🏆龙头' if r.get('is_leader') else ''))+'\n    '+r['suggestion'])
     print('\n--- 🟡 B 纳入观察池 ---')
     for r in B[:30]: print(' '+line(r))
     if LEAD:
@@ -1010,8 +1058,8 @@ def main():
         print('\n--- ⚪ D 主跌观望 ---')
         for r in D[:10]: print(' '+line(r))
     # 保存
-    out={'generated':time.strftime('%Y-%m-%d %H:%M'),'summary':{'cand':len(results),'M':len(M),'leaders':len(LEAD),'leaders_wait':len(LEADW),'A':len(A),'B':len(B),'C':len(C),'D':len(D)},
-         'market':get_market_regime(),'leaders':LEAD,'leaders_wait':LEADW,'M':M,'A':A,'B':B,'C':C,'D':D}
+    out={'generated':time.strftime('%Y-%m-%d %H:%M'),'summary':{'cand':len(results),'M':len(M),'E':len(E),'leaders':len(LEAD),'leaders_wait':len(LEADW),'A':len(A),'B':len(B),'C':len(C),'D':len(D)},
+         'market':get_market_regime(),'leaders':LEAD,'leaders_wait':LEADW,'M':M,'E':E,'A':A,'B':B,'C':C,'D':D}
     # 浏览器 JSON.parse 不接受 NaN/Infinity，写盘前先清洗成 null
     def _clean(o):
         if isinstance(o,dict): return {k:_clean(v) for k,v in o.items()}
