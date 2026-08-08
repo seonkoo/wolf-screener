@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>艾略特波浪 · 日K数浪 + 斐波那契黄金分割 指引器</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#1a212b; --panel2:#222b38; --line:#2c3744;
+    --txt:#e6edf3; --sub:#9aa7b4; --red:#ff4d4f; --green:#16c784;
+    --blue:#4ea1ff; --gold:#ffcc4d; --purple:#b388ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       line-height:1.6;padding:14px;max-width:960px;margin:0 auto}
+  h1{font-size:20px;margin:6px 0 2px}
+  h2{font-size:16px;margin:22px 0 10px;border-left:3px solid var(--blue);padding-left:8px}
+  .sub{color:var(--sub);font-size:13px;margin-bottom:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+  input[type=text]{flex:1;min-width:160px;background:var(--panel2);border:1px solid var(--line);
+       color:var(--txt);padding:11px 12px;border-radius:9px;font-size:15px;outline:none}
+  input[type=text]:focus{border-color:var(--blue)}
+  button{background:var(--blue);color:#06121f;border:none;padding:11px 18px;border-radius:9px;
+       font-size:15px;font-weight:600;cursor:pointer}
+  button:active{transform:translateY(1px)}
+  .pill{font-size:12px;color:var(--sub);background:var(--panel);border:1px solid var(--line);
+       padding:3px 9px;border-radius:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+  .verdict{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .badge{font-size:19px;font-weight:800;padding:8px 14px;border-radius:10px;white-space:nowrap}
+  .b-imp{background:rgba(255,204,77,.15);color:var(--gold);border:1px solid var(--gold)}
+  .b-abc{background:rgba(78,161,255,.15);color:var(--blue);border:1px solid var(--blue)}
+  .b-un{background:rgba(154,167,180,.12);color:var(--sub);border:1px solid var(--line)}
+  .meta{color:var(--sub);font-size:13px}
+  .conf{font-size:13px;color:var(--gold)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px}
+  .stat{background:var(--panel2);border-radius:9px;padding:9px 10px}
+  .stat .k{font-size:11px;color:var(--sub)}
+  .stat .v{font-size:16px;font-weight:700;margin-top:2px}
+  .up{color:var(--red)} .dn{color:var(--green)}
+  canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px;margin-top:8px}
+  .ev{margin:4px 0;padding-left:18px;position:relative;font-size:14px}
+  .ev:before{content:"·";position:absolute;left:6px;color:var(--gold);font-weight:800}
+  .ev.warn:before{content:"⚠";color:var(--red);left:4px}
+  .teach{background:rgba(78,161,255,.07);border:1px solid rgba(78,161,255,.25);
+         border-radius:10px;padding:12px;font-size:14px;margin-top:10px}
+  .hidden{display:none}
+  .err{color:var(--red);background:rgba(255,77,79,.1);padding:10px;border-radius:9px}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 14px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600;padding:8px 0;font-size:15px}
+  .edu p{margin:9px 0;font-size:14px}
+  .edu .k{color:var(--blue);font-weight:700}
+  .fibline{display:flex;justify-content:space-between;padding:5px 10px;border-radius:8px;margin:4px 0;
+       font-size:14px;background:var(--panel2)}
+  .fibline .tag{color:var(--sub);font-size:12px}
+  .note{font-size:12px;color:var(--sub);margin-top:6px}
+  .ops{background:rgba(22,199,132,.07);border:1px solid rgba(22,199,132,.25);border-radius:10px;padding:12px;font-size:14px}
+</style>
+</head>
+<body>
+<div id="ewTop">
+  <h1>🌊 艾略特波浪 · 日K数浪 + 斐波那契黄金分割</h1>
+  <div class="sub">输入股票代码（如 sh600519 / sz000858 / 600519），自动对日K线数浪、判断当前处于什么浪，并用斐波那契测算反弹/回调的黄金分割位来指引操作。<b>非投资建议。</b></div>
+</div>
+
+<div class="row">
+  <input type="text" id="code" placeholder="代码，如 sh600519 / 000858" />
+  <button id="go">分析</button>
+  <span class="pill" id="status">输入代码开始</span>
+</div>
+
+<div id="errBox" class="err hidden"></div>
+
+<div class="card hidden" id="result">
+  <div class="verdict">
+    <span class="badge" id="badge">—</span>
+    <div>
+      <div id="phase" style="font-size:15px;font-weight:700"></div>
+      <div class="conf" id="conf"></div>
+    </div>
+  </div>
+  <div class="grid" id="waveGrid"></div>
+  <div id="evidenceBox" style="margin-top:10px"></div>
+  <canvas id="chart" style="margin-top:12px"></canvas>
+</div>
+
+<div class="card hidden" id="fibCard">
+  <h2 style="margin-top:4px">📐 斐波那契关键位</h2>
+  <div id="fibBox"></div>
+  <div class="ops" id="opsBox" style="margin-top:12px"></div>
+</div>
+
+<!-- ================= 教学 ================= -->
+<details open class="edu">
+  <summary>📚 教学一：艾略特波浪是什么？（是什么）</summary>
+  <div class="edu">
+    <p><span class="k">一句话</span>：市场价格按「<b>5 浪推动 + 3 浪调整</b>」的节奏循环前进，这就是趋势的「呼吸」。艾略特波浪理论（Elliott Wave）就是用这套节奏给行情“分浪”，判断我们现在处在这一口气里的哪一个阶段。</p>
+    <p><span class="k">五浪推动（ trend 方向）</span>：浪1 起步 → 浪2 回调（不破浪1起点）→ 浪3 往往最长最猛 → 浪4 回调（不与浪1重叠）→ 浪5 最后一冲。五浪走完，一段趋势就到头了。</p>
+    <p><span class="k">三浪调整（ counter-trend）</span>：A 下跌 → B 反弹（不超过A起点）→ C 再跌（常与A等长的 0.618~1.618 倍）。ABC 结束后，下一轮五浪推动重新开始。这就是「分形」——大浪里套小浪，日K的浪在周K里可能只是一个子浪。</p>
+    <p><span class="k">三铁律（数浪对错的关键）</span>：① 浪2 不能跌破浪1起点；② 浪3 不能是三个推动浪里最短的；③ 浪4 不能与浪1 重叠（普通浪，倾斜三角形除外）。违反任一条，这串摆动就不是有效五浪。</p>
+  </div>
+</details>
+
+<details class="edu">
+  <summary>📚 教学二：为什么要用它？斐波那契又是什么？（为什么）</summary>
+  <div class="edu">
+    <p><span class="k">为什么数浪有用</span>：它能把“现在该买还是该卖”从感觉变成位置判断——如果你知道刚走完五浪、正在ABC调整，那眼前的反弹就该谨慎、等C到位；如果你知道在浪3主升，回踩就是顺势低吸。同时它给出明确的<b>失效位</b>（如跌破浪2低点结构就破），止损清晰。</p>
+    <p><span class="k">斐波那契（黄金分割）</span>：自然界普遍存在的比例（0.618、1.618…）。股市里，回调和反弹常常停在一段行情的 <b>0.382 / 0.5 / 0.618 / 0.786</b> 位置；下一浪目标常落在 <b>1.272 / 1.618 / 2.618</b> 倍。它给数浪补上了“具体到哪个价”的量尺。</p>
+    <p><span class="k">两者怎么配合</span>：数浪定“方向/阶段”，斐波那契定“价格目标”。比如五浪完成后的回调，0.5~0.618 是经典低吸区；ABC 里 C 跌到 A 的 1.272~1.618 倍且止跌，反弹第一目标看整段跌幅的 0.382~0.5。两者共振，信号更可信。</p>
+  </div>
+</details>
+
+<details class="edu">
+  <summary>📚 教学三：怎么用本工具？以及诚实边界（怎么办）</summary>
+  <div class="edu">
+    <p><span class="k">四步用法</span>：① 输入代码点分析 → ② 看顶部「相位」判断当前浪（推动浪/调整浪，进行中还是尾声）→ ③ 看日K图上的波浪标注与彩色斐波那契线 → ④ 看「操作指引」里的低吸/减仓参考区与失效位。</p>
+    <p><span class="k">怎么读图</span>：图上金/蓝字标出浪1~浪5或A~C的位置；虚线是该段行情的斐波那契位（支撑=绿、目标=红/金）。价格回到<b>支撑虚线区间</b>是低吸观察区；反弹到<b>阻力虚线</b>是减仓观察区。</p>
+    <p><span class="k">⚠️ 诚实边界（务必看）</span>：① <b>千人千浪</b>——同一段K线高手能数出好几种浪，本工具只给“首选+备选+置信度”，<b>不铁口直断</b>；② 自动数浪是<b>启发式</b>（摆动阈值+铁律打分），会漏判复杂调整（三角形/平台型）；③ 必须与<b>量能、均线、基本面、仓位管理</b>结合，单看波浪亏损概率仍高；④ 置信度低（<50%）时只当参考，别重仓。</p>
+  </div>
+</details>
+
+<div class="teach">
+  💡 <b>查缺补漏提示</b>：你原来只问了“数浪+斐波那契反弹位”，这里已补上：① 五浪 vs 三浪调整的结构区别；② 三铁律（数浪对错的硬标准）；③ 回撤位(0.382~0.786)与扩展位(1.272~2.618)的不同用途；④ 自动数浪的“千人千浪”诚实边界与失效位。理解这四点，工具才不会误用。
+</div>
+
+<script>
+/* ===== 艾略特波浪 + 斐波那契 分析引擎 (JS, 镜像 ewave_detect.py) ===== */
+var FIB_RETRACE=[0.382,0.5,0.618,0.786];
+var FIB_EXTEND=[1.272,1.618,2.618];
+
+function zigzag(closes, pct){
+  var n=closes.length; if(n<12) return [];
+  var pts=[], trend=0, hi=closes[0], lo=closes[0], hi_i=0, lo_i=0;
+  for(var i=1;i<n;i++){
+    var v=closes[i];
+    if(v>hi){hi=v;hi_i=i;}
+    if(v<lo){lo=v;lo_i=i;}
+    if(trend>=0 && v < hi*(1-pct)){ pts.push([hi_i,hi,1]); trend=-1; lo=v; lo_i=i; }
+    else if(trend<=0 && v > lo*(1+pct)){ pts.push([lo_i,lo,-1]); trend=1; hi=v; hi_i=i; }
+  }
+  if(!pts.length) return [];
+  if(trend==1 && pts[pts.length-1][2]==-1) pts.push([hi_i,hi,1]);
+  else if(trend==-1 && pts[pts.length-1][2]==1) pts.push([lo_i,lo,-1]);
+  return pts;
+}
+function checkImpulse(l0,h1,l2,h3,l4,h5){
+  var viol=[];
+  if(l2<=l0) viol.push('铁律1违规: 浪2低点'+l2.toFixed(2)+' ≤ 浪1起点'+l0.toFixed(2));
+  var legs=[Math.abs(h1-l0),Math.abs(h3-l2),Math.abs(h5-l4)];
+  if(legs[1]<=Math.min(legs[0],legs[2])) viol.push('铁律2违规: 浪3是最短推动段');
+  if(l4<=h1) viol.push('铁律3违规: 浪4与浪1重叠');
+  return {ok:viol.length===0, viol:viol};
+}
+function waveMetrics(l0,h1,l2,h3,l4,h5){
+  function p(a,b){return b?(a-b)/b*100:0;}
+  return {w1:p(h1,l0), w2r:(h1!==l0?(h1-l2)/(h1-l0)*100:0),
+          w3:p(h3,l2), w4r:(h3!==l2?(h3-l4)/(h3-l2)*100:0), w5:p(h5,l4)};
+}
+function fibLevels(lo,hi,ratios,tag){
+  var span=hi-lo, out=[];
+  for(var i=0;i<ratios.length;i++) out.push({r:ratios[i], price:hi-span*ratios[i], tag:tag});
+  return out;
+}
+function identify(closes){
+  var pts=zigzag(closes,0.05);
+  var out={pts:pts, structure:null, phase:null, conf:0, evidence:[], rules:[], fib:null,
+           primary:null, alt:null, ok:false, fib_verdict:'', marks:[]};
+  if(pts.length<5){
+    out.phase='数据不足';
+    out.evidence.push('摆动点不足（需≥5个转折点），无法可靠数浪；请拉长周期或换标的。');
+    return out;
+  }
+  var last_dir=pts[pts.length-1][2], cur=closes[closes.length-1];
+
+  // 推动浪
+  var imp=[];
+  for(var i=Math.max(0,pts.length-14); i<pts.length-5; i++){
+    if(pts[i][2]!==-1) continue;
+    var seg=pts.slice(i,i+6); if(seg.length<6) break;
+    var l0=seg[0][1],h1=seg[1][1],l2=seg[2][1],h3=seg[3][1],l4=seg[4][1],h5=seg[5][1];
+    var ci=checkImpulse(l0,h1,l2,h3,l4,h5), m=waveMetrics(l0,h1,l2,h3,l4,h5);
+    var score=(ci.ok?3:-4);
+    if(Math.abs(h3-l2)>=Math.max(Math.abs(h1-l0),Math.abs(h5-l4))) score+=1.5;
+    if(m.w2r>=15&&m.w2r<=85&&m.w4r>=15&&m.w4r<=85) score+=1;
+    imp.push({seg:seg,ok:ci.ok,viol:ci.viol,score:score,m:m,l0:l0,h1:h1,l2:l2,h3:h3,l4:l4,h5:h5});
+  }
+  imp.sort(function(a,b){return b.score-a.score;});
+
+  // 调整浪 ABC
+  var abc=[];
+  for(var j=Math.max(0,pts.length-10); j<pts.length-3; j++){
+    if(pts[j][2]!==1) continue;
+    var s2=pts.slice(j,j+4); if(s2.length<4) break;
+    var h0=s2[0][1],la=s2[1][1],hb=s2[2][1],lc=s2[3][1];
+    if(hb>h0) continue;
+    var A=h0-la; if(A<=0) continue;
+    var C=hb-lc, ratio=C/A;
+    var ok=(ratio>=0.5&&ratio<=1.8);
+    var sc=(ok?2:-1);
+    if(ratio>=0.9&&ratio<=1.1) sc+=1.5; else if(ratio>=0.6&&ratio<=0.85) sc+=0.8;
+    abc.push({seg:s2,ok:ok,score:sc,ratio:ratio,h0:h0,la:la,hb:hb,lc:lc,A:A,C:C});
+  }
+  abc.sort(function(a,b){return b.score-a.score;});
+
+  if(imp.length && (abc.length===0 || imp[0].score>=abc[0].score)){
+    var c=imp[0];
+    var l0=c.l0,h1=c.h1,l2=c.l2,h3=c.h3,l4=c.l4,h5=c.h5, m=c.m;
+    out.structure='impulse'; out.ok=c.ok; out.rules=c.viol;
+    if(cur>=h5*0.995) out.phase='推动浪·浪5 进行中/延伸';
+    else if(cur>l4) out.phase='推动浪·浪5 进行中';
+    else if(cur>l2) out.phase='推动浪完成, 进入调整 (A-B-C)';
+    else out.phase='推动浪后深度调整';
+    out.conf=Math.min(0.9, 0.5+(c.ok?0.25:0)+(Math.abs(h3-l2)>=Math.max(Math.abs(h1-l0),Math.abs(h5-l4))?0.1:0));
+    out.evidence.push('识别到五浪推动(首选): 浪1 '+m.w1.toFixed(1)+'% → 浪2回撤 '+m.w2r.toFixed(0)+'% → 浪3 '+m.w3.toFixed(1)+'% → 浪4回撤 '+m.w4r.toFixed(0)+'% → 浪5 '+m.w5.toFixed(1)+'%');
+    if(c.viol.length) out.evidence.push('⚠ 结构瑕疵: '+c.viol.join('；'));
+    var up=l0<h5, lo=up?l0:h5, hi=up?h5:l0;
+    var fib={retrace:fibLevels(lo,hi,FIB_RETRACE,'回调支撑'),
+             extend:[{r:1.272,price:l4+(h5-l4)*1.272,tag:'浪5延伸'},{r:1.618,price:l4+(h5-l4)*1.618,tag:'浪5延伸'},{r:2.618,price:l4+(h5-l4)*2.618,tag:'浪5延伸'}],
+             base:{lo:lo,hi:hi}};
+    out.fib=fib;
+    out.fib_verdict='整段(浪1起点 '+l0.toFixed(2)+' → 浪5高点 '+h5.toFixed(2)+')回调支撑: 0.5≈'+fib.retrace[1].price.toFixed(2)+' / 0.618≈'+fib.retrace[2].price.toFixed(2)+' —— 回调到此区间是「低吸参考区」；跌破浪2低点 '+l2.toFixed(2)+' 则推动结构失效。';
+    out.primary={type:'impulse',l0:l0,h1:h1,l2:l2,h3:h3,l4:l4,h5:h5};
+    out.marks=[{idx:seg0(c.seg,0),price:l0,label:'起点'},
+               {idx:c.seg[1][0],price:h1,label:'浪1'},
+               {idx:c.seg[2][0],price:l2,label:'浪2'},
+               {idx:c.seg[3][0],price:h3,label:'浪3'},
+               {idx:c.seg[4][0],price:l4,label:'浪4'},
+               {idx:c.seg[5][0],price:h5,label:'浪5'}];
+    if(imp.length>1) out.alt={type:'impulse',note:'备选数法: 第2优选分浪(分数 '+imp[1].score.toFixed(1)+')'};
+  } else if(abc.length){
+    var d=abc[0];
+    var h0=d.h0,la=d.la,hb=d.hb,lc=d.lc,A=d.A,C=d.C,ratio=d.ratio;
+    out.structure='abc'; out.ok=d.ok;
+    if(cur<=lc*1.005) out.phase='调整浪·C浪 进行中/尾声';
+    else if(cur<hb) out.phase='调整浪·C浪结束, 反弹中';
+    else out.phase='调整浪·B浪 反弹';
+    out.rules = d.ok?[]:['C浪('+C.toFixed(2)+') 与 A浪('+A.toFixed(2)+') 比例 '+ratio.toFixed(2)+' 偏离典型区间 0.5~1.8'];
+    out.conf=Math.min(0.85, 0.45+(d.ok?0.25:0));
+    out.evidence.push('识别到 A-B-C 调整(首选): A浪 '+((la-h0)/h0*100).toFixed(1)+'% → B浪反弹至 '+hb.toFixed(2)+' (回撤A '+((h0-hb)/A*100).toFixed(0)+'%) → C浪 '+((lc-hb)/hb*100).toFixed(1)+'% (A的'+ratio.toFixed(2)+'倍)');
+    var fib={c_targets:[{r:0.618,price:h0-A*0.618,tag:'C浪目标'},{r:1.0,price:h0-A*1.0,tag:'C浪目标'},{r:1.272,price:h0-A*1.272,tag:'C浪目标'},{r:1.618,price:h0-A*1.618,tag:'C浪目标'}],
+             rebound:fibLevels(lc,h0,FIB_RETRACE,'反弹阻力')};
+    out.fib=fib;
+    out.fib_verdict='C浪目标(按A浪幅度): 1.0倍≈'+fib.c_targets[1].price.toFixed(2)+' / 1.272倍≈'+fib.c_targets[2].price.toFixed(2)+'。若 C 已到 1.272~1.618 倍且出现止跌信号, 反弹第一目标看整段跌幅(A起点 '+h0.toFixed(2)+' → C低点 '+lc.toFixed(2)+')的 0.382~0.5 黄金分割位 ≈ '+fib.rebound[0].price.toFixed(2)+'~'+fib.rebound[1].price.toFixed(2)+'。';
+    out.primary={type:'abc',h0:h0,la:la,hb:hb,lc:lc};
+    out.marks=[{idx:d.seg[0][0],price:h0,label:'A顶'},
+               {idx:d.seg[1][0],price:la,label:'A底'},
+               {idx:d.seg[2][0],price:hb,label:'B顶'},
+               {idx:d.seg[3][0],price:lc,label:'C底'}];
+    if(abc.length>1) out.alt={type:'abc',note:'备选数法: 第2优选分浪(分数 '+abc[1].score.toFixed(1)+')'};
+  } else {
+    out.phase='结构不明';
+    out.evidence.push('近期摆动点不满足五浪或 ABC 标准结构，可能是复杂调整(平台/三角形)或数据区间不足。建议结合更大周期判断。');
+    out.conf=0.3;
+  }
+  return out;
+  function seg0(seg,k){return seg[k][0];}
+}
+
+/* ===== 数据获取 (JSONP, 直连腾讯, 无需服务器) ===== */
+function fetchDaily(code, cb){
+  var rnd=Math.random().toString(36).slice(2), vname='__ew_'+rnd;
+  var s=document.createElement('script');
+  s.src='https://ifzq.gtimg.cn/appstock/app/kline/kline?_var='+vname+'&param='+code+',day,,,320';
+  s.onload=function(){
+    var d=window[vname];
+    try{document.body.removeChild(s);}catch(e){}
+    try{delete window[vname];}catch(e){}
+    cb(null,d);
+  };
+  s.onerror=function(){try{document.body.removeChild(s);}catch(e){} cb(new Error('fetch'));};
+  document.body.appendChild(s);
+}
+function parseRows(d, code){
+  try{
+    var node=d.data[code]||{};
+    var day=node.day||node.qfqday||[];
+    var rows=[];
+    for(var i=0;i<day.length;i++){
+      var r=day[i]; if(!r||r.length<6) continue;
+      rows.push({date:r[0],open:+r[1],close:+r[2],high:+r[3],low:+r[4],vol:+r[5]});
+    }
+    return rows;
+  }catch(e){return null;}
+}
+
+/* ===== 绘图 ===== */
+function drawChart(canvas, rows, fibs, marks){
+  var dpr=window.devicePixelRatio||1;
+  var cssW=canvas.clientWidth||canvas.parentNode.clientWidth||800;
+  var cssH=Math.max(320, Math.round(cssW*0.52));
+  canvas.width=cssW*dpr; canvas.height=cssH*dpr; canvas.style.height=cssH+'px';
+  var ctx=canvas.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);
+  if(!rows.length) return;
+  var padL=8,padR=64,padT=14,padB=18, volH=46;
+  var plotW=cssW-padL-padR, plotH=cssH-padT-padB-volH;
+  var maxP=-1e9,minP=1e9;
+  for(var i=0;i<rows.length;i++){ if(rows[i].high>maxP)maxP=rows[i].high; if(rows[i].low<minP)minP=rows[i].low; }
+  for(var f=0;f<fibs.length;f++){ var fp=fibs[f].price; if(fp>maxP)maxP=fp; if(fp<minP)minP=fp; }
+  var pad=(maxP-minP)*0.04; maxP+=pad; minP-=pad;
+  function X(i){return padL + (rows.length<=1?0:i/(rows.length-1))*plotW;}
+  function Y(p){return padT + (maxP-p)/(maxP-minP)*plotH;}
+  // 网格 + 价格刻度
+  ctx.strokeStyle='#2c3744'; ctx.fillStyle='#9aa7b4'; ctx.font='11px sans-serif'; ctx.lineWidth=1;
+  for(var g=0;g<=4;g++){ var yy=padT+plotH*g/4; var pp=maxP-(maxP-minP)*g/4;
+    ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+plotW,yy); ctx.stroke();
+    ctx.fillText(pp.toFixed(2), padL+plotW+4, yy+4); }
+  // 成交量
+  var maxV=-1; for(var v=0;v<rows.length;v++) if(rows[v].vol>maxV)maxV=rows[v].vol;
+  var volTop=padT+plotH+6;
+  for(var k=0;k<rows.length;k++){
+    var vh=(maxV?rows[k].vol/maxV:0)*volH;
+    ctx.fillStyle=rows[k].close>=rows[k].open?'rgba(255,77,79,.35)':'rgba(22,199,132,.35)';
+    ctx.fillRect(X(k)-plotW/rows.length/2, volTop+volH-vh, Math.max(1,plotW/rows.length*0.7), vh);
+  }
+  // K线
+  var cw=Math.max(2, plotW/rows.length*0.62);
+  for(var c=0;c<rows.length;c++){
+    var r=rows[c], x=X(c), yo=Y(r.open), yc=Y(r.close), yh=Y(r.high), yl=Y(r.low);
+    var up=r.close>=r.open;
+    ctx.strokeStyle=up?'#ff4d4f':'#16c784'; ctx.fillStyle=up?'#ff4d4f':'#16c784';
+    ctx.beginPath(); ctx.moveTo(x,yh); ctx.lineTo(x,yl); ctx.stroke();
+    var top=Math.min(yo,yc), bh=Math.max(1,Math.abs(yc-yo));
+    ctx.fillRect(x-cw/2, top, cw, bh);
+  }
+  // 斐波那契线
+  for(var fi=0;fi<fibs.length;fi++){
+    var fb=fibs[fi]; if(fb.price<minP||fb.price>maxP) continue;
+    var yy2=Y(fb.price);
+    ctx.strokeStyle = (fb.tag==='反弹阻力'||fb.tag==='C浪目标')?'rgba(78,161,255,.7)':'rgba(255,204,77,.7)';
+    ctx.setLineDash([5,4]); ctx.beginPath(); ctx.moveTo(padL,yy2); ctx.lineTo(padL+plotW,yy2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=ctx.strokeStyle; ctx.fillText(fb.r.toFixed(3)+' '+fb.tag, padL+4, yy2-3);
+  }
+  // 波浪标注
+  ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+  for(var mi=0;mi<marks.length;mi++){
+    var mk=marks[mi]; if(mk.idx<0||mk.idx>=rows.length) continue;
+    var mx=X(mk.idx);
+    var isImp = mk.label.indexOf('浪')===0;
+    ctx.fillStyle = isImp?'#ffcc4d':'#4ea1ff';
+    ctx.fillText(mk.label, mx, Y(mk.price) + (mk.price>=(minP+maxP)/2? 16:-6));
+  }
+  ctx.textAlign='left';
+}
+
+/* ===== 渲染 ===== */
+function render(code, d){
+  var rows=parseRows(d, code);
+  var errBox=document.getElementById('errBox');
+  if(!rows||rows.length<30){ errBox.classList.remove('hidden'); errBox.textContent='日K数据不足或代码有误（'+code+'）。请检查代码或稍后重试。'; return; }
+  errBox.classList.add('hidden');
+  var closes=rows.map(function(r){return r.close;});
+  var res=identify(closes);
+  var N=closes.length, winStart=Math.max(0,N-90), winRows=rows.slice(winStart);
+  // 收集 fib 价格
+  var fibs=[];
+  if(res.fib){
+    ['retrace','extend','rebound','c_targets'].forEach(function(k){
+      if(res.fib[k]) res.fib[k].forEach(function(o){ fibs.push({price:o.price, r:o.r, tag:o.tag}); });
+    });
+  }
+  var marks=(res.marks||[]).filter(function(m){return m.idx>=winStart;})
+    .map(function(m){return {idx:m.idx-winStart, price:m.price, label:m.label};});
+
+  // 顶部 badge
+  var badge=document.getElementById('badge'), phaseEl=document.getElementById('phase'), confEl=document.getElementById('conf');
+  if(res.structure==='impulse'){ badge.className='badge b-imp'; badge.textContent='推动浪 5'; }
+  else if(res.structure==='abc'){ badge.className='badge b-abc'; badge.textContent='调整浪 ABC'; }
+  else { badge.className='badge b-un'; badge.textContent='结构不明'; }
+  phaseEl.textContent=res.phase||'—';
+  confEl.textContent='置信度 '+Math.round((res.conf||0)*100)+'%'+(res.ok?' · 三铁律通过':' · 结构有瑕疵');
+
+  // 波浪统计
+  var grid=document.getElementById('waveGrid'); grid.innerHTML='';
+  if(res.structure==='impulse' && res.primary){
+    var p=res.primary;
+    var mm=waveMetrics(p.l0,p.h1,p.l2,p.h3,p.l4,p.h5);
+    addStat(grid,'浪1', mm.w1.toFixed(1)+'%');
+    addStat(grid,'浪2回撤', mm.w2r.toFixed(0)+'%');
+    addStat(grid,'浪3', mm.w3.toFixed(1)+'%');
+    addStat(grid,'浪4回撤', mm.w4r.toFixed(0)+'%');
+    addStat(grid,'浪5', mm.w5.toFixed(1)+'%');
+  } else if(res.structure==='abc' && res.primary){
+    var q=res.primary;
+    addStat(grid,'A浪幅度', ((q.la-q.h0)/q.h0*100).toFixed(1)+'%');
+    addStat(grid,'B浪回撤A', ((q.h0-q.hb)/(q.h0-q.la)*100).toFixed(0)+'%');
+    addStat(grid,'C浪幅度', ((q.lc-q.hb)/q.hb*100).toFixed(1)+'%');
+    addStat(grid,'C/A比', (Math.abs(q.lc-q.hb)/(q.h0-q.la)).toFixed(2));
+  }
+
+  // 证据
+  var ev=document.getElementById('evidenceBox'); ev.innerHTML='';
+  (res.evidence||[]).forEach(function(t){
+    var div=document.createElement('div'); div.className='ev'+(t.indexOf('⚠')>=0?' warn':'');
+    div.textContent=t; ev.appendChild(div);
+  });
+
+  // 斐波那契卡片
+  var fibBox=document.getElementById('fibBox'); fibBox.innerHTML='';
+  if(res.fib){
+    if(res.fib.retrace){
+      fibBox.appendChild(sectionTitle('回调/支撑位（整段回撤）'));
+      res.fib.retrace.forEach(function(o){ fibBox.appendChild(fibLine(o)); });
+    }
+    if(res.fib.rebound){
+      fibBox.appendChild(sectionTitle('反弹阻力位（自C低点反弹）'));
+      res.fib.rebound.forEach(function(o){ fibBox.appendChild(fibLine(o)); });
+    }
+    if(res.fib.c_targets){
+      fibBox.appendChild(sectionTitle('C浪目标位（按A浪幅度）'));
+      res.fib.c_targets.forEach(function(o){ fibBox.appendChild(fibLine(o)); });
+    }
+    if(res.fib.extend){
+      fibBox.appendChild(sectionTitle('浪5延伸目标'));
+      res.fib.extend.forEach(function(o){ fibBox.appendChild(fibLine(o)); });
+    }
+  }
+  document.getElementById('opsBox').textContent = res.fib_verdict||'';
+  document.getElementById('result').classList.remove('hidden');
+  document.getElementById('fibCard').classList.remove('hidden');
+
+  drawChart(document.getElementById('chart'), winRows, fibs, marks);
+}
+function addStat(p,k,v){ var d=document.createElement('div'); d.className='stat'; d.innerHTML='<div class="k">'+k+'</div><div class="v">'+v+'</div>'; p.appendChild(d); }
+function sectionTitle(t){ var d=document.createElement('div'); d.style.cssText='font-size:13px;color:#9aa7b4;margin:10px 0 4px'; d.textContent=t; return d; }
+function fibLine(o){
+  var d=document.createElement('div'); d.className='fibline';
+  d.innerHTML='<span>'+o.r.toFixed(3)+' <span class="tag">'+o.tag+'</span></span><b>'+o.price.toFixed(2)+'</b>';
+  return d;
+}
+
+/* ===== 入口 ===== */
+function normalizeCode(raw){
+  raw=(raw||'').trim().toLowerCase().replace(/\s/g,'');
+  if(/^\d{6}$/.test(raw)) return (raw[0]==='6'?'sh':(raw[0]==='0'||raw[0]==='3')?'sz':'bj')+raw;
+  if(/^(sh|sz|bj)\d{6}$/.test(raw)) return raw;
+  return null;
+}
+function run(){
+  var raw=document.getElementById('code').value;
+  var code=normalizeCode(raw);
+  var st=document.getElementById('status'), errBox=document.getElementById('errBox');
+  if(!code){ errBox.classList.remove('hidden'); errBox.textContent='代码格式不对，示例：sh600519 / sz000858 / 600519'; return; }
+  errBox.classList.add('hidden');
+  st.textContent='分析中…';
+  fetchDaily(code, function(err, d){
+    if(err||!d){ st.textContent='获取失败'; errBox.classList.remove('hidden'); errBox.textContent='行情接口暂不可达，请稍后重试（浏览器直连腾讯，无需服务器）。'; return; }
+    st.textContent='完成 · '+code;
+    render(code, d);
+  });
+}
+document.getElementById('go').addEventListener('click', run);
+document.getElementById('code').addEventListener('keydown', function(e){ if(e.key==='Enter') run(); });
+
+// embed 模式隐藏大标题
+if(/[?&]embed=1/.test(location.search)){ var t=document.getElementById('ewTop'); if(t) t.style.display='none'; }
+// 支持 ?code= 直达
+(function(){ var m=location.search.match(/[?&]code=([^&]+)/); if(m){ document.getElementById('code').value=m[1]; run(); } })();
+</script>
+</body>
+</html>
