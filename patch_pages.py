@@ -79,6 +79,48 @@ TRAP_PANE = '''<section class="pane" id="pane-trap">
     style="width:100%;height:calc(100vh - 170px);min-height:520px;border:0;border-radius:12px;background:var(--bg)"></iframe>
 </section>'''
 
+# ---- 全局能力：点击股票代码 → 复制 + 新标签页打开分时陷阱 trap-detector.html?code=XXX ----
+CODE_LINK_SCRIPT = '''<script>
+/* 全局能力(2026-08-08): 点击股票代码 → 复制 + 新标签页打开分时陷阱 trap-detector.html?code=XXX */
+(function(){
+  if(window.__codeLinkInit) return; window.__codeLinkInit = true;
+  function norm(t){
+    t = (t||'').replace(/\\s/g,'');
+    return /^(sh|sz|bj)?\\d{6}$/i.test(t) ? t.toLowerCase() : null;
+  }
+  function interactive(el){
+    if(!el || el.nodeType!==1) return true;
+    if(/^(A|BUTTON|INPUT|TEXTAREA|SELECT|LABEL|OPTION|CANVAS)$/i.test(el.tagName)) return true;
+    if(el.closest && el.closest('a,button,input,textarea,select')) return true;
+    var p = el;
+    while(p && p.nodeType===1){ if(p.getAttribute && p.getAttribute('onclick')) return true; p = p.parentNode; }
+    return false;
+  }
+  function toast(msg){
+    var d = document.getElementById('__codeToast');
+    if(!d){
+      d = document.createElement('div'); d.id = '__codeToast';
+      d.style.cssText = 'position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:rgba(24,32,44,.95);color:#e6edf3;border:1px solid #2c3744;border-radius:8px;padding:8px 14px;font-size:13px;z-index:2147483647;pointer-events:none;opacity:0;transition:opacity .25s;box-shadow:0 4px 16px rgba(0,0,0,.4)';
+      document.body.appendChild(d);
+    }
+    d.textContent = msg; d.style.opacity = '1';
+    clearTimeout(d._t); d._t = setTimeout(function(){ d.style.opacity = '0'; }, 1800);
+  }
+  document.addEventListener('click', function(e){
+    var el = e.target;
+    if(interactive(el)) return;
+    var code = norm(el.textContent);
+    if(!code) return;
+    e.preventDefault(); e.stopPropagation();
+    try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code); }catch(_){}
+    toast('已复制 ' + code + '，正在打开分时陷阱…');
+    var a = document.createElement('a');
+    a.href = 'trap-detector.html?code=' + code; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+  }, true);
+})();
+</script>'''
+
 # ---- 市场研判（综合研判 + 全球市场 + 重大事件 + 国家队资金 + 情绪指数 合并为一个 Tab）----
 # 注意：综合研判/国家队/情绪 用 snapshot 标记(sync_auto_tab.py 注入)；全球/重大事件 为前端独立渲染空壳(DOM id 由 renderGlobal/loadMajorEvents 填充)
 MARKET_PANE = '''<section class="pane" id="pane-market">
@@ -1453,6 +1495,14 @@ def patch(fn):
             print('  + 分时陷阱pane（新建）')
         else:
             print('  ! 无法定位分时陷阱pane插入点')
+
+    # 2b2) 全局能力：点击股票代码 → 复制 + 新标签页跳转分时陷阱（幂等，CI 重跑保活）
+    if '__codeLinkInit' not in s:
+        s = s.replace('</body>', CODE_LINK_SCRIPT + '\n</body>', 1)
+        print('  + 全局代码跳转脚本（注入 </body> 前）')
+    else:
+        print('  ~ 全局代码跳转脚本已存在')
+
     if baked_prs and '正在加载' not in baked_prs:
         s = s.replace('<!--PRS_START-->' + LOADING_PRS + '<!--PRS_END-->',
                       '<!--PRS_START-->' + baked_prs + '<!--PRS_END-->', 1)
