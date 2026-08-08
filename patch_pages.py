@@ -45,7 +45,7 @@ WATCH_TAB_BTN = '  <button class="tab" data-tab="watch">📈 观察池</button>'
 # ---- Tab 顺序（操作层在前，阅读层在后）----
 # prs 实战策略(主入口) → radar 低位资金雷达 → auto 自动选股 → watch 观察池 → tradetime 交易时机
 # 后面才是环境阅读类：今日看板/市场研判/选股雷达/资金流/ETF/风控
-TAB_ORDER = ['prs', 'radar', 'trap', 'auto', 'watch', 'tradetime', 'overview',
+TAB_ORDER = ['prs', 'radar', 'trap', 'ewave', 'auto', 'watch', 'tradetime', 'overview',
              'market', 'screener', 'flow', 'etf', 'risk']
 TRADETIME_TAB_BTN = '  <button class="tab" data-tab="tradetime">⏱️ 交易时机</button>'
 LOADING_TRADETIME = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
@@ -76,6 +76,13 @@ RADAR_PANE = '''<section class="pane" id="pane-radar">
 TRAP_TAB_BTN = '  <button class="tab" data-tab="trap">🕵️ 分时陷阱</button>'
 TRAP_PANE = '''<section class="pane" id="pane-trap">
   <iframe src="trap-detector.html?embed=1" title="分时陷阱识别" loading="lazy"
+    style="width:100%;height:calc(100vh - 170px);min-height:520px;border:0;border-radius:12px;background:var(--bg)"></iframe>
+</section>'''
+
+# ---- 艾略特波浪 + 斐波那契（iframe 嵌 ewave-detector.html，自包含直连腾讯，不依赖流水线数据）----
+EWAVE_TAB_BTN = '  <button class="tab" data-tab="ewave">🌊 波浪斐波</button>'
+EWAVE_PANE = '''<section class="pane" id="pane-ewave">
+  <iframe src="ewave-detector.html?embed=1" title="艾略特波浪分析" loading="lazy"
     style="width:100%;height:calc(100vh - 170px);min-height:520px;border:0;border-radius:12px;background:var(--bg)"></iframe>
 </section>'''
 
@@ -1462,6 +1469,16 @@ def patch(fn):
         else:
             print('  ! 未找到首个 tab 按钮')
 
+    # 1g) 艾略特波浪 + 斐波那契（独立自包含页面，直连腾讯，不依赖流水线数据）：插到首个 button 之前，最终位置由 TAB_ORDER 决定
+    if 'data-tab="ewave"' not in s:
+        nav_start = s.find('<nav')
+        first_btn = s.find('<button', nav_start) if nav_start >= 0 else s.find('<button')
+        if first_btn >= 0:
+            s = s[:first_btn] + EWAVE_TAB_BTN + '\n' + s[first_btn:]
+            print('  + tab按钮: ewave')
+        else:
+            print('  ! 未找到首个 tab 按钮')
+
     # 2) 自动选股 pane -> fetch 结构（保留已烘焙快照）
     m = re.search(r'<!--AUTOPICK_START-->(.*?)<!--AUTOPICK_END-->', s, re.S)
     baked_auto = m.group(1) if m else None
@@ -1495,6 +1512,17 @@ def patch(fn):
             print('  + 分时陷阱pane（新建）')
         else:
             print('  ! 无法定位分时陷阱pane插入点')
+
+    # 2b3) 艾略特波浪 + 斐波那契 pane（iframe 嵌 ewave-detector.html?embed=1，自包含无需烘焙，不被 sync_auto_tab 冲掉）
+    s, ok = replace_section(s, 'pane-ewave', EWAVE_PANE)
+    if not ok:
+        ins = s.rfind('</section>')
+        if ins >= 0:
+            ins += len('</section>')
+            s = s[:ins] + '\n' + EWAVE_PANE + s[ins:]
+            print('  + 艾略特波浪pane（新建）')
+        else:
+            print('  ! 无法定位艾略特波浪pane插入点')
 
     # 2b2) 全局能力：点击股票代码 → 复制 + 新标签页跳转分时陷阱（幂等，CI 重跑保活）
     if '__codeLinkInit' not in s:
