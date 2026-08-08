@@ -1,0 +1,72 @@
+{
+ "updated": "2026-08-08 02:04",
+ "baseline": {
+  "win": 0.615,
+  "avg": 0.0411
+ },
+ "stats": {
+  "total": 1,
+  "active": 1,
+  "cleared": 0,
+  "win": 0,
+  "win_rate": null,
+  "avg_return": null,
+  "vs_backtest": "样本不足",
+  "by_tier": {
+   "P": {
+    "n": 0,
+    "win_rate": null,
+    "avg_return": null
+   },
+   "M": {
+    "n": 0,
+    "win_rate": null,
+    "avg_return": null
+   },
+   "E": {
+    "n": 0,
+    "win_rate": null,
+    "avg_return": null
+   },
+   "A": {
+    "n": 0,
+    "win_rate": null,
+    "avg_return": null
+   }
+  },
+  "pool_max": 20,
+  "hold_days": 20,
+  "exit_days": 21,
+  "today_picked": true,
+  "last_pick_date": "2026-08-08",
+  "last_pick_name": "紫金矿业"
+ },
+ "items": [
+  {
+   "code": "601899",
+   "name": "紫金矿业",
+   "template": "P",
+   "entry_date": "2026-08-08",
+   "entry_price": 35.15,
+   "last_date": "",
+   "last_price": null,
+   "return": null,
+   "hold_days": 0,
+   "status": "持有中",
+   "expectation": "待观察",
+   "plan_exit_days": 60,
+   "is_leader": true,
+   "sector": "有色金属",
+   "target_pct": 0.2,
+   "stop_mag": 0.0836,
+   "side": "",
+   "prob": 0.72,
+   "rr": 2.39,
+   "position_pct": 0.191,
+   "note": "🎯实战·主升浪(3)"
+  }
+ ],
+ "last_pick_date": "2026-08-08",
+ "last_pick_code": "601899",
+ "last_pick_name": "紫金矿业"
+}
