@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>分时陷阱识别 · 诱多 / 骗筹码 看穿器</title>
+<title>分时陷阱识别 · 诱多 / 骗筹码 / 量价关系 看穿器</title>
 <style>
   :root{
     --bg:#0f1419; --panel:#1a212b; --panel2:#222b38; --line:#2c3744;
@@ -28,7 +28,7 @@
        padding:3px 9px;border-radius:20px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
   .verdict{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .badge{font-size:22px;font-weight:800;padding:8px 16px;border-radius:10px;white-space:nowrap}
+  .badge{font-size:20px;font-weight:800;padding:8px 14px;border-radius:10px;white-space:nowrap}
   .b-lure{background:rgba(255,77,79,.15);color:var(--red);border:1px solid var(--red)}
   .b-shake{background:rgba(22,199,132,.15);color:var(--green);border:1px solid var(--green)}
   .b-up{background:rgba(78,161,255,.15);color:var(--blue);border:1px solid var(--blue)}
@@ -58,18 +58,25 @@
   summary{cursor:pointer;font-weight:600;padding:8px 0;font-size:15px}
   .edu p{margin:9px 0;font-size:14px}
   .edu .k{color:var(--blue);font-weight:700}
+  .edu .why{color:var(--gold);font-weight:700}
   .shape-svg{width:100%;max-width:420px;display:block;margin:8px auto;background:var(--panel2);border-radius:10px}
   table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
   th,td{border:1px solid var(--line);padding:7px 8px;text-align:left}
   th{background:var(--panel2);color:var(--sub);font-weight:600}
   .foot{color:var(--sub);font-size:12px;margin-top:20px;border-top:1px solid var(--line);padding-top:12px}
   code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px}
+  .vp-badge{font-size:18px;font-weight:800;padding:8px 14px;border-radius:10px;display:inline-block}
+  .vp-red{background:rgba(255,77,79,.15);color:var(--red);border:1px solid var(--red)}
+  .vp-green{background:rgba(22,199,132,.15);color:var(--green);border:1px solid var(--green)}
+  .vp-blue{background:rgba(78,161,255,.13);color:var(--blue);border:1px solid rgba(78,161,255,.5)}
+  .vp-neutral{background:rgba(154,167,180,.12);color:var(--sub);border:1px solid var(--line)}
+  .vpgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:10px}
 </style>
 </head>
 <body>
 <div id="trapTop">
-<h1>🕵️ 分时陷阱识别 · 诱多 / 骗筹码 看穿器</h1>
-<div class="sub">输入任意 A 股代码，自动拉取<b>最新交易日分时</b>，用量价关系判断当日是否「拉高诱多」或「低开骗筹码」。盘后看一眼，不用盯盘也能看穿套路。</div>
+<h1>🕵️ 分时陷阱识别 · 诱多 / 骗筹码 / 量价关系 看穿器</h1>
+<div class="sub">输入任意 A 股代码，自动拉取<b>最新交易日分时</b>，用量价关系判断当日是「拉高诱多」「低开骗筹码」还是「真实走强」，并给出<b>量价关系八态</b>解读。盘后看一眼，不用盯盘也能看穿套路。</div>
 </div>
 <script>if(/[?&]embed\b/.test(location.search)){var _t=document.getElementById('trapTop');if(_t)_t.style.display='none';}</script>
 
@@ -99,6 +106,16 @@
   </div>
 
   <div class="card">
+    <div style="font-weight:600;margin-bottom:6px">📊 量价关系（当日）</div>
+    <div class="verdict">
+      <span id="vpbadge" class="vp-badge vp-neutral">—</span>
+      <div class="meta" id="vpbrief"></div>
+    </div>
+    <div class="teach" id="vpimpl" style="margin-top:10px"></div>
+    <div class="vpgrid" id="vpstats"></div>
+  </div>
+
+  <div class="card">
     <div style="font-weight:600;margin-bottom:4px">分时图（价格 / 均价线 / 昨收）</div>
     <canvas id="chart" width="860" height="380"></canvas>
     <div class="meta" style="margin-top:6px">🔴 红=涨（相对昨收） · 🟢 绿=跌 · 蓝线=均价线(VWAP) · 灰虚线=昨收 · 标注=最高/最低点</div>
@@ -111,48 +128,63 @@
   </div>
 </div>
 
-<h2>📚 教学扫盲：诱多 vs 骗筹码，到底怎么分？</h2>
+<h2>📚 盘中分时实时识别 · 看什么 / 为什么</h2>
 <div class="edu">
-  <p>你盯盘累、容易上头，根子在「看不懂动作背后的意图」。庄家/主力洗盘或出货，靠的就是<b>制造情绪</b>：让你在高位忍不住追、在低位恐慌割。下面把两种最常见的「日内套路」拆开讲。</p>
+  <p>你盯盘累、容易上头，根子在「看不懂动作背后的意图」。其实开盘后不必死盯，按下面 6 个观察点，每个只花 10 秒扫一眼，就能判断「这票今天在干嘛」。本工具就是把这 6 点自动化了。</p>
 
   <details open>
-    <summary>一、拉高诱多（诱多出货）—— 表象强、收盘弱</summary>
-    <p><span class="k">机理：</span>用少量资金把股价快速拉起，制造「要启动了」的假象，吸引跟风盘在高位接货，随后悄悄派发，股价回落。</p>
-    <p><span class="k">典型分时：</span>早盘或盘中<b>急拉冲高</b> → 量价背离（涨的时候没量，或单笔脉冲）→ <b>冲高回落</b> → 收盘掉到<b>均价线下方</b>。追高的人全套在均价之上。</p>
-    <p><span class="k">看穿四件套：</span>① 冲高时<b>量能没跟上</b>（价涨量不涨）；② 收盘<b>低于均价线</b>；③ <b>长上影</b>（上方抛压重）；④ 尾盘急拉却守不住 = 粉饰收盘。</p>
-    <svg class="shape-svg" viewBox="0 0 420 180">
-      <line x1="40" y1="150" x2="400" y2="150" stroke="#2c3744"/>
-      <line x1="40" y1="100" x2="400" y2="100" stroke="#9aa7b4" stroke-dasharray="4 4"/>
-      <polyline fill="none" stroke="#ff4d4f" stroke-width="2.5"
-        points="40,120 120,80 180,55 200,60 260,95 340,110 400,108"/>
-      <line x1="40" y1="70" x2="400" y2="70" stroke="#4ea1ff" stroke-width="1.5" opacity="0.7"/>
-      <text x="200" y="48" fill="#ff4d4f" font-size="12">冲高</text>
-      <text x="320" y="125" fill="#9aa7b4" font-size="11">回落·收均线下</text>
-      <text x="60" y="168" fill="#9aa7b4" font-size="10">09:30</text>
-      <text x="370" y="168" fill="#9aa7b4" font-size="10">15:00</text>
-    </svg>
+    <summary>一、均价线（VWAP）—— 当日成本生命线</summary>
+    <p><span class="k">看什么：</span>价格相对蓝色均价线的位置；回踩均价线时能不能守住。</p>
+    <p><span class="why">为什么：</span>均价线 = 全市场当日平均持仓成本。价格在上方 = 多数人当日赚钱（买盘占优）；下方 = 多数人被套（卖压重）。<b>回踩不破均价线 = 强；跌破且放量 = 弱</b>。这是区分诱多/骗筹码的第一道尺——<b>收在均价线下方＝诱多（套你），收在上方＝洗盘（骗你下车后收回）</b>。</p>
   </details>
 
   <details>
-    <summary>二、低开骗筹码（洗盘震仓）—— 表象弱、收盘强</summary>
-    <p><span class="k">机理：</span>先低开或盘中小幅杀跌，制造「要崩了」的恐慌，逼你割肉离场，主力在低位把筹码接走，随后股价收回。</p>
-    <p><span class="k">典型分时：</span><b>低开/盘中小跌</b> → 长下影（低点有承接）→ <b>收回开盘价/均价线之上</b>。恐慌盘被洗下车后，股价反而走强。对持筹者是<b>偏多信号</b>（洗盘结束），不是真破位。</p>
-    <p><span class="k">看穿四件套：</span>① 下跌时<b>没放量破位</b>；② 收盘<b>站回均价线</b>且日线不跌；③ <b>长下影</b>（低点未确认）；④ 不破前低、板块未共振杀跌。</p>
-    <svg class="shape-svg" viewBox="0 0 420 180">
-      <line x1="40" y1="150" x2="400" y2="150" stroke="#2c3744"/>
-      <line x1="40" y1="100" x2="400" y2="100" stroke="#9aa7b4" stroke-dasharray="4 4"/>
-      <polyline fill="none" stroke="#16c784" stroke-width="2.5"
-        points="40,110 110,130 150,135 200,110 280,85 340,80 400,82"/>
-      <line x1="40" y1="95" x2="400" y2="95" stroke="#4ea1ff" stroke-width="1.5" opacity="0.7"/>
-      <text x="120" y="150" fill="#16c784" font-size="11">下探洗盘</text>
-      <text x="300" y="74" fill="#16c784" font-size="12">收回·收均价上</text>
-      <text x="60" y="168" fill="#9aa7b4" font-size="10">09:30</text>
-      <text x="370" y="168" fill="#9aa7b4" font-size="10">15:00</text>
-    </svg>
+    <summary>二、量能方向（涨段量 vs 跌段量）—— 看穿诱多的核心</summary>
+    <p><span class="k">看什么：</span>每一波上攻 / 下杀时的量能变化；本工具「量能方向」指标（涨段量占比，&gt;55% 买盘主动 / &lt;45% 卖盘主动）。</p>
+    <p><span class="why">为什么：</span>真涨 = 价涨时量放大、价跌时量缩小（资金<b>主动买</b>）；假涨 = 价涨量缩 或 价跌放量（对倒 / 派发）。同样一根阳线，量是「买出来的」还是「对倒对出来的」，一眼可分。</p>
   </details>
 
   <details>
-    <summary>三、一句话区分（背下来）</summary>
+    <summary>三、量比（今日量 ÷ 近 5 日均量）—— 放量是真是假</summary>
+    <p><span class="k">看什么：</span>本工具「量比」（&gt;1.5 放量 / &lt;0.7 缩量）。</p>
+    <p><span class="why">为什么：</span>早盘放量过猛容易透支全天；<b>尾盘突放巨量</b>常是对倒粉饰收盘；<b>缩量上涨 = 无量空涨</b>（动能不足，诱多前兆）。放量必须配合「价在均价线上 + 量能方向买盘主动」才是真强。</p>
+  </details>
+
+  <details>
+    <summary>四、量价背离 —— 最容易被忽略的预警</summary>
+    <p><span class="k">看什么：</span>价创新高但量没跟上（缩量上涨）；价在跌但量在缩小（缩量下跌）。</p>
+    <p><span class="why">为什么：</span><b>价升量减 = 动能衰减</b>（诱多前兆，涨不长久）；<b>价跌量减 = 抛压减轻</b>（多为洗盘，非真破位）。背离是「表面还在涨、内里已乏力」的信号。</p>
+  </details>
+
+  <details>
+    <summary>五、冲高 / 杀跌的「回落质量」</summary>
+    <p><span class="k">看什么：</span>拉高后是否快速回落并收在均价线下方（诱多）；杀跌后是否被收回（洗盘）。</p>
+    <p><span class="why">为什么：</span>诱多 = 拉高套人后悄悄派发（冲高回落、长上影）；洗盘 = 吓出恐慌盘后收回（长下影、收盘站回均价）。看的是「动作之后怎么收场」，不是动作本身。</p>
+  </details>
+
+  <details>
+    <summary>六、尾盘 30 分钟 —— 主力最便宜的操纵窗口</summary>
+    <p><span class="k">看什么：</span>尾盘偷拉但全天弱（粉饰收盘）；尾盘跳水（资金出逃）。</p>
+    <p><span class="why">为什么：</span>尾盘成交量小、影响大，是主力低成本做图时段。所以<b>尾盘单独的动作必须结合全天</b>——全天弱 + 尾盘急拉，诱多嫌疑反而更高。</p>
+  </details>
+
+  <details>
+    <summary>📋 量价关系八态速查表</summary>
+    <table>
+      <tr><th>状态</th><th>含义</th><th>应对</th></tr>
+      <tr><td>放量上涨·量价齐升</td><td>买盘主动放量、价在均线上</td><td>真实走强，可跟随</td></tr>
+      <tr><td>放量滞涨·高位派发</td><td>放量却不涨、量能偏卖盘</td><td>诱多温床，不追</td></tr>
+      <tr><td>缩量上涨·无量空涨</td><td>涨却没量，动能不足</td><td>高位防回落</td></tr>
+      <tr><td>放量下跌·恐慌见底</td><td>低位放量大跌后长下影收回</td><td>恐慌出尽，关注止跌</td></tr>
+      <tr><td>放量下跌·抛压释放</td><td>卖盘主动放量下跌</td><td>高位=出货，低位看止跌</td></tr>
+      <tr><td>缩量下跌·洗盘阴跌</td><td>下跌缩量、抛压减轻</td><td>多为洗盘，看收回</td></tr>
+      <tr><td>放量震荡·分歧加大</td><td>平盘放量、多空激战</td><td>方向待选，不抢</td></tr>
+      <tr><td>缩量横盘·观望</td><td>量能萎缩、资金观望</td><td>等方向</td></tr>
+    </table>
+  </details>
+
+  <details>
+    <summary>🖼️ 诱多 vs 骗筹码 · 一图秒懂</summary>
     <p>两者都「先动一下再回来」，区别只在<b>收盘价相对均价线的位置</b>：</p>
     <table>
       <tr><th>维度</th><th>拉高诱多</th><th>低开骗筹码</th></tr>
@@ -162,14 +194,30 @@
       <tr><td>量能</td><td>涨时缩量 / 单笔脉冲</td><td>跌时不放量破位</td></tr>
       <tr><td>对你意味着</td><td>别追高，等回踩确认</td><td>洗盘偏多，看是否站回</td></tr>
     </table>
+    <svg class="shape-svg" viewBox="0 0 420 180">
+      <line x1="40" y1="150" x2="400" y2="150" stroke="#2c3744"/>
+      <line x1="40" y1="100" x2="400" y2="100" stroke="#9aa7b4" stroke-dasharray="4 4"/>
+      <polyline fill="none" stroke="#ff4d4f" stroke-width="2.5" points="40,120 120,80 180,55 200,60 260,95 340,110 400,108"/>
+      <line x1="40" y1="70" x2="400" y2="70" stroke="#4ea1ff" stroke-width="1.5" opacity="0.7"/>
+      <text x="200" y="48" fill="#ff4d4f" font-size="12">诱多：冲高</text>
+      <text x="315" y="125" fill="#9aa7b4" font-size="11">回落·收均线下</text>
+    </svg>
+    <svg class="shape-svg" viewBox="0 0 420 180">
+      <line x1="40" y1="150" x2="400" y2="150" stroke="#2c3744"/>
+      <line x1="40" y1="100" x2="400" y2="100" stroke="#9aa7b4" stroke-dasharray="4 4"/>
+      <polyline fill="none" stroke="#16c784" stroke-width="2.5" points="40,110 110,130 150,135 200,110 280,85 340,80 400,82"/>
+      <line x1="40" y1="95" x2="400" y2="95" stroke="#4ea1ff" stroke-width="1.5" opacity="0.7"/>
+      <text x="110" y="150" fill="#16c784" font-size="11">骗筹码：下探洗盘</text>
+      <text x="295" y="74" fill="#16c784" font-size="12">收回·收均价上</text>
+    </svg>
   </details>
 
   <details>
-    <summary>四、怎么做到「不盯盘也不慌」</summary>
-    <p>① <b>盘后看结论</b>：收盘后用本工具扫一眼，拿「诱多/骗筹码/真实」的结论，代替全天盯分时。</p>
+    <summary>怎么做到「不盯盘也不慌」</summary>
+    <p>① <b>盘后看结论</b>：收盘后用本工具扫一眼，拿「诱多 / 骗筹码 / 真实 / 量价关系」的结论，代替全天盯分时。</p>
     <p>② <b>用条件单替代手速</b>：想买挂「回踩均价线且放量」的触发单；想卖挂「跌破前低」的止损单，不靠临场情绪。</p>
-    <p>③ <b>看板块别看个股</b>：个股分时陷阱常是「板块共振」的一部分。板块齐涨它独弱=真弱；板块跌它长下影收回=洗盘概率大。</p>
-    <p>④ <b>本工具只给「特征/嫌疑」</b>：单日分时看不出真实意图（需结合趋势、消息、位置）。把它当「风险提示 + 教学训练」，别当买卖定罪。</p>
+    <p>③ <b>看板块别看个股</b>：个股陷阱常是板块共振的一部分。板块齐涨它独弱 = 真弱；板块跌它长下影收回 = 洗盘概率大。</p>
+    <p>④ <b>本工具只给「特征 / 嫌疑 + 量价解读」</b>：单日分时看不出真实意图（需结合趋势、消息、位置）。当风险提示 + 训练用，别当买卖定罪。</p>
   </details>
 </div>
 
@@ -217,18 +265,55 @@ function parseMinute(j, code){
   if(Array.isArray(qt) && qt.length>1) name = qt[1];
   return { date:node.date, name:name, rows:rows };
 }
-function parsePrevClose(j, code, targetDate){
+function parseDayCtx(j, code, targetDate){
   var node = j && j.data && j.data[code];
   var day = (node && (node.day || node.qfqday)) || [];
-  var arr = day.map(function(r){ return [r[0], parseFloat(r[2])]; }).sort(function(a,b){return a[0]<b[0]?-1:1;});
-  var prev=null;
-  for(var i=0;i<arr.length;i++){
-    if(arr[i][0] >= targetDate){ prev = i>0 ? arr[i-1][1] : arr[i][1]; break; }
-  }
-  if(prev===null) prev = arr.length>=2 ? arr[arr.length-2][1] : (arr.length?arr[arr.length-1][1]:null);
-  return prev;
+  var bars = day.map(function(r){ return [r[0], parseFloat(r[2]), parseFloat(r[5])]; })
+                 .filter(function(r){ return r[0] && !isNaN(r[2]); })
+                 .sort(function(a,b){ return a[0]<b[0]?-1:1; });
+  if(!bars.length) return { prev:null, todayVol:null, avgPriorVol:null };
+  var today=null;
+  for(var i=0;i<bars.length;i++){ if(bars[i][0] <= targetDate) today = bars[i]; }
+  var prior = bars.filter(function(b){ return today && b[0] < today[0]; }).slice(-5);
+  var avgPriorVol = prior.length ? (prior.reduce(function(s,b){return s+b[2];},0)/prior.length)*100 : null;
+  var todayVol = today ? today[2]*100 : null;
+  var prev = prior.length ? prior[prior.length-1][1] : (bars[0][1]||null);
+  return { prev:prev, todayVol:todayVol, avgPriorVol:avgPriorVol };
 }
-function analyze(rows, prevClose){
+function volpriceState(day_chg, vol_ratio, vol_bias, above_vwap, lower_shadow){
+  var up = day_chg>0.005, dn = day_chg<-0.005;
+  if(vol_ratio===null) return ['量能未知','无法取得近5日均量，量比暂不可计算。'];
+  if(vol_ratio>1.5){
+    if(up){
+      if(vol_bias>=0.55 && above_vwap) return ['放量上涨·量价齐升','上涨伴随买盘主动放量、价在均价线上方，属资金真实推动的走强/突破，可靠性较高。'];
+      if(vol_bias<0.45) return ['放量滞涨·高位派发','价在涨但量能偏向卖盘（量价背离/放量不涨），多为对倒拉高出货，是诱多的典型温床。'];
+      return ['放量上涨·分歧','上涨但多空分歧大（涨段跌段都在放量），需看收盘能否守住均价线确认方向。'];
+    }
+    if(dn){
+      if(vol_bias<0.45){
+        if(lower_shadow>0.45) return ['放量下跌·恐慌见底','低位放巨量杀跌后长下影收回，常是恐慌盘出尽（最后一跌），关注是否止跌企稳。'];
+        return ['放量下跌·抛压释放','卖盘主动放量下跌：若在高位=出货加速；若在低位长下影=恐慌见底信号。'];
+      }
+      return ['放量下跌·对倒','下跌中买盘也放量，可能是对倒制造恐慌（洗盘）或资金博弈，需结合位置判断。'];
+    }
+    return ['放量震荡·分歧加大','平盘放量，多空分歧显著，方向待选，切勿追涨杀跌。'];
+  }
+  if(vol_ratio<0.7){
+    if(up) return ['缩量上涨·无量空涨','上涨却没量，动能不足/惜售，若已处高位需防回落（诱多前兆）。'];
+    if(dn) return ['缩量下跌·洗盘阴跌','下跌缩量，抛压减轻，多为洗盘或阴跌，而非恐慌性杀跌。'];
+    return ['缩量横盘·观望','量能萎缩横盘，资金观望，等待方向选择。'];
+  }
+  if(up && above_vwap) return ['平量上涨·稳健','温和放量上涨、价在均价线上，走势稳健健康。'];
+  if(dn) return ['平量下跌·阴跌','平量阴跌，趋势偏弱但无恐慌，多看少动。'];
+  return ['平量横盘','多空均衡，方向不明。'];
+}
+function vpClass(state){
+  if(state.indexOf('派发')>=0 || state.indexOf('空涨')>=0 || state.indexOf('抛压')>=0) return 'vp-red';
+  if(state.indexOf('齐升')>=0 || state.indexOf('稳健')>=0 || state.indexOf('见底')>=0) return 'vp-green';
+  if(state.indexOf('洗盘')>=0 || state.indexOf('对倒')>=0 || state.indexOf('阴跌')>=0) return 'vp-blue';
+  return 'vp-neutral';
+}
+function analyze(rows, dctx){
   var n = rows.length;
   var opens = rows[0].price, close = rows[n-1].price;
   var prices = rows.map(function(r){return r.price;});
@@ -243,9 +328,10 @@ function analyze(rows, prevClose){
   var tail_vol = sum(tail.map(function(r){return r.vol;}));
   var tail_vol_share = total_vol? tail_vol/total_vol : 0;
   var tail_chg = (n>=30 && prices[n-30]) ? (prices[n-1]-prices[n-30])/prices[n-30] : 0;
-  var gap = (opens-prevClose)/prevClose;
-  var day_chg = (close-prevClose)/prevClose;
-  var intraday_range = (high-low)/prevClose;
+  var prev = dctx.prev;
+  var gap = (opens-prev)/prev;
+  var day_chg = (close-prev)/prev;
+  var intraday_range = (high-low)/prev;
   var spike_up = (high-opens)/opens;
   var dip_down = (low-opens)/opens;
   var fade_from_high = (high-close)/high;
@@ -255,6 +341,18 @@ function analyze(rows, prevClose){
   var above_vwap_time = prices.filter(function(p,i){return p>vwap[i];}).length/n;
   var lower_shadow = (high-low)>0 ? (close-low)/(high-low) : 0;
   var upper_shadow = (high-low)>0 ? (high-close)/(high-low) : 0;
+
+  // 量能方向(涨段/跌段成交量)
+  var vol_up=0, vol_down=0, vol_flat=0;
+  for(var k=1;k<n;k++){
+    var dv = rows[k].vol - rows[k-1].vol;
+    if(dv<=0) continue;
+    if(prices[k]>prices[k-1]) vol_up+=dv;
+    else if(prices[k]<prices[k-1]) vol_down+=dv;
+    else vol_flat+=dv;
+  }
+  var vol_bias = (vol_up+vol_down)>0 ? vol_up/(vol_up+vol_down) : 0.5;
+  var vol_ratio = (dctx.todayVol && dctx.avgPriorVol) ? dctx.todayVol/dctx.avgPriorVol : null;
 
   var evidence=[], lure=0, shake=0;
   if(spike_up>0.012){ lure+=1.0; evidence.push("盘中冲高 +"+(spike_up*100).toFixed(1)+"% (相对开盘)"); }
@@ -267,6 +365,23 @@ function analyze(rows, prevClose){
   if(rebound_from_low>0.015 && (close>opens || above_vwap_close)){ shake+=1.5; evidence.push("从最低点回收 +"+(rebound_from_low*100).toFixed(1)+"% 且收回开盘/均价之上 (恐慌盘被洗后收复)"); }
   if(lower_shadow>0.45 && (close>opens || above_vwap_close)){ shake+=0.8; evidence.push("长下影(下影占振幅 "+(lower_shadow*100).toFixed(0)+"%): 下方有承接、低点未确认"); }
   if(above_vwap_close && day_chg>=0){ shake+=0.6; evidence.push("收在均价线之上且日线不跌 (洗盘后资金收回)"); }
+
+  // 第二层: 量价关系
+  var vp = volpriceState(day_chg, vol_ratio, vol_bias, above_vwap_close, lower_shadow);
+  var vp_state = vp[0], vp_impl = vp[1];
+  if(vol_ratio!==null){
+    var vr_txt = "量比 "+vol_ratio.toFixed(2);
+    if(vol_ratio>1.5) vr_txt+="(放量)";
+    else if(vol_ratio<0.7) vr_txt+="(缩量)";
+    else vr_txt+="(平量)";
+    var dir = vol_bias>=0.55 ? "买盘主动" : (vol_bias<0.45 ? "卖盘主动" : "多空均衡");
+    evidence.push(vr_txt+" | 量能方向: "+dir+" (涨段量占比"+(vol_bias*100).toFixed(0)+"%)");
+  }
+  if(vp_state==='放量滞涨·高位派发' || vp_state==='缩量上涨·无量空涨'){
+    lure+=1.5; evidence.push("量价关系判定「"+vp_state+"」→ 强化诱多嫌疑");
+  } else if(vp_state==='放量下跌·恐慌见底' || vp_state==='缩量下跌·洗盘阴跌' || vp_state==='放量下跌·对倒'){
+    shake+=1.2; evidence.push("量价关系判定「"+vp_state+"」→ 偏向洗盘/骗筹码");
+  }
 
   var early=n*0.3, shape;
   if(high_i<early && close<opens) shape='冲高回落';
@@ -293,14 +408,14 @@ function analyze(rows, prevClose){
     teach='多空拉锯、收盘贴近均价，无明确陷阱特征。';
   }
   return { verdict:verdict, cls:cls, conf:conf, shape:shape, teach:teach, evidence:evidence,
-    lure:lure, shake:shake, f:{
-      gap_pct:gap*100, day_chg_pct:day_chg*100, intraday_range_pct:intraday_range*100,
+    lure:lure, shake:shake, volprice:{ state:vp_state, impl:vp_impl, vol_ratio:vol_ratio, vol_bias:vol_bias },
+    f:{ gap_pct:gap*100, day_chg_pct:day_chg*100, intraday_range_pct:intraday_range*100,
       spike_up_pct:spike_up*100, dip_down_pct:dip_down*100, fade_from_high_pct:fade_from_high*100,
       rebound_from_low_pct:rebound_from_low*100, above_vwap:above_vwap_close, vwap_close:vwap_close,
       morning_vol_share:morning_vol/total_vol*100, tail_vol_share:tail_vol_share*100,
       tail_chg_pct:tail_chg*100, lower_shadow:lower_shadow, upper_shadow:upper_shadow,
-      high:high, low:low, open:opens, close:close, prev:prevClose, high_i:high_i, low_i:low_i, n:n
-    }, rows:rows, vwap:vwap };
+      high:high, low:low, open:opens, close:close, prev:prev, high_i:high_i, low_i:low_i, n:n,
+      vol_ratio:vol_ratio, vol_bias:vol_bias }, rows:rows, vwap:vwap };
 }
 function fmt(v,d){ return (v>=0?'+':'')+v.toFixed(d===undefined?2:d); }
 function cls(v){ return v>0?'up':(v<0?'dn':''); }
@@ -331,6 +446,18 @@ function render(r, code, name, date){
   document.getElementById('stats').innerHTML = stats.map(function(s){
     return '<div class="stat"><div class="k">'+s[0]+'</div><div class="v '+s[2]+'">'+s[1]+'</div></div>';
   }).join('');
+  // 量价关系卡片
+  var vp=r.volprice;
+  var vpb=document.getElementById('vpbadge');
+  vpb.textContent=vp.state; vpb.className='vp-badge '+vpClass(vp.state);
+  document.getElementById('vpbrief').textContent='量比 '+(vp.vol_ratio===null?'—':vp.vol_ratio.toFixed(2))
+    +' · 量能方向 '+(vp.vol_bias*100).toFixed(0)+'% 涨段量'+(vp.vol_bias>=0.55?'（买盘主动）':(vp.vol_bias<0.45?'（卖盘主动）':'（均衡）'));
+  document.getElementById('vpimpl').textContent='📖 '+vp.impl;
+  var vr = vp.vol_ratio===null ? '—' : (vp.vol_ratio>1.5?'放量':(vp.vol_ratio<0.7?'缩量':'平量'))+' '+vp.vol_ratio.toFixed(2);
+  document.getElementById('vpstats').innerHTML = [
+    ['量比', vr], ['涨段量占比', (vp.vol_bias*100).toFixed(0)+'%'],
+    ['均价线成本', f.above_vwap?'价格在上方✅':'价格在下方⚠️']
+  ].map(function(s){ return '<div class="stat"><div class="k">'+s[0]+'</div><div class="v">'+s[1]+'</div></div>'; }).join('');
   var ev=document.getElementById('evidence');
   ev.innerHTML = r.evidence.length ? r.evidence.map(function(e){return '<div class="ev">'+e+'</div>';}).join('')
                                    : '<div class="ev">无显著陷阱特征。</div>';
@@ -348,24 +475,18 @@ function drawChart(r){
   function X(i){ return padL+(W-padL-padR)*i/(n-1); }
   function Y(v){ return padT+(H-padT-padB)*(1-(v-ymin)/span); }
   ctx.clearRect(0,0,W,H);
-  // 昨收灰虚线
   ctx.strokeStyle='#9aa7b4'; ctx.setLineDash([5,4]); ctx.beginPath();
   ctx.moveTo(padL,Y(r.f.prev)); ctx.lineTo(W-padR,Y(r.f.prev)); ctx.stroke(); ctx.setLineDash([]);
-  // 均价线
   ctx.strokeStyle='#4ea1ff'; ctx.lineWidth=1.5; ctx.beginPath();
   for(var i=0;i<n;i++){ var x=X(i),y=Y(vw[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); } ctx.stroke();
-  // 价格线（按相对昨收着色）
   var up = r.f.close>=r.f.prev;
   ctx.strokeStyle=up?'#ff4d4f':'#16c784'; ctx.lineWidth=2; ctx.beginPath();
   for(var i=0;i<n;i++){ var x=X(i),y=Y(rows[i].price); i?ctx.lineTo(x,y):ctx.moveTo(x,y); } ctx.stroke();
-  // 最高点标注
   var hi=r.f.high_i; ctx.fillStyle='#ff4d4f'; ctx.beginPath(); ctx.arc(X(hi),Y(r.f.high),3.5,0,7); ctx.fill();
   ctx.fillStyle='#9aa7b4'; ctx.font='11px sans-serif';
   ctx.fillText('高 '+r.f.high.toFixed(2), Math.min(X(hi)+4,W-70), Y(r.f.high)-4);
-  // 最低点标注
   var li=r.f.low_i; ctx.fillStyle='#16c784'; ctx.beginPath(); ctx.arc(X(li),Y(r.f.low),3.5,0,7); ctx.fill();
   ctx.fillText('低 '+r.f.low.toFixed(2), Math.min(X(li)+4,W-70), Y(r.f.low)+14);
-  // x轴标签
   ctx.fillStyle='#9aa7b4'; ctx.font='10px sans-serif';
   ctx.fillText('09:30',padL,H-4); ctx.fillText('11:30/13:00',W/2-30,H-4); ctx.fillText('15:00',W-padR-34,H-4);
 }
@@ -382,10 +503,10 @@ async function run(){
     var jm=await jsonp('https://web.ifzq.gtimg.cn/appstock/app/minute/query?code='+code+'&_var=min_data','min_data');
     var md=parseMinute(jm,code);
     if(!md || !md.rows.length){ document.getElementById('status').innerHTML='<div class="err">未取到分时数据（该代码可能非A股或当日停牌）。</div>'; return; }
-    var jk=await jsonp('https://ifzq.gtimg.cn/appstock/app/kline/kline?_var=kdata&param='+code+',day,,,8','kdata');
-    var prev=parsePrevClose(jk,code,md.date);
-    if(prev===null){ document.getElementById('status').innerHTML='<div class="err">未取到昨收数据。</div>'; return; }
-    var r=analyze(md.rows, prev);
+    var jk=await jsonp('https://ifzq.gtimg.cn/appstock/app/kline/kline?_var=kdata&param='+code+',day,,,12','kdata');
+    var dctx=parseDayCtx(jk,code,md.date);
+    if(dctx.prev===null){ document.getElementById('status').innerHTML='<div class="err">未取到昨收数据。</div>'; return; }
+    var r=analyze(md.rows, dctx);
     document.getElementById('status').innerHTML='';
     render(r, code, md.name||code, md.date);
   }catch(e){
