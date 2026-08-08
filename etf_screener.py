@@ -197,13 +197,15 @@ def main():
     for r in results:
         out.setdefault(r['template'], 'D')
         out[r['template']].append(r)
-    # 宏观调制（李大霄温度 + 情绪）per-pick 开仓总开关
+    # 宏观调制（仅情绪指数）per-pick 开仓总开关
+    # ⚠️ 李大霄温度已从买卖决策中移除(2026-08-08)，apply_macro 签名变为 (res, sentiment) 两参；
+    #    ld 仅保留用于 lidaxiao_pick 信息标注，绝不再传入 apply_macro。
     ld, sd = A.load_macro_best_effort()
     if ld or sd:
         qset = A.load_quality_set()
         for r in results:
             r['lidaxiao_pick'] = r['code'] in qset
-            A.apply_macro(r, ld, sd)
+            A.apply_macro(r, sd)
     # 排序（确定性降序）
     for k in out:
         out[k].sort(key=lambda r: -(r.get('trade_plan', {}).get('conviction', 0)))
