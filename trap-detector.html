@@ -515,6 +515,8 @@ async function run(){
 }
 document.getElementById('go').addEventListener('click', run);
 document.getElementById('code').addEventListener('keydown', function(e){ if(e.key==='Enter') run(); });
+var _qc = (location.search.match(/[?&]code=([^&]+)/)||[])[1];
+if(_qc){ try{ _qc = decodeURIComponent(_qc); }catch(_){} document.getElementById('code').value = _qc; }
 run();
 </script>
 </body>
