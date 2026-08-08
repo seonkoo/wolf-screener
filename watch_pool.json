@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-08 02:04",
+ "updated": "2026-08-08 03:11",
  "baseline": {
   "win": 0.615,
   "avg": 0.0411
@@ -37,7 +37,7 @@
   "pool_max": 20,
   "hold_days": 20,
   "exit_days": 21,
-  "today_picked": true,
+  "today_picked": false,
   "last_pick_date": "2026-08-08",
   "last_pick_name": "紫金矿业"
  },
@@ -48,12 +48,12 @@
    "template": "P",
    "entry_date": "2026-08-08",
    "entry_price": 35.15,
-   "last_date": "",
-   "last_price": null,
-   "return": null,
+   "last_date": "2026-08-07",
+   "last_price": 35.15,
+   "return": 0.0,
    "hold_days": 0,
    "status": "持有中",
-   "expectation": "待观察",
+   "expectation": "偏不符",
    "plan_exit_days": 60,
    "is_leader": true,
    "sector": "有色金属",
