@@ -5867,5 +5867,45 @@ document.getElementById('eventsRefreshBtn').onclick=loadMajorEvents;
 })();
 </script>
 <!--WOLF_RENDER_JS_END-->
+<script>
+/* 全局能力(2026-08-08): 点击股票代码 → 复制 + 新标签页打开分时陷阱 trap-detector.html?code=XXX */
+(function(){
+  if(window.__codeLinkInit) return; window.__codeLinkInit = true;
+  function norm(t){
+    t = (t||'').replace(/\s/g,'');
+    return /^(sh|sz|bj)?\d{6}$/i.test(t) ? t.toLowerCase() : null;
+  }
+  function interactive(el){
+    if(!el || el.nodeType!==1) return true;
+    if(/^(A|BUTTON|INPUT|TEXTAREA|SELECT|LABEL|OPTION|CANVAS)$/i.test(el.tagName)) return true;
+    if(el.closest && el.closest('a,button,input,textarea,select')) return true;
+    var p = el;
+    while(p && p.nodeType===1){ if(p.getAttribute && p.getAttribute('onclick')) return true; p = p.parentNode; }
+    return false;
+  }
+  function toast(msg){
+    var d = document.getElementById('__codeToast');
+    if(!d){
+      d = document.createElement('div'); d.id = '__codeToast';
+      d.style.cssText = 'position:fixed;left:50%;bottom:70px;transform:translateX(-50%);background:rgba(24,32,44,.95);color:#e6edf3;border:1px solid #2c3744;border-radius:8px;padding:8px 14px;font-size:13px;z-index:2147483647;pointer-events:none;opacity:0;transition:opacity .25s;box-shadow:0 4px 16px rgba(0,0,0,.4)';
+      document.body.appendChild(d);
+    }
+    d.textContent = msg; d.style.opacity = '1';
+    clearTimeout(d._t); d._t = setTimeout(function(){ d.style.opacity = '0'; }, 1800);
+  }
+  document.addEventListener('click', function(e){
+    var el = e.target;
+    if(interactive(el)) return;
+    var code = norm(el.textContent);
+    if(!code) return;
+    e.preventDefault(); e.stopPropagation();
+    try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code); }catch(_){}
+    toast('已复制 ' + code + '，正在打开分时陷阱…');
+    var a = document.createElement('a');
+    a.href = 'trap-detector.html?code=' + code; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+  }, true);
+})();
+</script>
 </body>
 </html>
