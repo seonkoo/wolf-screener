@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分时陷阱识别 · 诱多 / 骗筹码 看穿器</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#1a212b; --panel2:#222b38; --line:#2c3744;
+    --txt:#e6edf3; --sub:#9aa7b4; --red:#ff4d4f; --green:#16c784;
+    --blue:#4ea1ff; --gold:#ffcc4d; --purple:#b388ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       line-height:1.6;padding:14px;max-width:920px;margin:0 auto}
+  h1{font-size:20px;margin:6px 0 2px}
+  h2{font-size:16px;margin:22px 0 10px;border-left:3px solid var(--blue);padding-left:8px}
+  .sub{color:var(--sub);font-size:13px;margin-bottom:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+  input[type=text]{flex:1;min-width:160px;background:var(--panel2);border:1px solid var(--line);
+       color:var(--txt);padding:11px 12px;border-radius:9px;font-size:15px;outline:none}
+  input[type=text]:focus{border-color:var(--blue)}
+  button{background:var(--blue);color:#06121f;border:none;padding:11px 18px;border-radius:9px;
+       font-size:15px;font-weight:600;cursor:pointer}
+  button:active{transform:translateY(1px)}
+  .pill{font-size:12px;color:var(--sub);background:var(--panel);border:1px solid var(--line);
+       padding:3px 9px;border-radius:20px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0}
+  .verdict{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .badge{font-size:22px;font-weight:800;padding:8px 16px;border-radius:10px;white-space:nowrap}
+  .b-lure{background:rgba(255,77,79,.15);color:var(--red);border:1px solid var(--red)}
+  .b-shake{background:rgba(22,199,132,.15);color:var(--green);border:1px solid var(--green)}
+  .b-up{background:rgba(78,161,255,.15);color:var(--blue);border:1px solid var(--blue)}
+  .b-down{background:rgba(154,167,180,.15);color:var(--sub);border:1px solid var(--line)}
+  .b-neutral{background:rgba(154,167,180,.12);color:var(--sub);border:1px solid var(--line)}
+  .meta{color:var(--sub);font-size:13px}
+  .conf{font-size:13px;color:var(--gold)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:10px}
+  .stat{background:var(--panel2);border-radius:9px;padding:9px 10px}
+  .stat .k{font-size:11px;color:var(--sub)}
+  .stat .v{font-size:16px;font-weight:700;margin-top:2px}
+  .up{color:var(--red)} .dn{color:var(--green)}
+  canvas{width:100%;height:auto;display:block;background:var(--panel2);border-radius:10px;margin-top:8px}
+  .ev{margin:4px 0;padding-left:18px;position:relative;font-size:14px}
+  .ev:before{content:"·";position:absolute;left:6px;color:var(--gold);font-weight:800}
+  .teach{background:rgba(78,161,255,.07);border:1px solid rgba(78,161,255,.25);
+         border-radius:10px;padding:12px;font-size:14px;margin-top:10px}
+  .bars{margin-top:8px}
+  .bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}
+  .bar .lab{width:84px;color:var(--sub)}
+  .bar .track{flex:1;height:10px;background:var(--panel2);border-radius:6px;overflow:hidden}
+  .bar .fill{height:100%}
+  .fill-lure{background:var(--red)} .fill-shake{background:var(--green)}
+  .hidden{display:none}
+  .err{color:var(--red);background:rgba(255,77,79,.1);padding:10px;border-radius:9px}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 14px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600;padding:8px 0;font-size:15px}
+  .edu p{margin:9px 0;font-size:14px}
+  .edu .k{color:var(--blue);font-weight:700}
+  .shape-svg{width:100%;max-width:420px;display:block;margin:8px auto;background:var(--panel2);border-radius:10px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+  th,td{border:1px solid var(--line);padding:7px 8px;text-align:left}
+  th{background:var(--panel2);color:var(--sub);font-weight:600}
+  .foot{color:var(--sub);font-size:12px;margin-top:20px;border-top:1px solid var(--line);padding-top:12px}
+  code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<h1>🕵️ 分时陷阱识别 · 诱多 / 骗筹码 看穿器</h1>
+<div class="sub">输入任意 A 股代码，自动拉取<b>最新交易日分时</b>，用量价关系判断当日是否「拉高诱多」或「低开骗筹码」。盘后看一眼，不用盯盘也能看穿套路。</div>
+
+<div class="row">
+  <input id="code" type="text" placeholder="输入代码，如 600000 / 000001 / 300750 或 sh600000" value="600000">
+  <button id="go">分析分时</button>
+  <span class="pill">数据：腾讯财经（仅最新交易日）</span>
+</div>
+<div id="status"></div>
+
+<div id="result" class="hidden">
+  <div class="card">
+    <div class="verdict">
+      <span id="badge" class="badge b-neutral">—</span>
+      <div>
+        <div id="rname" style="font-size:16px;font-weight:700"></div>
+        <div class="meta" id="rmeta"></div>
+      </div>
+      <div class="conf" id="rconf"></div>
+    </div>
+    <div class="meta" id="rshape" style="margin-top:8px"></div>
+    <div class="bars">
+      <div class="bar"><span class="lab">诱多特征</span><div class="track"><div id="flure" class="fill fill-lure" style="width:0%"></div></div><span id="vlure">0.0</span></div>
+      <div class="bar"><span class="lab">骗筹特征</span><div class="track"><div id="fshake" class="fill fill-shake" style="width:0%"></div></div><span id="vshake">0.0</span></div>
+    </div>
+    <div class="grid" id="stats"></div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:600;margin-bottom:4px">分时图（价格 / 均价线 / 昨收）</div>
+    <canvas id="chart" width="860" height="380"></canvas>
+    <div class="meta" style="margin-top:6px">🔴 红=涨（相对昨收） · 🟢 绿=跌 · 蓝线=均价线(VWAP) · 灰虚线=昨收 · 标注=最高/最低点</div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:600;margin-bottom:6px">判定依据（证据）</div>
+    <div id="evidence"></div>
+    <div class="teach" id="teach"></div>
+  </div>
+</div>
+
+<h2>📚 教学扫盲：诱多 vs 骗筹码，到底怎么分？</h2>
+<div class="edu">
+  <p>你盯盘累、容易上头，根子在「看不懂动作背后的意图」。庄家/主力洗盘或出货，靠的就是<b>制造情绪</b>：让你在高位忍不住追、在低位恐慌割。下面把两种最常见的「日内套路」拆开讲。</p>
+
+  <details open>
+    <summary>一、拉高诱多（诱多出货）—— 表象强、收盘弱</summary>
+    <p><span class="k">机理：</span>用少量资金把股价快速拉起，制造「要启动了」的假象，吸引跟风盘在高位接货，随后悄悄派发，股价回落。</p>
+    <p><span class="k">典型分时：</span>早盘或盘中<b>急拉冲高</b> → 量价背离（涨的时候没量，或单笔脉冲）→ <b>冲高回落</b> → 收盘掉到<b>均价线下方</b>。追高的人全套在均价之上。</p>
+    <p><span class="k">看穿四件套：</span>① 冲高时<b>量能没跟上</b>（价涨量不涨）；② 收盘<b>低于均价线</b>；③ <b>长上影</b>（上方抛压重）；④ 尾盘急拉却守不住 = 粉饰收盘。</p>
+    <svg class="shape-svg" viewBox="0 0 420 180">
+      <line x1="40" y1="150" x2="400" y2="150" stroke="#2c3744"/>
+      <line x1="40" y1="100" x2="400" y2="100" stroke="#9aa7b4" stroke-dasharray="4 4"/>
+      <polyline fill="none" stroke="#ff4d4f" stroke-width="2.5"
+        points="40,120 120,80 180,55 200,60 260,95 340,110 400,108"/>
+      <line x1="40" y1="70" x2="400" y2="70" stroke="#4ea1ff" stroke-width="1.5" opacity="0.7"/>
+      <text x="200" y="48" fill="#ff4d4f" font-size="12">冲高</text>
+      <text x="320" y="125" fill="#9aa7b4" font-size="11">回落·收均线下</text>
+      <text x="60" y="168" fill="#9aa7b4" font-size="10">09:30</text>
+      <text x="370" y="168" fill="#9aa7b4" font-size="10">15:00</text>
+    </svg>
+  </details>
+
+  <details>
+    <summary>二、低开骗筹码（洗盘震仓）—— 表象弱、收盘强</summary>
+    <p><span class="k">机理：</span>先低开或盘中小幅杀跌，制造「要崩了」的恐慌，逼你割肉离场，主力在低位把筹码接走，随后股价收回。</p>
+    <p><span class="k">典型分时：</span><b>低开/盘中小跌</b> → 长下影（低点有承接）→ <b>收回开盘价/均价线之上</b>。恐慌盘被洗下车后，股价反而走强。对持筹者是<b>偏多信号</b>（洗盘结束），不是真破位。</p>
+    <p><span class="k">看穿四件套：</span>① 下跌时<b>没放量破位</b>；② 收盘<b>站回均价线</b>且日线不跌；③ <b>长下影</b>（低点未确认）；④ 不破前低、板块未共振杀跌。</p>
+    <svg class="shape-svg" viewBox="0 0 420 180">
+      <line x1="40" y1="150" x2="400" y2="150" stroke="#2c3744"/>
+      <line x1="40" y1="100" x2="400" y2="100" stroke="#9aa7b4" stroke-dasharray="4 4"/>
+      <polyline fill="none" stroke="#16c784" stroke-width="2.5"
+        points="40,110 110,130 150,135 200,110 280,85 340,80 400,82"/>
+      <line x1="40" y1="95" x2="400" y2="95" stroke="#4ea1ff" stroke-width="1.5" opacity="0.7"/>
+      <text x="120" y="150" fill="#16c784" font-size="11">下探洗盘</text>
+      <text x="300" y="74" fill="#16c784" font-size="12">收回·收均价上</text>
+      <text x="60" y="168" fill="#9aa7b4" font-size="10">09:30</text>
+      <text x="370" y="168" fill="#9aa7b4" font-size="10">15:00</text>
+    </svg>
+  </details>
+
+  <details>
+    <summary>三、一句话区分（背下来）</summary>
+    <p>两者都「先动一下再回来」，区别只在<b>收盘价相对均价线的位置</b>：</p>
+    <table>
+      <tr><th>维度</th><th>拉高诱多</th><th>低开骗筹码</th></tr>
+      <tr><td>第一动作</td><td>先涨（拉）</td><td>先跌（吓）</td></tr>
+      <tr><td>收盘 vs 均价线</td><td><b>下方</b>（套牢追高盘）</td><td><b>上方</b>（洗完收回）</td></tr>
+      <tr><td>影线</td><td>长上影</td><td>长下影</td></tr>
+      <tr><td>量能</td><td>涨时缩量 / 单笔脉冲</td><td>跌时不放量破位</td></tr>
+      <tr><td>对你意味着</td><td>别追高，等回踩确认</td><td>洗盘偏多，看是否站回</td></tr>
+    </table>
+  </details>
+
+  <details>
+    <summary>四、怎么做到「不盯盘也不慌」</summary>
+    <p>① <b>盘后看结论</b>：收盘后用本工具扫一眼，拿「诱多/骗筹码/真实」的结论，代替全天盯分时。</p>
+    <p>② <b>用条件单替代手速</b>：想买挂「回踩均价线且放量」的触发单；想卖挂「跌破前低」的止损单，不靠临场情绪。</p>
+    <p>③ <b>看板块别看个股</b>：个股分时陷阱常是「板块共振」的一部分。板块齐涨它独弱=真弱；板块跌它长下影收回=洗盘概率大。</p>
+    <p>④ <b>本工具只给「特征/嫌疑」</b>：单日分时看不出真实意图（需结合趋势、消息、位置）。把它当「风险提示 + 教学训练」，别当买卖定罪。</p>
+  </details>
+</div>
+
+<div class="foot">
+  本工具为教学/风险识别用途，不构成投资建议。分时仅取最新交易日（腾讯接口不支持历史日回放）；判定为规则化特征识别，存在误判可能。
+</div>
+
+<script>
+"use strict";
+function jsonp(url, varName){
+  return new Promise(function(resolve){
+    var w = window;
+    w[varName] = undefined;
+    var s = document.createElement('script');
+    var done = false;
+    function fin(d){ if(done) return; done=true; resolve(d); if(s.parentNode) s.parentNode.removeChild(s); }
+    s.onload = function(){ fin(w[varName]); };
+    s.onerror = function(){ fin(null); };
+    s.src = url;
+    document.body.appendChild(s);
+    setTimeout(function(){ fin(w[varName] || null); }, 9000);
+  });
+}
+function normCode(raw){
+  raw = (raw||'').trim().toLowerCase();
+  if(raw.indexOf('sh')===0 || raw.indexOf('sz')===0 || raw.indexOf('bj')===0) return raw;
+  if(/^\d{6}$/.test(raw)){
+    if(raw[0]==='6' || raw[0]==='9') return 'sh'+raw;
+    if(raw[0]==='0' || raw[0]==='3' || raw[0]==='2') return 'sz'+raw;
+    if(raw[0]==='8' || raw[0]==='4') return 'bj'+raw;
+  }
+  return raw;
+}
+function sum(a){ return a.reduce(function(x,y){return x+y;},0); }
+function parseMinute(j, code){
+  var node = j && j.data && j.data[code] && j.data[code].data;
+  if(!node || !node.data) return null;
+  var rows = node.data.map(function(s){
+    var p = s.split(' ');
+    var hhmm = p[0], h = parseInt(hhmm.slice(0,2),10), m = parseInt(hhmm.slice(2),10);
+    var t = (h<12) ? (h-9)*60+(m-30) : 120+(h-13)*60+m;
+    return { t:t, price:parseFloat(p[1]), vol:parseFloat(p[2])*100, amt:parseFloat(p[3]) };
+  });
+  var name=''; var qt = j.data[code].qt && j.data[code].qt[code];
+  if(Array.isArray(qt) && qt.length>1) name = qt[1];
+  return { date:node.date, name:name, rows:rows };
+}
+function parsePrevClose(j, code, targetDate){
+  var node = j && j.data && j.data[code];
+  var day = (node && (node.day || node.qfqday)) || [];
+  var arr = day.map(function(r){ return [r[0], parseFloat(r[2])]; }).sort(function(a,b){return a[0]<b[0]?-1:1;});
+  var prev=null;
+  for(var i=0;i<arr.length;i++){
+    if(arr[i][0] >= targetDate){ prev = i>0 ? arr[i-1][1] : arr[i][1]; break; }
+  }
+  if(prev===null) prev = arr.length>=2 ? arr[arr.length-2][1] : (arr.length?arr[arr.length-1][1]:null);
+  return prev;
+}
+function analyze(rows, prevClose){
+  var n = rows.length;
+  var opens = rows[0].price, close = rows[n-1].price;
+  var prices = rows.map(function(r){return r.price;});
+  var high = Math.max.apply(null,prices), low = Math.min.apply(null,prices);
+  var high_i = prices.indexOf(high), low_i = prices.indexOf(low);
+  var vwap = rows.map(function(r){ return r.vol>0 ? r.amt/r.vol : r.price; });
+  var mid = n; for(var i=0;i<n;i++){ if(rows[i].t>120){ mid=i; break; } }
+  var morning_vol = sum(rows.slice(0,mid).map(function(r){return r.vol;}));
+  var afternoon_vol = sum(rows.slice(mid).map(function(r){return r.vol;}));
+  var total_vol = morning_vol + afternoon_vol;
+  var tail = rows.slice(-30);
+  var tail_vol = sum(tail.map(function(r){return r.vol;}));
+  var tail_vol_share = total_vol? tail_vol/total_vol : 0;
+  var tail_chg = (n>=30 && prices[n-30]) ? (prices[n-1]-prices[n-30])/prices[n-30] : 0;
+  var gap = (opens-prevClose)/prevClose;
+  var day_chg = (close-prevClose)/prevClose;
+  var intraday_range = (high-low)/prevClose;
+  var spike_up = (high-opens)/opens;
+  var dip_down = (low-opens)/opens;
+  var fade_from_high = (high-close)/high;
+  var rebound_from_low = (close-low)/low;
+  var above_vwap_close = close > vwap[n-1];
+  var vwap_close = vwap[n-1];
+  var above_vwap_time = prices.filter(function(p,i){return p>vwap[i];}).length/n;
+  var lower_shadow = (high-low)>0 ? (close-low)/(high-low) : 0;
+  var upper_shadow = (high-low)>0 ? (high-close)/(high-low) : 0;
+
+  var evidence=[], lure=0, shake=0;
+  if(spike_up>0.012){ lure+=1.0; evidence.push("盘中冲高 +"+(spike_up*100).toFixed(1)+"% (相对开盘)"); }
+  if(fade_from_high>0.5 && spike_up>0.012){ lure+=1.5; evidence.push("冲高后回落 "+(fade_from_high*100).toFixed(0)+"% 涨幅被吞 (高位追入者被套)"); }
+  else if(fade_from_high>0.35 && spike_up>0.02){ lure+=0.8; evidence.push("冲高后明显回落 "+(fade_from_high*100).toFixed(0)+"%"); }
+  if(!above_vwap_close && spike_up>0.012){ lure+=1.2; evidence.push("收盘价 "+close.toFixed(2)+" 低于均价线 "+vwap_close.toFixed(2)+" (追高者多数套在均价之上)"); }
+  if(tail_chg>0.008 && !above_vwap_close){ lure+=0.6; evidence.push("尾盘急拉 +"+(tail_chg*100).toFixed(1)+"% 但全天仍收弱 (粉饰收盘嫌疑)"); }
+  if(upper_shadow>0.45 && spike_up>0.015){ lure+=0.6; evidence.push("长上影(上影占振幅 "+(upper_shadow*100).toFixed(0)+"%): 上方抛压重"); }
+  if(gap<-0.008 || dip_down<-0.012){ shake+=1.0; evidence.push("低开/盘中小幅杀跌 "+(Math.min(gap,dip_down)*100).toFixed(1)+"% (制造恐慌)"); }
+  if(rebound_from_low>0.015 && (close>opens || above_vwap_close)){ shake+=1.5; evidence.push("从最低点回收 +"+(rebound_from_low*100).toFixed(1)+"% 且收回开盘/均价之上 (恐慌盘被洗后收复)"); }
+  if(lower_shadow>0.45 && (close>opens || above_vwap_close)){ shake+=0.8; evidence.push("长下影(下影占振幅 "+(lower_shadow*100).toFixed(0)+"%): 下方有承接、低点未确认"); }
+  if(above_vwap_close && day_chg>=0){ shake+=0.6; evidence.push("收在均价线之上且日线不跌 (洗盘后资金收回)"); }
+
+  var early=n*0.3, shape;
+  if(high_i<early && close<opens) shape='冲高回落';
+  else if(low_i<early && close>opens) shape='下探回升(洗盘)';
+  else if(gap>0.01 && close<opens) shape='高开低走';
+  else if(gap<-0.01 && close>opens) shape='低开高走';
+  else shape='平开震荡';
+
+  var verdict, conf, teach, cls;
+  if(lure>=2.5 && lure>shake){
+    verdict='诱多嫌疑'; cls='b-lure'; conf=Math.min(0.95,0.4+lure/8);
+    teach='表象强、收盘弱：拉高时用少量资金/对倒制造强势，把追涨者套在均价之上，随后派发。应对：不追高，等回踩均价线且放量确认再言。';
+  } else if(shake>=2.2 && shake>lure){
+    verdict='骗筹码嫌疑(洗盘吸筹)'; cls='b-shake'; conf=Math.min(0.95,0.4+shake/8);
+    teach='表象弱、收盘强：先低开/下杀制造恐慌逼你割肉，随后收回均价之上。对持筹者是偏多信号(洗盘结束)，而非真破位。应对：看收盘是否站回均价+不破前低。';
+  } else if(day_chg>0.01 && above_vwap_close && upper_shadow<0.4 && spike_up<=0.03){
+    verdict='真实走强'; cls='b-up'; conf=0.7;
+    teach='价量配合、全天在均价线上方、收盘近高位，属真实资金推动的走强。';
+  } else if(day_chg<-0.01 && !above_vwap_close && lower_shadow<0.4){
+    verdict='真实走弱'; cls='b-down'; conf=0.7;
+    teach='全天在均价线下方、收盘近低位，属真实承压/派发，非洗盘。';
+  } else {
+    verdict='震荡中性'; cls='b-neutral'; conf=0.5;
+    teach='多空拉锯、收盘贴近均价，无明确陷阱特征。';
+  }
+  return { verdict:verdict, cls:cls, conf:conf, shape:shape, teach:teach, evidence:evidence,
+    lure:lure, shake:shake, f:{
+      gap_pct:gap*100, day_chg_pct:day_chg*100, intraday_range_pct:intraday_range*100,
+      spike_up_pct:spike_up*100, dip_down_pct:dip_down*100, fade_from_high_pct:fade_from_high*100,
+      rebound_from_low_pct:rebound_from_low*100, above_vwap:above_vwap_close, vwap_close:vwap_close,
+      morning_vol_share:morning_vol/total_vol*100, tail_vol_share:tail_vol_share*100,
+      tail_chg_pct:tail_chg*100, lower_shadow:lower_shadow, upper_shadow:upper_shadow,
+      high:high, low:low, open:opens, close:close, prev:prevClose, high_i:high_i, low_i:low_i, n:n
+    }, rows:rows, vwap:vwap };
+}
+function fmt(v,d){ return (v>=0?'+':'')+v.toFixed(d===undefined?2:d); }
+function cls(v){ return v>0?'up':(v<0?'dn':''); }
+function render(r, code, name, date){
+  var badge=document.getElementById('badge');
+  badge.textContent=r.verdict; badge.className='badge '+r.cls;
+  document.getElementById('rname').textContent=name+'  ('+code+')';
+  document.getElementById('rmeta').textContent='交易日 '+date+' · 昨收 '+r.f.prev.toFixed(2);
+  document.getElementById('rconf').textContent='可信度 '+(r.conf*100).toFixed(0)+'%';
+  document.getElementById('rshape').textContent='日内形态：'+r.shape;
+  document.getElementById('flure').style.width=Math.min(100,r.lure/5*100)+'%';
+  document.getElementById('fshake').style.width=Math.min(100,r.shake/5*100)+'%';
+  document.getElementById('vlure').textContent=r.lure.toFixed(1);
+  document.getElementById('vshake').textContent=r.shake.toFixed(1);
+  var f=r.f;
+  var stats=[
+    ['开盘缺口', fmt(f.gap_pct,1)+'%', cls(f.gap_pct)],
+    ['当日涨跌', fmt(f.day_chg_pct,1)+'%', cls(f.day_chg_pct)],
+    ['日内振幅', f.intraday_range_pct.toFixed(1)+'%', ''],
+    ['冲高幅度', f.spike_up_pct.toFixed(1)+'%', f.spike_up_pct>1.2?'up':''],
+    ['冲高回落', f.fade_from_high_pct.toFixed(0)+'%', f.fade_from_high_pct>35?'dn':''],
+    ['低点回收', f.rebound_from_low_pct.toFixed(1)+'%', f.rebound_from_low_pct>1.5?'up':''],
+    ['收/均价', f.above_vwap?'上方✅':'下方⚠️', f.above_vwap?'up':'dn'],
+    ['下影占比', (f.lower_shadow*100).toFixed(0)+'%', f.lower_shadow>0.45?'up':''],
+    ['上影占比', (f.upper_shadow*100).toFixed(0)+'%', f.upper_shadow>0.45?'dn':''],
+    ['尾盘涨跌', fmt(f.tail_chg_pct,1)+'%', cls(f.tail_chg_pct)]
+  ];
+  document.getElementById('stats').innerHTML = stats.map(function(s){
+    return '<div class="stat"><div class="k">'+s[0]+'</div><div class="v '+s[2]+'">'+s[1]+'</div></div>';
+  }).join('');
+  var ev=document.getElementById('evidence');
+  ev.innerHTML = r.evidence.length ? r.evidence.map(function(e){return '<div class="ev">'+e+'</div>';}).join('')
+                                   : '<div class="ev">无显著陷阱特征。</div>';
+  document.getElementById('teach').textContent='📖 '+r.teach;
+  drawChart(r);
+  document.getElementById('result').classList.remove('hidden');
+}
+function drawChart(r){
+  var cv=document.getElementById('chart'), ctx=cv.getContext('2d');
+  var W=cv.width, H=cv.height, padL=8, padR=8, padT=14, padB=18;
+  var rows=r.rows, vw=r.vwap, n=rows.length;
+  var prices=rows.map(function(x){return x.price;}).concat(vw).concat([r.f.prev]);
+  var ymin=Math.min.apply(null,prices), ymax=Math.max.apply(null,prices);
+  var span=(ymax-ymin)||1; ymin-=span*0.06; ymax+=span*0.06; span=ymax-ymin;
+  function X(i){ return padL+(W-padL-padR)*i/(n-1); }
+  function Y(v){ return padT+(H-padT-padB)*(1-(v-ymin)/span); }
+  ctx.clearRect(0,0,W,H);
+  // 昨收灰虚线
+  ctx.strokeStyle='#9aa7b4'; ctx.setLineDash([5,4]); ctx.beginPath();
+  ctx.moveTo(padL,Y(r.f.prev)); ctx.lineTo(W-padR,Y(r.f.prev)); ctx.stroke(); ctx.setLineDash([]);
+  // 均价线
+  ctx.strokeStyle='#4ea1ff'; ctx.lineWidth=1.5; ctx.beginPath();
+  for(var i=0;i<n;i++){ var x=X(i),y=Y(vw[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y); } ctx.stroke();
+  // 价格线（按相对昨收着色）
+  var up = r.f.close>=r.f.prev;
+  ctx.strokeStyle=up?'#ff4d4f':'#16c784'; ctx.lineWidth=2; ctx.beginPath();
+  for(var i=0;i<n;i++){ var x=X(i),y=Y(rows[i].price); i?ctx.lineTo(x,y):ctx.moveTo(x,y); } ctx.stroke();
+  // 最高点标注
+  var hi=r.f.high_i; ctx.fillStyle='#ff4d4f'; ctx.beginPath(); ctx.arc(X(hi),Y(r.f.high),3.5,0,7); ctx.fill();
+  ctx.fillStyle='#9aa7b4'; ctx.font='11px sans-serif';
+  ctx.fillText('高 '+r.f.high.toFixed(2), Math.min(X(hi)+4,W-70), Y(r.f.high)-4);
+  // 最低点标注
+  var li=r.f.low_i; ctx.fillStyle='#16c784'; ctx.beginPath(); ctx.arc(X(li),Y(r.f.low),3.5,0,7); ctx.fill();
+  ctx.fillText('低 '+r.f.low.toFixed(2), Math.min(X(li)+4,W-70), Y(r.f.low)+14);
+  // x轴标签
+  ctx.fillStyle='#9aa7b4'; ctx.font='10px sans-serif';
+  ctx.fillText('09:30',padL,H-4); ctx.fillText('11:30/13:00',W/2-30,H-4); ctx.fillText('15:00',W-padR-34,H-4);
+}
+async function run(){
+  var raw=document.getElementById('code').value;
+  var code=normCode(raw);
+  if(!/^(sh|sz|bj)\d{6}$/.test(code)){
+    document.getElementById('status').innerHTML='<div class="err">代码格式不对，请输入 6 位代码或带 sh/sz 前缀。</div>';
+    return;
+  }
+  document.getElementById('status').innerHTML='<div class="meta">拉取分时中…</div>';
+  document.getElementById('result').classList.add('hidden');
+  try{
+    var jm=await jsonp('https://web.ifzq.gtimg.cn/appstock/app/minute/query?code='+code+'&_var=min_data','min_data');
+    var md=parseMinute(jm,code);
+    if(!md || !md.rows.length){ document.getElementById('status').innerHTML='<div class="err">未取到分时数据（该代码可能非A股或当日停牌）。</div>'; return; }
+    var jk=await jsonp('https://ifzq.gtimg.cn/appstock/app/kline/kline?_var=kdata&param='+code+',day,,,8','kdata');
+    var prev=parsePrevClose(jk,code,md.date);
+    if(prev===null){ document.getElementById('status').innerHTML='<div class="err">未取到昨收数据。</div>'; return; }
+    var r=analyze(md.rows, prev);
+    document.getElementById('status').innerHTML='';
+    render(r, code, md.name||code, md.date);
+  }catch(e){
+    document.getElementById('status').innerHTML='<div class="err">请求失败：'+e.message+'（可能是网络或接口限流，稍后重试）。</div>';
+  }
+}
+document.getElementById('go').addEventListener('click', run);
+document.getElementById('code').addEventListener('keydown', function(e){ if(e.key==='Enter') run(); });
+run();
+</script>
+</body>
+</html>
