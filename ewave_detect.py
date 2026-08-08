@@ -249,6 +249,133 @@ def identify(closes):
     return out
 
 
+def _nearest_level(levels, cur):
+    """返回 (最近支撑<=cur, 最近阻力>cur)；都为 {price,label,kind} 或 None"""
+    sup = [l for l in levels if l['price'] <= cur]
+    res = [l for l in levels if l['price'] > cur]
+    s = max(sup, key=lambda x: x['price']) if sup else None
+    r = min(res, key=lambda x: x['price']) if res else None
+    return s, r
+
+
+def guidance(closes, idr, rows=None):
+    """结合个股股价，给出【当前该怎么看 / 留意什么 / 怎么做】的价格锚定指引。
+    返回 dict: cur, locator(位置+最近支撑阻力), watch(触发条件列表), action(策略), vol(量能上下文)。
+    """
+    cur = round(closes[-1], 2)
+    g = {'structure': idr.get('structure'), 'phase': idr.get('phase'), 'cur': cur,
+         'locator': None, 'watch': [], 'action': None, 'vol': None}
+    if rows and len(rows) >= 12:
+        vol = [r['vol'] for r in rows]
+        recent = sum(vol[-5:]) / 5.0
+        prev = sum(vol[-15:-5]) / 10.0
+        ratio = round(recent / prev, 2) if prev else 1.0
+        g['vol'] = {'ratio': ratio,
+                    'label': '放量' if ratio > 1.25 else ('缩量' if ratio < 0.8 else '平量')}
+    prim = idr.get('primary')
+    fib = idr.get('fib')
+    if idr.get('structure') == 'impulse' and prim and fib:
+        l0, h1, l2, h3, l4, h5 = prim['l0'], prim['h1'], prim['l2'], prim['h3'], prim['l4'], prim['h5']
+        r = fib['retrace']
+        levels = []
+        for o in r:
+            levels.append({'price': round(o['price'], 2), 'label': '回撤%.3f' % o['r'], 'kind': 'S'})
+        levels.append({'price': round(l2, 2), 'label': '浪2低点(失效位)', 'kind': 'S'})
+        for o in fib['extend']:
+            levels.append({'price': round(o['price'], 2), 'label': '延伸%.3f' % o['r'], 'kind': 'R'})
+        levels.append({'price': round(h5, 2), 'label': '浪5高点', 'kind': 'R'})
+        s, rr = _nearest_level(levels, cur)
+        if cur < l2 * 0.99:
+            pos = '已跌破 浪2低点(失效位) ≈%.2f：推动结构破，观望等重构' % round(l2, 2)
+        elif cur >= h5 * 0.995:
+            pos = '处于浪5高位/延伸区：已在五浪末端，追高风险大'
+        elif cur > l4:
+            pos = '浪5进行中：趋势仍在，持有但警惕末端放量滞涨'
+        elif cur >= r[2]['price']:
+            pos = '已回踩至低吸参考区(0.618附近)：留意缩量止跌信号'
+        else:
+            pos = '深度回调区：接近浪2低点的关键支撑/失效位'
+        g['locator'] = {'pos': pos, 'support': s, 'resistance': rr}
+        r618 = round(r[2]['price'], 2)
+        g['watch'] = [
+            {'trig': '价格回踩至 0.618 支撑 ≈%.2f 且缩量止跌' % r618,
+             'mean': '五浪后回调到位，是顺势低吸的观察区', 'do': '考虑低吸；若放量跌破则放弃'},
+            {'trig': '跌破 浪2低点 ≈%.2f' % round(l2, 2),
+             'mean': '推动结构失效，原五浪划分错误', 'do': '止损/离场观望，不恋战'},
+            {'trig': '放量突破 浪5高点 ≈%.2f' % round(h5, 2),
+             'mean': '延伸浪开启，主升未结束', 'do': '持有甚至加仓，目标看延伸位'},
+            {'trig': '浪5创新高但成交量较前高萎缩',
+             'mean': '量价背离，末端警示', 'do': '不再追高，准备减仓'},
+        ]
+        if cur < l2 * 0.99:
+            stance = '观望(已破位)'
+        else:
+            stance = '减仓/不追' if cur >= h5 * 0.995 else ('持有' if cur > l4 else '低吸')
+        g['action'] = {
+            'stance': stance,
+            'entry': [round(r[1]['price'], 2), r618],
+            'stop': round(l2 * 0.98, 2),
+            'target': round(h5, 2) if cur < h5 else round(fib['extend'][0]['price'], 2),
+            'invalid': round(l2, 2),
+            'pos_hint': ('常规仓位' if idr['conf'] >= 0.7 else '半仓以下')
+                        + ('' if idr['ok'] else '（结构有瑕疵，更谨慎）'),
+        }
+    elif idr.get('structure') == 'abc' and prim and fib:
+        h0, la, hb, lc = prim['h0'], prim['la'], prim['hb'], prim['lc']
+        ct = fib['c_targets']; rb = fib['rebound']
+        levels = []
+        for o in ct:
+            levels.append({'price': round(o['price'], 2), 'label': 'C目标%.3f' % o['r'], 'kind': 'S'})
+        for o in rb:
+            levels.append({'price': round(o['price'], 2), 'label': '反弹%.3f' % o['r'], 'kind': 'R'})
+        levels.append({'price': round(hb, 2), 'label': 'B顶', 'kind': 'R'})
+        levels.append({'price': round(h0, 2), 'label': 'A顶', 'kind': 'R'})
+        s, rr = _nearest_level(levels, cur)
+        if cur < lc * 0.99:
+            pos = '已跌破 C 低点(≈%.2f)：调整延长/破位，等待新低或新结构' % round(lc, 2)
+        elif cur <= lc * 1.01:
+            pos = 'C浪尾声/已到位(≈%.2f)：关注止跌信号，准备博反弹' % round(lc, 2)
+        elif cur < hb:
+            pos = 'C结束后反弹中：反弹非反转，看阻力位减仓'
+        else:
+            pos = 'B浪反弹区：只是调整中的反抽，非新主升'
+        g['locator'] = {'pos': pos, 'support': s, 'resistance': rr}
+        c12 = round(ct[2]['price'], 2); c16 = round(ct[3]['price'], 2)
+        rb38 = round(rb[0]['price'], 2); rb50 = round(rb[1]['price'], 2)
+        g['watch'] = [
+            {'trig': 'C 跌至 1.272~1.618 倍A (≈%.2f~%.2f) 且出现止跌K线' % (c12, c16),
+             'mean': 'C浪可能到位，调整临近结束', 'do': '轻仓试多博反弹，必须等次日确认'},
+            {'trig': '反弹至 0.382~0.5 阻力 (≈%.2f~%.2f)' % (rb38, rb50),
+             'mean': 'B浪式反弹的减仓区', 'do': '减仓，不把反弹当反转'},
+            {'trig': '跌破 C 低点 ≈%.2f' % round(lc, 2),
+             'mean': '调整延长，可能走更深的子浪', 'do': '不接飞刀，等更低或更明确的底'},
+            {'trig': 'C末端 放量急跌',
+             'mean': '恐慌盘涌出，常是阶段底的前兆', 'do': '关注但不急买，需次日缩量企稳确认'},
+        ]
+        if cur < lc * 0.99:
+            stance = '观望(已破位)'
+        elif cur <= lc * 1.01:
+            stance = '轻仓博反弹'
+        elif cur < hb:
+            stance = '减仓(反弹中)'
+        else:
+            stance = '观望(B反弹)'
+        g['action'] = {
+            'stance': stance,
+            'entry': [c12, c16],
+            'stop': round(lc * 0.985, 2),
+            'target': [rb38, rb50],
+            'invalid': round(lc, 2),
+            'pos_hint': '逆势反弹，轻仓(≤1/3)严格止损' + ('' if idr['ok'] else '（结构有瑕疵，更谨慎）'),
+        }
+    else:
+        g['watch'] = [{'trig': '结构不明，摆动点不满足标准五浪/ABC',
+                       'mean': '可能是复杂调整或周期不对', 'do': '观望，切换更大周期(周K)再看'}]
+        g['action'] = {'stance': '观望', 'entry': None, 'stop': None, 'target': None,
+                       'invalid': None, 'pos_hint': '不操作'}
+    return g
+
+
 def analyze(code, n=320):
     rows = fetch_daily(code, n)
     if len(rows) < 30:
@@ -258,6 +385,7 @@ def analyze(code, n=320):
     res['code'] = code
     res['name'] = ''
     res['bars'] = rows[-90:]      # 仅返回最近90根供画图
+    res['guidance'] = guidance(closes, res, rows)
     return res
 
 
@@ -283,6 +411,7 @@ def analyze_closes(code, closes):
     res['code'] = code
     res['name'] = ''
     res['bars'] = []
+    res['guidance'] = guidance(closes, res, None)
     return res
 
 
