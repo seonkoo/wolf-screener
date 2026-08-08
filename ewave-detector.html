@@ -56,6 +56,25 @@
   .fibline .tag{color:var(--sub);font-size:12px}
   .note{font-size:12px;color:var(--sub);margin-top:6px}
   .ops{background:rgba(22,199,132,.07);border:1px solid rgba(22,199,132,.25);border-radius:10px;padding:12px;font-size:14px}
+  .loc{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin:6px 0}
+  .loc .price{font-size:26px;font-weight:800}
+  .loc .pos{font-size:14px;color:var(--txt);max-width:600px}
+  .sr{display:flex;gap:12px;flex-wrap:wrap;margin-top:4px}
+  .sr .box{flex:1;min-width:160px;background:var(--panel2);border-radius:9px;padding:8px 10px}
+  .sr .box .k{font-size:11px;color:var(--sub)}
+  .sr .box .v{font-size:17px;font-weight:700;margin-top:2px}
+  .sr .box .d{font-size:12px;color:var(--sub);margin-top:2px}
+  .watch{margin:6px 0}
+  .witem{background:var(--panel2);border-left:3px solid var(--gold);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px}
+  .witem .t{font-weight:700}
+  .witem .m{color:var(--sub);margin-top:2px}
+  .witem .a{color:var(--green);margin-top:2px}
+  .act{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:6px}
+  .act .it{background:var(--panel2);border-radius:9px;padding:9px 10px}
+  .act .it .k{font-size:11px;color:var(--sub)}
+  .act .it .v{font-size:15px;font-weight:700;margin-top:2px}
+  .act .it.full{grid-column:1/-1}
+  .st-buy{color:var(--red)} .st-sell{color:var(--green)} .st-hold{color:var(--gold)} .st-watch{color:var(--sub)}
 </style>
 </head>
 <body>
@@ -89,6 +108,19 @@
   <h2 style="margin-top:4px">📐 斐波那契关键位</h2>
   <div id="fibBox"></div>
   <div class="ops" id="opsBox" style="margin-top:12px"></div>
+</div>
+
+<div class="card hidden" id="opsCard">
+  <h2 style="margin-top:4px">🎯 当前股价定位 + 操作参考</h2>
+  <div id="locBox"></div>
+  <div id="volBox" class="note" style="margin-top:6px"></div>
+
+  <h2 style="margin-top:18px">👀 当前应留意什么</h2>
+  <div id="watchBox" class="watch"></div>
+
+  <h2 style="margin-top:14px">🛠 怎么做（机械映射参考）</h2>
+  <div id="actBox" class="act"></div>
+  <div class="note" style="margin-top:8px">以上为波浪+斐波那契的机械映射，<b>非投资建议</b>。务必结合量能、均线、基本面与仓位管理；自动数浪存在"千人千浪"误差，低置信度时仅作参考。</div>
 </div>
 
 <!-- ================= 教学 ================= -->
@@ -257,6 +289,92 @@ function identify(closes){
   function seg0(seg,k){return seg[k][0];}
 }
 
+/* ===== 股价锚定指引 (镜像 ewave_detect.guidance) ===== */
+function guidance(closes, idr, rows){
+  var cur = Math.round(closes[closes.length-1]*100)/100;
+  var g = {structure:idr.structure, phase:idr.phase, cur:cur, locator:null, watch:[], action:null, vol:null};
+  function r2(x){return Math.round(x*100)/100;}
+  if(rows && rows.length>=12){
+    var vol=rows.map(function(r){return r.vol;});
+    var recent=vol.slice(-5).reduce(function(a,b){return a+b;},0)/5;
+    var prev=vol.slice(-15,-5).reduce(function(a,b){return a+b;},0)/10;
+    var ratio=prev?Math.round(recent/prev*100)/100:1;
+    g.vol={ratio:ratio, label: ratio>1.25?'放量':(ratio<0.8?'缩量':'平量')};
+  }
+  var prim=idr.primary, fib=idr.fib;
+  function nearest(levels, c){
+    var sup=levels.filter(function(l){return l.price<=c;});
+    var res=levels.filter(function(l){return l.price>c;});
+    var s=sup.length?sup.reduce(function(a,b){return a.price>b.price?a:b;}):null;
+    var r=res.length?res.reduce(function(a,b){return a.price<b.price?a:b;}):null;
+    return [s,r];
+  }
+  if(idr.structure==='impulse' && prim && fib){
+    var l0=prim.l0,h1=prim.h1,l2=prim.l2,h3=prim.h3,l4=prim.l4,h5=prim.h5;
+    var r=fib.retrace;
+    var levels=[];
+    r.forEach(function(o){ levels.push({price:r2(o.price),label:'回撤'+o.r.toFixed(3),kind:'S'}); });
+    levels.push({price:r2(l2),label:'浪2低点(失效位)',kind:'S'});
+    fib.extend.forEach(function(o){ levels.push({price:r2(o.price),label:'延伸'+o.r.toFixed(3),kind:'R'}); });
+    levels.push({price:r2(h5),label:'浪5高点',kind:'R'});
+    var nr=nearest(levels,cur); var s=nr[0], rr=nr[1];
+    var pos;
+    if(cur < l2*0.99) pos='已跌破 浪2低点(失效位) ≈'+r2(l2).toFixed(2)+'：推动结构破，观望等重构';
+    else if(cur >= h5*0.995) pos='处于浪5高位/延伸区：已在五浪末端，追高风险大';
+    else if(cur > l4) pos='浪5进行中：趋势仍在，持有但警惕末端放量滞涨';
+    else if(cur >= r[2].price) pos='已回踩至低吸参考区(0.618附近)：留意缩量止跌信号';
+    else pos='深度回调区：接近浪2低点的关键支撑/失效位';
+    g.locator={pos:pos, support:s, resistance:rr};
+    var r618=r2(r[2].price);
+    g.watch=[
+      {trig:'价格回踩至 0.618 支撑 ≈'+r618.toFixed(2)+' 且缩量止跌', mean:'五浪后回调到位，是顺势低吸的观察区', do:'考虑低吸；若放量跌破则放弃'},
+      {trig:'跌破 浪2低点 ≈'+r2(l2).toFixed(2), mean:'推动结构失效，原五浪划分错误', do:'止损/离场观望，不恋战'},
+      {trig:'放量突破 浪5高点 ≈'+r2(h5).toFixed(2), mean:'延伸浪开启，主升未结束', do:'持有甚至加仓，目标看延伸位'},
+      {trig:'浪5创新高但成交量较前高萎缩', mean:'量价背离，末端警示', do:'不再追高，准备减仓'}
+    ];
+    var stance;
+    if(cur < l2*0.99) stance='观望(已破位)';
+    else stance = cur>=h5*0.995 ? '减仓/不追' : (cur>l4 ? '持有':'低吸');
+    g.action={stance:stance, entry:[r2(r[1].price),r618], stop:r2(l2*0.98),
+      target: cur<h5?r2(h5):r2(fib.extend[0].price),
+      invalid:r2(l2),
+      pos_hint:(idr.conf>=0.7?'常规仓位':'半仓以下')+(idr.ok?'':'（结构有瑕疵，更谨慎）')};
+  } else if(idr.structure==='abc' && prim && fib){
+    var h0=prim.h0,la=prim.la,hb=prim.hb,lc=prim.lc;
+    var ct=fib.c_targets, rb=fib.rebound;
+    var levels=[];
+    ct.forEach(function(o){ levels.push({price:r2(o.price),label:'C目标'+o.r.toFixed(3),kind:'S'}); });
+    rb.forEach(function(o){ levels.push({price:r2(o.price),label:'反弹'+o.r.toFixed(3),kind:'R'}); });
+    levels.push({price:r2(hb),label:'B顶',kind:'R'});
+    levels.push({price:r2(h0),label:'A顶',kind:'R'});
+    var nr2=nearest(levels,cur); var s=nr2[0], rr2=nr2[1];
+    var pos;
+    if(cur < lc*0.99) pos='已跌破 C 低点(≈'+r2(lc).toFixed(2)+')：调整延长/破位，等待新低或新结构';
+    else if(cur <= lc*1.01) pos='C浪尾声/已到位(≈'+r2(lc).toFixed(2)+')：关注止跌信号，准备博反弹';
+    else if(cur < hb) pos='C结束后反弹中：反弹非反转，看阻力位减仓';
+    else pos='B浪反弹区：只是调整中的反抽，非新主升';
+    g.locator={pos:pos, support:s, resistance:rr2};
+    var c12=r2(ct[2].price), c16=r2(ct[3].price), rb38=r2(rb[0].price), rb50=r2(rb[1].price);
+    g.watch=[
+      {trig:'C 跌至 1.272~1.618 倍A (≈'+c12.toFixed(2)+'~'+c16.toFixed(2)+') 且出现止跌K线', mean:'C浪可能到位，调整临近结束', do:'轻仓试多博反弹，必须等次日确认'},
+      {trig:'反弹至 0.382~0.5 阻力 (≈'+rb38.toFixed(2)+'~'+rb50.toFixed(2)+')', mean:'B浪式反弹的减仓区', do:'减仓，不把反弹当反转'},
+      {trig:'跌破 C 低点 ≈'+r2(lc).toFixed(2), mean:'调整延长，可能走更深的子浪', do:'不接飞刀，等更低或更明确的底'},
+      {trig:'C末端 放量急跌', mean:'恐慌盘涌出，常是阶段底的前兆', do:'关注但不急买，需次日缩量企稳确认'}
+    ];
+    var stance2;
+    if(cur < lc*0.99) stance2='观望(已破位)';
+    else if(cur <= lc*1.01) stance2='轻仓博反弹';
+    else if(cur < hb) stance2='减仓(反弹中)';
+    else stance2='观望(B反弹)';
+    g.action={stance:stance2, entry:[c12,c16], stop:r2(lc*0.985), target:[rb38,rb50],
+      invalid:r2(lc), pos_hint:'逆势反弹，轻仓(≤1/3)严格止损'+(idr.ok?'':'（结构有瑕疵，更谨慎）')};
+  } else {
+    g.watch=[{trig:'结构不明，摆动点不满足标准五浪/ABC', mean:'可能是复杂调整或周期不对', do:'观望，切换更大周期(周K)再看'}];
+    g.action={stance:'观望', entry:null, stop:null, target:null, invalid:null, pos_hint:'不操作'};
+  }
+  return g;
+}
+
 /* ===== 数据获取 (JSONP, 直连腾讯, 无需服务器) ===== */
 function fetchDaily(code, cb){
   var rnd=Math.random().toString(36).slice(2), vname='__ew_'+rnd;
@@ -419,8 +537,73 @@ function render(code, d){
   document.getElementById('opsBox').textContent = res.fib_verdict||'';
   document.getElementById('result').classList.remove('hidden');
   document.getElementById('fibCard').classList.remove('hidden');
+  document.getElementById('opsCard').classList.remove('hidden');
 
+  renderGuidance(closes, res, rows);
   drawChart(document.getElementById('chart'), winRows, fibs, marks);
+}
+
+/* ===== 股价定位 + 操作参考 渲染 ===== */
+function renderGuidance(closes, res, rows){
+  if(!res) return;
+  var gd = guidance(closes, res, rows);
+
+  // 当前价 + 位置
+  var loc = document.getElementById('locBox'); loc.innerHTML='';
+  if(gd && gd.locator){
+    var h = '<div class="loc"><span class="price">'+gd.cur.toFixed(2)+'</span>'
+          + '<span class="pos">'+gd.locator.pos+'</span></div>';
+    var s = gd.locator.support, rr = gd.locator.resistance;
+    if(s || rr){
+      h += '<div class="sr">';
+      if(s){
+        var ds = (s.price - gd.cur)/gd.cur*100;
+        h += '<div class="box"><div class="k">最近支撑 · '+s.label+'</div><div class="v">'+s.price.toFixed(2)+'</div><div class="d">低于现价 '+Math.abs(ds).toFixed(1)+'%</div></div>';
+      } else if(gd.action && gd.action.invalid){
+        h += '<div class="box"><div class="k">关键支撑(已跌破) · 失效位</div><div class="v">'+gd.action.invalid.toFixed(2)+'</div><div class="d">现价已破，等更低</div></div>';
+      }
+      if(rr){
+        var dr = (rr.price - gd.cur)/gd.cur*100;
+        h += '<div class="box"><div class="k">最近阻力 · '+rr.label+'</div><div class="v">'+rr.price.toFixed(2)+'</div><div class="d">高于现价 '+dr.toFixed(1)+'%</div></div>';
+      }
+      h += '</div>';
+    }
+    loc.innerHTML = h;
+  }
+
+  // 量能上下文
+  var vb = document.getElementById('volBox');
+  if(gd.vol) vb.innerHTML = '📊 量能：近5日均量 / 前10日均量 ≈ <b>'+gd.vol.ratio.toFixed(2)+'×</b> · '+gd.vol.label+'（缩量回踩支撑更可靠，放量突破更可信）';
+  else vb.textContent='';
+
+  // 当前应留意
+  var wb = document.getElementById('watchBox'); wb.innerHTML='';
+  (gd.watch||[]).forEach(function(w){
+    var d=document.createElement('div'); d.className='witem';
+    d.innerHTML='<div class="t">⚑ '+w.trig+'</div><div class="m">含义：'+w.mean+'</div><div class="a">动作：'+w.do+'</div>';
+    wb.appendChild(d);
+  });
+
+  // 怎么做
+  var ab = document.getElementById('actBox'); ab.innerHTML='';
+  var ac = gd.action||{};
+  if(ac.stance){
+    var it=document.createElement('div'); it.className='it full';
+    var cls = ac.stance.indexOf('观望')>=0 ? 'st-watch' : (ac.stance.indexOf('减仓')>=0||ac.stance.indexOf('不追')>=0 ? 'st-sell' : 'st-buy');
+    it.innerHTML='<div class="k">当前策略</div><div class="v '+cls+'">'+ac.stance+'</div>';
+    ab.appendChild(it);
+  }
+  function kv(k,v){ var d=document.createElement('div'); d.className='it'; d.innerHTML='<div class="k">'+k+'</div><div class="v">'+v+'</div>'; return d; }
+  function fmt(x){ return Array.isArray(x)? x[0].toFixed(2)+' ~ '+x[1].toFixed(2) : x.toFixed(2); }
+  if(ac.entry) ab.appendChild(kv('低吸/关注区', fmt(ac.entry)));
+  if(ac.stop) ab.appendChild(kv('止损位', fmt(ac.stop)));
+  if(ac.target) ab.appendChild(kv('目标位', fmt(ac.target)));
+  if(ac.invalid) ab.appendChild(kv('失效位', fmt(ac.invalid)));
+  if(ac.pos_hint){
+    var d=document.createElement('div'); d.className='it full';
+    d.innerHTML='<div class="k">仓位建议</div><div class="v" style="font-size:13px;font-weight:600">'+ac.pos_hint+'</div>';
+    ab.appendChild(d);
+  }
 }
 function addStat(p,k,v){ var d=document.createElement('div'); d.className='stat'; d.innerHTML='<div class="k">'+k+'</div><div class="v">'+v+'</div>'; p.appendChild(d); }
 function sectionTitle(t){ var d=document.createElement('div'); d.style.cssText='font-size:13px;color:#9aa7b4;margin:10px 0 4px'; d.textContent=t; return d; }
