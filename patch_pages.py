@@ -45,7 +45,7 @@ WATCH_TAB_BTN = '  <button class="tab" data-tab="watch">📈 观察池</button>'
 # ---- Tab 顺序（操作层在前，阅读层在后）----
 # prs 实战策略(主入口) → radar 低位资金雷达 → auto 自动选股 → watch 观察池 → tradetime 交易时机
 # 后面才是环境阅读类：今日看板/市场研判/选股雷达/资金流/ETF/风控
-TAB_ORDER = ['prs', 'radar', 'auto', 'watch', 'tradetime', 'overview',
+TAB_ORDER = ['prs', 'radar', 'trap', 'auto', 'watch', 'tradetime', 'overview',
              'market', 'screener', 'flow', 'etf', 'risk']
 TRADETIME_TAB_BTN = '  <button class="tab" data-tab="tradetime">⏱️ 交易时机</button>'
 LOADING_TRADETIME = ('<div class="panel"><div class="loading"><div class="spinner"></div>'
@@ -70,6 +70,13 @@ RADAR_PANE = '''<section class="pane" id="pane-radar">
   核心判断：<b>低位 + 有钱进 = 值得提醒</b>；<b>低位 + 没钱进 = 无人问津</b>（回测胜率48.9%，约等于全市场基线，不值得动）。<br>
   三个资金信号（MFI回升 / 放量&gt;1.3倍 / OBV上行）三选二为「有资金」；再叠加同业低位票的同步进钱比例 + 该板块真实净流入排名 = 板块共振。<span style="color:var(--t3)">非投资建议。</span></div>
   <div id="radarMount"><!--RADAR_START-->''' + LOADING_RADAR + '''<!--RADAR_END--></div>
+</section>'''
+
+# ---- 分时陷阱识别（iframe 嵌 trap-detector.html，自包含直连腾讯，不依赖流水线数据）----
+TRAP_TAB_BTN = '  <button class="tab" data-tab="trap">🕵️ 分时陷阱</button>'
+TRAP_PANE = '''<section class="pane" id="pane-trap">
+  <iframe src="trap-detector.html?embed=1" title="分时陷阱识别" loading="lazy"
+    style="width:100%;height:calc(100vh - 170px);min-height:520px;border:0;border-radius:12px;background:var(--bg)"></iframe>
 </section>'''
 
 # ---- 市场研判（综合研判 + 全球市场 + 重大事件 + 国家队资金 + 情绪指数 合并为一个 Tab）----
@@ -1403,6 +1410,16 @@ def patch(fn):
         else:
             print('  ! 未找到首个 tab 按钮')
 
+    # 1f) 分时陷阱识别（独立自包含页面，直连腾讯，不依赖流水线数据）：插到首个 button 之前，最终位置由 TAB_ORDER 决定
+    if 'data-tab="trap"' not in s:
+        nav_start = s.find('<nav')
+        first_btn = s.find('<button', nav_start) if nav_start >= 0 else s.find('<button')
+        if first_btn >= 0:
+            s = s[:first_btn] + TRAP_TAB_BTN + '\n' + s[first_btn:]
+            print('  + tab按钮: trap')
+        else:
+            print('  ! 未找到首个 tab 按钮')
+
     # 2) 自动选股 pane -> fetch 结构（保留已烘焙快照）
     m = re.search(r'<!--AUTOPICK_START-->(.*?)<!--AUTOPICK_END-->', s, re.S)
     baked_auto = m.group(1) if m else None
@@ -1425,6 +1442,17 @@ def patch(fn):
             print('  + 实战策略pane（新建）')
         else:
             print('  ! 无法定位实战策略pane插入点')
+
+    # 2b) 分时陷阱识别 pane（iframe 嵌 trap-detector.html?embed=1，自包含无需烘焙，不被 sync_auto_tab 冲掉）
+    s, ok = replace_section(s, 'pane-trap', TRAP_PANE)
+    if not ok:
+        ins = s.rfind('</section>')
+        if ins >= 0:
+            ins += len('</section>')
+            s = s[:ins] + '\n' + TRAP_PANE + s[ins:]
+            print('  + 分时陷阱pane（新建）')
+        else:
+            print('  ! 无法定位分时陷阱pane插入点')
     if baked_prs and '正在加载' not in baked_prs:
         s = s.replace('<!--PRS_START-->' + LOADING_PRS + '<!--PRS_END-->',
                       '<!--PRS_START-->' + baked_prs + '<!--PRS_END-->', 1)
