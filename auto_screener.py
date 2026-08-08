@@ -321,7 +321,7 @@ def regime_gate(template, regime):
         if t=='neutral':
             return 'A', '大盘震荡（年线附近），可小仓试探，严格执行本卡的ATR动态止损。'
         if t=='up':
-            return 'A', '大盘上行（沪深300在年线上方），可正常按计划低吸。'
+            return 'A', '大盘上行（沪深300在年线上方）——逆向低吸(A)在此市况历史胜率不足50%、近端为负；仅"深度恐慌(贪婪<20)+技术强共振(≥3)"的强信号才触发，否则由 run_screening 自动降为观察池。'
     return template, ''
 
 def right_side(day_closes, kd, md):
@@ -692,17 +692,30 @@ def run_screening(stock):
     elif l1[0]=='pass' and l3status=='pass':
         # 进入 A：低位 + 技术共振(1.0)。好公司仅作"优先级"(回测显示好公司过滤不增Alpha，
         # 但会丢弃93%信号)，故不再硬降级为B，而是好公司排前、非好公司轻仓/观察。
-        res['template']='A'
-        a_stop=max(STOP_PCT, 2*atr_pct)   # ATR 动态止损：波动越大止损越宽(与"止损是胜率杀手"结论自洽)，但≥8%底线
-        res['atr_stop_pct']=round(a_stop,4)
-        res['stop']=round(price*(1-a_stop),3) if price else 0
-        if good_company:
-            res['suggestion']='好公司+低位共振(1.0)：小仓位分批低吸，持有约%d日做均值回归，ATR动态止损%.0f%%目标%d%%，反弹属急跌修复，不长期持有。'%(
-                HOLD_DAYS, a_stop*100, int(TP_PCT*100))
+        # —— A 档市况分层门控(OOS 实证, 2026-08 对照实验 oos_regime_compare): 逆向低吸(A)的 edge
+        #    高度集中于下行/恐慌市况, up 市况历史胜率<50%、近端(2025-08~)样本为负; 故 up 市况下仅当
+        #    "深度恐慌(贪婪<20)+技术强共振(≥3)"才保留 A, 否则降为观察池 —— 该约束使合并OOS胜率 52.5%→56.4%、
+        #    Sharpe 0.58→0.81、近端亏损 -1.87%→-0.49%, 且下行市况强势(66.7%/+5.99%)完整保留。
+        trend = res.get('market', {}).get('trend', 'na')
+        a_stop = max(STOP_PCT, 2 * atr_pct)   # ATR 动态止损：波动越大止损越宽(与"止损是胜率杀手"结论自洽)，但≥8%底线
+        if trend == 'up' and not (greed < 20 and res['l3'].get('tech', 0) >= 3):
+            res['template'] = 'B'
+            res['suggestion'] = ('大盘上行(沪深300在年线上方)时逆向低吸(A)历史胜率不足50%、近端样本为负——'
+                                 '本信号未达"深度恐慌(贪婪<20)+技术强共振(≥3)"的强触发门槛，降至观察池，'
+                                 '等待大盘回落至震荡/恐慌区再低吸。')
         else:
-            res['suggestion']='低位+技术共振(1.0,非好公司)：仅轻仓或观察；若参与，ATR动态止损%.0f%%、目标%d%%，排序优先级低于好公司。'%(
-                a_stop*100, int(TP_PCT*100))
-    else: res['template']='B'; res['suggestion']='纳入观察池，等待信号共振，暂不入场。'
+            res['template'] = 'A'
+            res['atr_stop_pct'] = round(a_stop, 4)
+            res['stop'] = round(price * (1 - a_stop), 3) if price else 0
+            if good_company:
+                res['suggestion'] = '好公司+低位共振(1.0)：小仓位分批低吸，持有约%d日做均值回归，ATR动态止损%.0f%%目标%d%%，反弹属急跌修复，不长期持有。' % (
+                    HOLD_DAYS, a_stop * 100, int(TP_PCT * 100))
+            else:
+                res['suggestion'] = '低位+技术共振(1.0,非好公司)：仅轻仓或观察；若参与，ATR动态止损%.0f%%、目标%d%%，排序优先级低于好公司。' % (
+                    a_stop * 100, int(TP_PCT * 100))
+    else:
+        res['template'] = 'B'
+        res['suggestion'] = '纳入观察池，等待信号共振，暂不入场。'
     # 大盘方向门控：下行期封杀顺势(M)/热点(E)，保留左侧低吸(A)——见 regime_gate 注释
     gated, gnote = regime_gate(res['template'], res['market'])
     if gated != res['template']:
