@@ -49,7 +49,7 @@ def load_cache():
     return {}
 
 def save_cache(c):
-    try: json.dump(c, open(CACHE, 'w', encoding='utf-8'))
+    try: json.dump(clean_nan(c), open(CACHE, 'w', encoding='utf-8'), allow_nan=False)
     except: pass
 
 def col(df, *names):
@@ -73,7 +73,7 @@ def get_hs300():
         log('沪深300 成分 %d 只' % len(codes))
     except Exception as e:
         log('沪深300 获取失败:', e)
-    json.dump(codes, open(cf, 'w', encoding='utf-8'))
+    json.dump(clean_nan(codes), open(cf, 'w', encoding='utf-8'), allow_nan=False)
     return codes
 
 def get_yjbb(date, cache):

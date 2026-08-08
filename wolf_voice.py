@@ -7,6 +7,16 @@
 """
 import json, os, re, ssl, time, html, urllib.request
 
+def clean_nan(o):
+    """递归把 NaN/Infinity 换成 None，避免写出浏览器解析不了的 NaN（非法 JSON）。"""
+    if isinstance(o, float):
+        return o if (o == o and o != float('inf') and o != float('-inf')) else None
+    if isinstance(o, dict):
+        return {k: clean_nan(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [clean_nan(v) for v in o]
+    return o
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 AUTHOR_ID = '150058'
@@ -137,8 +147,8 @@ def main():
            'hot_tags': sorted(tag_cnt.items(), key=lambda x: -x[1])[:8],
            'posts': uniq,
            'note': '参考信息，不参与买卖打分'}
-    json.dump(out, open(os.path.join(HERE, 'wolf_voice.json'), 'w', encoding='utf-8'),
-              ensure_ascii=False, indent=1)
+    json.dump(clean_nan(out), open(os.path.join(HERE, 'wolf_voice.json'), 'w', encoding='utf-8'),
+              ensure_ascii=False, indent=1, allow_nan=False)
     print('OK wolf_voice.json  %d条  总体情绪=%s(%.2f)  热词=%s'
           % (len(uniq), overall, avg, [t for t, _ in out['hot_tags'][:5]]))
 

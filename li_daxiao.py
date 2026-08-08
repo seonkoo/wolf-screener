@@ -78,7 +78,7 @@ def fetch_index(symbol, kind):
             col = '市净率'
         rows = [{'date': str(r[0]), 'v': (float(r[1]) if r[1] is not None else None)}
                 for r in df[['日期', col]].itertuples(index=False, name=None)]
-        json.dump({'ts': time.time(), 'rows': rows}, open(cache, 'w', encoding='utf-8'))
+        json.dump(clean_nan({'ts': time.time(), 'rows': rows}), open(cache, 'w', encoding='utf-8'), allow_nan=False)
         return rows, time.time(), 'realtime'
     except Exception as e:
         # 拉取失败：尽量用过期缓存兜底，避免整体崩溃导致 li_daxiao.json 缺失
@@ -215,7 +215,7 @@ def get_bluechips():
                     b['low'] = b['cheap_score'] < 30
                     b['src'] = 'cross'
     out.sort(key=lambda b: (b['cheap_score'] if b['cheap_score'] is not None else 999))
-    json.dump(cache, open(BLUECHIP_CACHE, 'w', encoding='utf-8'))
+    json.dump(clean_nan(cache), open(BLUECHIP_CACHE, 'w', encoding='utf-8'), allow_nan=False)
     return out
 
 

@@ -9,6 +9,16 @@ K线本地缓存(klines_cache.json)避免重复抓取；基本面 as-of 防未�
 用法：python opt_backtest.py [pool_cap=1500] [--refresh]
 """
 import urllib.request, json, ssl, math, sys, time, os, random, concurrent.futures, threading
+
+def clean_nan(o):
+    """递归把 NaN/Infinity 换成 None，避免写出浏览器解析不了的 NaN（非法 JSON）。"""
+    if isinstance(o, float):
+        return o if (o == o and o != float('inf') and o != float('-inf')) else None
+    if isinstance(o, dict):
+        return {k: clean_nan(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [clean_nan(v) for v in o]
+    return o
 import datetime as _dt
 
 CTX = ssl.create_default_context(); CTX.check_hostname=False; CTX.verify_mode=ssl.CERT_NONE
@@ -118,7 +128,7 @@ def load_klines(pool, refresh=False):
         for f in concurrent.futures.as_completed(futs):
             c,kl=f.result(); kd[c]=kl; done+=1
             if done%100==0: print('  K线抓取 %d/%d'%(done,len(pool)))
-    json.dump(kd, open(CACHE,'w',encoding='utf-8'))
+    json.dump(clean_nan(kd), open(CACHE,'w',encoding='utf-8'), allow_nan=False)
     print('  缓存写入 %d 只 -> %s'%(len(kd),CACHE)); return kd
 
 # ---------------- 信号 / 收益 ----------------
@@ -331,7 +341,7 @@ def main():
 
     # 输出
     out={'variants':results,'quality':{'good':{'n':gn,'win':gw,'avg':ga,'med':gm},'bad':{'n':bn,'win':bw,'avg':ba,'med':bm_}}}
-    json.dump(out, open('opt_result.json','w',encoding='utf-8'), ensure_ascii=False, indent=1)
+    json.dump(clean_nan(out), open('opt_result.json','w',encoding='utf-8'), ensure_ascii=False, indent=1, allow_nan=False)
     print('\n✅ 已保存 opt_result.json')
 
 if __name__=='__main__':

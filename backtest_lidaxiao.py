@@ -16,6 +16,16 @@ import json, os, time
 import urllib.request
 from datetime import datetime, timedelta
 import akshare as ak
+
+def clean_nan(o):
+    """递归把 NaN/Infinity 换成 None，避免写出浏览器解析不了的 NaN（非法 JSON）。"""
+    if isinstance(o, float):
+        return o if (o == o and o != float('inf') and o != float('-inf')) else None
+    if isinstance(o, dict):
+        return {k: clean_nan(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [clean_nan(v) for v in o]
+    return o
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -59,7 +69,7 @@ def load_close():
                                  start_date='20050101', end_date=ed)
         rows = {str(r[0]): float(r[1]) for r in df[['日期', '收盘']].itertuples(index=False, name=None)}
         if rows:
-            json.dump({'ts': time.time(), 'rows': rows}, open(CLOSE_CACHE, 'w', encoding='utf-8'))
+            json.dump(clean_nan({'ts': time.time(), 'rows': rows}), open(CLOSE_CACHE, 'w', encoding='utf-8'), allow_nan=False)
             log('akshare 上证50收盘 %d 条' % len(rows))
             return rows
     except Exception as e:
@@ -88,7 +98,7 @@ def load_close():
             end = (datetime.strptime(first, '%Y-%m-%d') - timedelta(days=1)).strftime('%Y-%m-%d')
         rows = {b[0]: b[1] for b in bars}
         if rows:
-            json.dump({'ts': time.time(), 'rows': rows}, open(CLOSE_CACHE, 'w', encoding='utf-8'))
+            json.dump(clean_nan({'ts': time.time(), 'rows': rows}), open(CLOSE_CACHE, 'w', encoding='utf-8'), allow_nan=False)
             log('腾讯 上证50收盘 %d 条' % len(rows))
             return rows
     except Exception as e:

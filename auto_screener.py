@@ -13,6 +13,16 @@ Template: A建议低吸 / B观察 / C禁止 / D观望
 """
 import urllib.request, json, ssl, urllib.parse, math, random, sys, time, concurrent.futures, threading, os
 
+def clean_nan(o):
+    """递归把 NaN/Infinity 换成 None，避免写出浏览器解析不了的 NaN（非法 JSON）。"""
+    if isinstance(o, float):
+        return o if (o == o and o != float('inf') and o != float('-inf')) else None
+    if isinstance(o, dict):
+        return {k: clean_nan(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [clean_nan(v) for v in o]
+    return o
+
 CTX = ssl.create_default_context(); CTX.check_hostname=False; CTX.verify_mode=ssl.CERT_NONE
 HDR = {'User-Agent':'Mozilla/5.0','Referer':'https://quote.eastmoney.com/'}
 
@@ -237,7 +247,7 @@ def load_inflow_hist():
         return {}
 def save_inflow_hist(h):
     try:
-        json.dump(h, open(INFLOW_HIST_FILE, 'w', encoding='utf-8'), ensure_ascii=False)
+        json.dump(clean_nan(h), open(INFLOW_HIST_FILE, 'w', encoding='utf-8'), ensure_ascii=False, allow_nan=False)
     except Exception:
         pass
 def inflow_yesterday(hist, code, today):
@@ -829,7 +839,7 @@ def get_universe(top_n, min_inflow):
     真正的恐慌低位股(贪困<40 的票往往仍在被抛售、净流入为负)，导致信号质量骤降
     (按净流入预筛的回测仅 36% 胜率/-3.4% 中位；全市场宽扫描为 61-65% 胜率/+6% 中位)。
     改为：拉取较宽的全市场，按"当日跌幅"升序偏向已被打压的弱势股，再由四层逻辑精选。"""
-    fs='m:0+t:6'
+    fs='m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23'
     out=[]
     for pn in range(1,16):   # 拉取更宽的全市场(约3000只)，供上层四层逻辑精选
         u='https://push2delay.eastmoney.com/api/qt/clist/get?pn=%d&pz=200&fid=f3&po=0&fltt=2&invt=2&np=1&ut=fa5fd079d0a4d4f8f8f8f8&fs=%s&fields=f12,f14,f2,f3,f62,f21'%(pn,urllib.parse.quote(fs))
@@ -959,7 +969,7 @@ def load_industry_map(cache='industry_map.json'):
     try:
         # 仅当足够完整才落盘缓存，避免污染后续运行
         if len(mp)>=MIN_MAP:
-            json.dump({'date':today,'map':mp}, open(p,'w',encoding='utf-8'), ensure_ascii=False)
+            json.dump(clean_nan({'date':today,'map':mp}), open(p,'w',encoding='utf-8'), ensure_ascii=False, allow_nan=False)
     except Exception: pass
     return mp
 

@@ -25,6 +25,16 @@
 用法：python backtest_screener.py  [poolN=1000]  [bars=750]
 """
 import urllib.request, json, ssl, urllib.parse, sys, threading, os, importlib.util, statistics, math
+
+def clean_nan(o):
+    """递归把 NaN/Infinity 换成 None，避免写出浏览器解析不了的 NaN（非法 JSON）。"""
+    if isinstance(o, float):
+        return o if (o == o and o != float('inf') and o != float('-inf')) else None
+    if isinstance(o, dict):
+        return {k: clean_nan(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [clean_nan(v) for v in o]
+    return o
 ctx=ssl.create_default_context(); ctx.check_hostname=False; ctx.verify_mode=ssl.CERT_NONE
 lock=threading.Lock()
 
@@ -302,7 +312,7 @@ def main():
                    'range':'%s ~ %s'%(sample[cps[0]][0],sample[cps[-1]][0])},
          'note':'S2/S3 的"主力净流入"用K线代理(均线多头+放量+当日上涨)近似，历史逐日 f62 资金流不可回溯，结论偏保守。',
          'strategies':STRATS,'matrix':matrix,'verdict':verdict}
-    json.dump(out, open('backtest_winrate.json','w',encoding='utf-8'), ensure_ascii=False, indent=1)
+    json.dump(clean_nan(out), open('backtest_winrate.json','w',encoding='utf-8'), ensure_ascii=False, indent=1, allow_nan=False)
     # 打印对比表
     print('\n=== 多策略 × 多持有期 回测对比（胜率% / 均值%） ===')
     print('%-22s'%'策略' + ''.join('%14s'%('%d日'%h) for h in HOLDS))

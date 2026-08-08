@@ -15,6 +15,16 @@
   python strategy_lab.py all     [N=800] [bars=1000]
 """
 import urllib.request, json, ssl, sys, os, pickle, time, math
+
+def clean_nan(o):
+    """递归把 NaN/Infinity 换成 None，避免写出浏览器解析不了的 NaN（非法 JSON）。"""
+    if isinstance(o, float):
+        return o if (o == o and o != float('inf') and o != float('-inf')) else None
+    if isinstance(o, dict):
+        return {k: clean_nan(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [clean_nan(v) for v in o]
+    return o
 import numpy as np
 from concurrent.futures import ThreadPoolExecutor
 
@@ -441,8 +451,8 @@ def sweep():
                        'train': {k: (round(v * 100, 2) if isinstance(v, float) else v) for k, v in it['tr'].items()},
                        'test': {k: (round(v * 100, 2) if isinstance(v, float) else v) for k, v in it['te'].items()}}
                       for it in robust[:20]]}
-    json.dump(out, open(os.path.join(HERE, 'lab_result.json'), 'w', encoding='utf-8'),
-              ensure_ascii=False, indent=1)
+    json.dump(clean_nan(out), open(os.path.join(HERE, 'lab_result.json'), 'w', encoding='utf-8'),
+              ensure_ascii=False, indent=1, allow_nan=False)
     print('\n✅ 已保存 lab_result.json')
 
 # ============================ final：小狼 2.0 定稿验证 ============================
@@ -527,8 +537,8 @@ def final():
                                        'base': round(s['base'] * 100, 1),
                                        'exp': round(s['exp'] * 100, 2),
                                        'exexp': round(s['exexp'] * 100, 2)}
-    json.dump(out, open(os.path.join(HERE, 'wolf2_validation.json'), 'w', encoding='utf-8'),
-              ensure_ascii=False, indent=1)
+    json.dump(clean_nan(out), open(os.path.join(HERE, 'wolf2_validation.json'), 'w', encoding='utf-8'),
+              ensure_ascii=False, indent=1, allow_nan=False)
     print('\n✅ 已保存 wolf2_validation.json')
     print('   总体：胜率 %.1f%%（基准 %.1f%%）超额 %+.2f%% | 训练 %.1f%% / 测试 %.1f%%'
           % (s_all['win'] * 100, s_all['base'] * 100, s_all['exexp'] * 100,
