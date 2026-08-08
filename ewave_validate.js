@@ -15,7 +15,7 @@ const a = html.indexOf('var FIB_RETRACE');
 const b = html.indexOf('/* ===== 数据获取');
 if (a < 0 || b < 0) { console.error('FAIL: 无法在 HTML 中定位 JS 引擎'); process.exit(1); }
 const engineSrc = html.slice(a, b);
-const fn = new Function('window', engineSrc + '\n;return {zigzag,checkImpulse,waveMetrics,fibLevels,identify};');
+const fn = new Function('window', engineSrc + '\n;return {zigzag,checkImpulse,waveMetrics,fibLevels,identify,guidance};');
 const JS = fn({});
 
 // 2) 单次抓取数据, 同时喂给两端, 杜绝两次抓取不一致
@@ -62,15 +62,19 @@ function round(obj, n = 2) {
     const pyFib = pyRes.fib ? Object.fromEntries(Object.entries(pyRes.fib).map(([k, v]) => [k, round(v)])) : null;
     const jsPrim = jsRes.primary ? round(jsRes.primary) : null;
     const pyPrim = pyRes.primary ? round(pyRes.primary) : null;
+    const jsG = round(JS.guidance(closes, jsRes));
+    const pyG = round(pyRes.guidance);
 
     const structOk = jsStruct === pyStruct;
     const phaseOk = jsPhase === pyPhase;
     const fibOk = JSON.stringify(jsFib) === JSON.stringify(pyFib);
     const primOk = JSON.stringify(jsPrim) === JSON.stringify(pyPrim);
-    const ok = structOk && phaseOk && fibOk && primOk;
+    const gdOk = JSON.stringify(jsG) === JSON.stringify(pyG);
+    const ok = structOk && phaseOk && fibOk && primOk && gdOk;
     if (!ok) allOk = false;
-    console.log(`${ok ? 'OK ' : 'XX '} ${code}  结构=${jsStruct}/${pyStruct} 相位="${jsPhase}"=="${pyPhase}"?${phaseOk} fib同?${fibOk} prim同?${primOk}`);
+    console.log(`${ok ? 'OK ' : 'XX '} ${code}  结构=${jsStruct}/${pyStruct} 相位="${jsPhase}"=="${pyPhase}"?${phaseOk} fib同?${fibOk} prim同?${primOk} guidance同?${gdOk}`);
     if (!fibOk) { console.log('   JS :', JSON.stringify(jsFib)); console.log('   PY :', JSON.stringify(pyFib)); }
+    if (!gdOk) { console.log('   JS.gd :', JSON.stringify(jsG)); console.log('   PY.gd :', JSON.stringify(pyG)); }
   }
   console.log(allOk ? '\nALL OK — 双引擎一致' : '\nMISMATCH — 见上');
   process.exit(allOk ? 0 : 1);
